@@ -1,0 +1,28 @@
+#!/bin/sh
+#
+# Pre-commit hook that runs BackupHandlerTest when VisitasDatabase is modified.
+# This ensures backup/restore compatibility is maintained when the database schema changes.
+
+# Check if VisitasDatabase.kt is in the staged files
+if git diff --cached --name-only | grep -q "VisitasDatabase.kt"; then
+    echo "VisitasDatabase.kt has been modified. Running BackupHandlerTest..."
+    
+    # Run the specific instrumented test
+    # Note: This requires a connected device or emulator
+    ./gradlew connectedAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=com.msmobile.visitas.util.BackupHandlerTest"
+
+    TEST_RESULT=$?
+    
+    if [ $TEST_RESULT -ne 0 ]; then
+        echo ""
+        echo "ERROR: BackupHandlerTest failed!"
+        echo "Please ensure backup/restore compatibility before committing VisitasDatabase changes."
+        echo ""
+        echo "To bypass this check (not recommended), use: git commit --no-verify"
+        exit 1
+    fi
+    
+    echo "BackupHandlerTest passed successfully."
+fi
+
+exit 0

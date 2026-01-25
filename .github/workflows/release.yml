@@ -1,0 +1,89 @@
+# Release Pipeline - Deploy to Google Play Store
+# Equivalent to Azure DevOps Release Pipeline
+# Triggered manually or after successful build on master
+
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_notes:
+        description: 'Release notes (Portuguese)'
+        required: false
+        default: 'Ajustes e melhorias.'
+        type: string
+  workflow_run:
+    workflows: ["Build"]
+    types:
+      - completed
+    branches:
+      - master
+
+jobs:
+  release:
+    name: Deploy to Play Store
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    # Only run if triggered manually OR if the build workflow succeeded
+    if: >
+      github.event_name == 'workflow_dispatch' || 
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+
+    steps:
+      # When auto-triggered: download artifact from the build workflow that triggered this
+      - name: Download artifact from build workflow
+        if: github.event_name == 'workflow_run'
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          name: app-bundle
+          path: artifacts
+          run_id: ${{ github.event.workflow_run.id }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      # When manually triggered: download latest successful build artifact
+      - name: Download latest successful build artifact
+        if: github.event_name == 'workflow_dispatch'
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          name: app-bundle
+          path: artifacts
+          workflow: build.yml
+          branch: master
+          workflow_conclusion: success
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: List artifacts
+        run: |
+          echo "Downloaded artifacts:"
+          find artifacts -name "*.aab" -type f
+
+
+      - name: Set Release Notes
+        id: release_notes
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            NOTES="${{ inputs.release_notes }}"
+          else
+            NOTES="Ajustes e melhorias."
+          fi
+          echo "notes=$NOTES" >> $GITHUB_OUTPUT
+          echo "Release notes: $NOTES"
+
+      - name: Create whatsnew directory
+        run: |
+          mkdir -p whatsnew
+          echo "${{ steps.release_notes.outputs.notes }}" > whatsnew/whatsnew-pt-BR
+
+      - name: Deploy to Play Store (Internal Testing)
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
+          packageName: com.msmobile.visitas
+          releaseFiles: artifacts/*.aab
+          track: internal
+          status: completed
+          releaseName: ${{ github.event_name == 'workflow_dispatch' && inputs.release_notes || 'Automatic Release' }}
+          whatsNewDirectory: whatsnew
+          inAppUpdatePriority: 5

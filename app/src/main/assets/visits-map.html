@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <title>Leaflet Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+    <style>
+        #map {
+            height: 100vh;
+            width: 100%;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+<div id="map"></div>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+    let map;
+    let currentLocation = null; // store current location
+    let routeLayer = null; // store route layer
+    let currentLocationMarker = null; // marker for current location
+    let labels = {
+        currentLocation: undefined,
+    };
+    let didFitBounds = false;
+
+    function log(message) {
+        console.log(message);
+        if (window.Visits && window.Visits.log) {
+            window.Visits.log(message);
+        }
+    }
+
+    function logError(message) {
+        console.error(message);
+        if (window.Visits && window.Visits.error) {
+            window.Visits.error(message);
+        }
+    }
+
+    log('Script loaded successfully');
+
+    // Changed: now only receives the text for current location popup
+    async function initializeMap(currentLocationText) {
+        try {
+            log('Initializing map (no coordinates yet)');
+
+            if (typeof L === 'undefined') {
+                throw new Error('Leaflet library not loaded');
+            }
+
+            labels.currentLocation = currentLocationText;
+
+            // Initialize map with a neutral view; real center will be applied in setMarkers
+            map = L.map('map').setView([0, 0], 2);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+              attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+
+            log('Map initialized successfully (awaiting coordinates)');
+
+            if (window.Visits && window.Visits.onMapReady) {
+                window.Visits.onMapReady();
+            }
+        } catch (error) {
+            logError('Map initialization error: ' + error.message);
+            if (window.Visits && window.Visits.onMapInitializationError) {
+               window.Visits.onMapInitializationError(error.message || error.toString());
+            }
+        }
+    }
+
+    // Changed: now receives latitude, longitude plus visits
+    async function setMarkers(latitude, longitude, visits) {
+        try {
+           if (!map) {
+               logError('Map not initialized');
+               return;
+           }
+
+           log('Setting markers...');
+
+           // Update current location
+           currentLocation = [latitude, longitude];
+
+           // Manage current location marker
+           if (currentLocationMarker) {
+               map.removeLayer(currentLocationMarker);
+           }
+           currentLocationMarker = L.marker(currentLocation)
+               .addTo(map)
+               .bindPopup(labels.currentLocation);
+
+           // Clear existing route layer
+           if (routeLayer) {
+               map.removeLayer(routeLayer);
+               routeLayer = null;
+           }
+
+           const bounds = L.latLngBounds([]);
+
+           // Always include current location in bounds
+           if (currentLocation) {
+               bounds.extend(currentLocation);
+           }
+
+            if (visits && visits.length > 0) {
+                // Sort visits by visitOrder for proper route display
+                const sortedVisits = visits.slice().sort((a, b) => a.visitOrder - b.visitOrder);
+
+                // Add markers for each visit
+                sortedVisits.forEach((visit, index) => {
+                    if (visit && visit.householderLatitude && visit.householderLongitude) {
+                        const { householderLatitude, householderLongitude, householderName, householderDistance, visitSubject, visitOrder } = visit;
+
+                        log('Adding marker for: ' + householderName + ' at ' + householderLatitude + ', ' + householderLongitude + ' (order: ' + visitOrder + ')');
+
+                        const redIcon = L.icon({
+                            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+                            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                            iconSize: [25, 41],
+                            iconAnchor: [12, 41],
+                            popupAnchor: [1, -34],
+                            shadowSize: [41, 41]
+                        });
+
+                        const popupContent = '<div>' +
+                            '<div style="display: flex; justify-content: space-between; align-items: center;">' +
+                                '<strong>' + householderName + '</strong>' +
+                                '<span style="font-size: 0.9em; color: #666;">Order: ' + (visitOrder + 1) + '</span>' +
+                            '</div>' +
+                            '<div style="display: flex; justify-content: space-between; align-items: center;">' +
+                                '<span>' + visitSubject + '</span>' +
+                                '<span style="font-size: 0.9em; color: #666;">' + (householderDistance || '') + '</span>' +
+                            '</div>' +
+                            visit.householderAddress + '<br/>' +
+                        '</div>';
+
+                        // Create numbered marker
+                        const marker = L.marker([householderLatitude, householderLongitude], { icon: redIcon })
+                            .addTo(map)
+                            .on('click', () => {
+                                if (window.Visits && window.Visits.onMarkerClicked) {
+                                    window.Visits.onMarkerClicked('marker_' + index);
+                                }
+                            })
+                            .bindPopup(popupContent);
+
+                        // Add visit order number as a div icon overlay
+                        const numberIcon = L.divIcon({
+                            className: 'visit-order-number',
+                            html: '<div style="background: white; border: 2px solid red; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; color: red; margin-left: 18px; margin-top: -8px;">' + (visitOrder + 1) + '</div>',
+                            iconSize: [20, 20],
+                            iconAnchor: [10, 10]
+                        });
+
+                        L.marker([householderLatitude, householderLongitude], { icon: numberIcon })
+                            .addTo(map);
+
+                        bounds.extend([householderLatitude, householderLongitude]);
+                    }
+                });
+
+                // Draw route if routeGeometry is available
+                if (sortedVisits.length > 0 && sortedVisits[0].routeGeometry) {
+                    try {
+                        log('Drawing route with geometry');
+                        const routeGeometry = sortedVisits[0].routeGeometry;
+
+                        // Create route line with styling
+                        routeLayer = L.geoJSON(routeGeometry, {
+                            style: {
+                                color: '#2E86AB',
+                                weight: 4,
+                                opacity: 0.8,
+                                lineJoin: 'round',
+                                lineCap: 'round'
+                            }
+                        }).addTo(map);
+
+                        log('Route drawn successfully');
+                    } catch (error) {
+                        logError('Error drawing route: ' + error.message);
+                    }
+                } else {
+                    // Fallback: draw simple line connecting visits in order
+                    if (sortedVisits.length > 1) {
+                        log('Drawing simple route line');
+                        const routePoints = [];
+
+                        // Start from current location if available
+                        if (currentLocation) {
+                            routePoints.push(currentLocation);
+                        }
+
+                        // Add all visit locations in order
+                        sortedVisits.forEach(visit => {
+                            if (visit.householderLatitude && visit.householderLongitude) {
+                                routePoints.push([visit.householderLatitude, visit.householderLongitude]);
+                            }
+                        });
+
+                        if (routePoints.length > 1) {
+                            routeLayer = L.polyline(routePoints, {
+                                color: '#2E86AB',
+                                weight: 3,
+                                opacity: 0.6,
+                                dashArray: '5, 10'
+                            }).addTo(map);
+                        }
+                    }
+                }
+
+                if (!didFitBounds && bounds.isValid()) {
+                    didFitBounds = true;
+                    map.fitBounds(bounds, { padding: [20, 20] });
+                }
+
+                log('All markers added successfully');
+            } else {
+                log('No visits provided or visits array is empty.');
+
+                // Only center on current location if no other markers
+                if (!didFitBounds && currentLocation) {
+                    didFitBounds = true;
+                    map.setView(currentLocation, 15);
+                }
+            }
+        } catch (error) {
+            logError('Error setting markers: ' + error.message);
+            if (window.Visits && window.Visits.onMapInitializationError) {
+                window.Visits.onMapInitializationError(error.message || error.toString());
+            }
+        }
+    }
+
+    window.onerror = function(message, source, lineno, colno, error) {
+        logError('JavaScript error: ' + message + ' at ' + source + ' ' + lineno + ':' + colno);
+        if (window.Visits && window.Visits.onMapInitializationError) {
+            window.Visits.onMapInitializationError(message);
+        }
+    };
+</script>
+</body>
+</html>
