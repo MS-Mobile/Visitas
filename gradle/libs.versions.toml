@@ -1,5 +1,5 @@
 [versions]
-agp = "8.13.2"
+agp = "8.8.0"
 android-sdk="36"
 android-min-sdk="26"
 javapoet = "1.13.0"
