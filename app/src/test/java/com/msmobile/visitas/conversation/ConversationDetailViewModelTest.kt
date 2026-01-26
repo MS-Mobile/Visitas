@@ -4,11 +4,14 @@ import com.msmobile.visitas.util.DispatcherProvider
 import com.msmobile.visitas.util.IdProvider
 import com.msmobile.visitas.util.MainDispatcherRule
 import com.msmobile.visitas.util.MockReferenceHolder
+import com.msmobile.visitas.util.on
+import junit.framework.TestCase.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import java.util.UUID
 
@@ -34,6 +37,31 @@ class ConversationDetailViewModelTest {
         // Assert
         val conversationRepository = requireNotNull(conversationRepositoryRef.value)
         verifyNoInteractions(conversationRepository)
+    }
+
+    @Test
+    fun `onEvent with ViewCreated event loads conversations when conversationGroupId is valid`() {
+        // Arrange
+        val conversationRepositoryRef = MockReferenceHolder<ConversationRepository>()
+        val viewModel = createViewModel(
+            conversationRepositoryRef = conversationRepositoryRef
+        )
+
+        // Act
+        viewModel.onEvent(
+            ConversationDetailViewModel.UiEvent.ViewCreated(
+                firstConversationId = FIRST_CONVERSATION_ID
+            )
+        )
+
+        // Assert
+        val conversationRepository = requireNotNull(conversationRepositoryRef.value)
+        val conversations = viewModel.uiState.value.conversationList
+        verify(conversationRepository).on { listByIdOrGroupId(FIRST_CONVERSATION_ID) }
+        assertEquals(3, conversations.size)
+        assertEquals(FIRST_CONVERSATION_ID, conversations[0].id)
+        assertEquals(SECOND_CONVERSATION_ID, conversations[1].id)
+        assertEquals(THIRD_CONVERSATION_ID, conversations[2].id)
     }
 
     private fun createViewModel(
