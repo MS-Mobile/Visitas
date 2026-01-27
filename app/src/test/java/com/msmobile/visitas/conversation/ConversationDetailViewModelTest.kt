@@ -4,14 +4,13 @@ import com.msmobile.visitas.util.DispatcherProvider
 import com.msmobile.visitas.util.IdProvider
 import com.msmobile.visitas.util.MainDispatcherRule
 import com.msmobile.visitas.util.MockReferenceHolder
-import com.msmobile.visitas.util.runSuspend
 import junit.framework.TestCase.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyBlocking
 import org.mockito.kotlin.verifyNoInteractions
 import java.util.UUID
 
@@ -57,7 +56,7 @@ class ConversationDetailViewModelTest {
         // Assert
         val conversationRepository = requireNotNull(conversationRepositoryRef.value)
         val conversations = viewModel.uiState.value.conversationList
-        verify(conversationRepository).runSuspend { listByIdOrGroupId(FIRST_CONVERSATION_ID) }
+        verifyBlocking(conversationRepository) { listByIdOrGroupId(FIRST_CONVERSATION_ID) }
         assertEquals(3, conversations.size)
         assertEquals(FIRST_CONVERSATION_ID, conversations[0].id)
         assertEquals(SECOND_CONVERSATION_ID, conversations[1].id)
