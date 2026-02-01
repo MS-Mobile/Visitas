@@ -1,0 +1,49 @@
+name: Feature Request
+description: Suggest a new feature or enhancement for Visitas
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to suggest a new feature! Please fill out the information below to help us understand your request.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem/Need
+      description: Describe the problem or need this feature would address. What are you trying to accomplish?
+      placeholder: |
+        Example: "As a user managing multiple visits, I find it difficult to filter visits by date range, which makes it hard to generate monthly reports."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe how you'd like this feature to work. Be as specific as possible.
+      placeholder: |
+        Example: "Add a date range filter in the visits list screen with a calendar picker. Users could select start and end dates to filter the visit list."
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Have you considered any alternative solutions or workarounds? If so, what are they and why would they not work?
+      placeholder: |
+        Example: "I considered manually searching by date, but this is time-consuming. I also thought about exporting all visits and filtering externally, but that breaks the workflow."
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any other context, screenshots, mockups, or examples that would help illustrate your feature request.
+      placeholder: |
+        You can attach images by dragging and dropping them here, or by pasting from your clipboard.
+    validations:
+      required: false
