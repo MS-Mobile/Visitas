@@ -60,5 +60,3 @@ body:
       options:
         - label: I have searched existing issues to ensure this feature hasn't been requested before
           required: true
-        - label: This feature request is specific to the Visitas Android application
-          required: true
