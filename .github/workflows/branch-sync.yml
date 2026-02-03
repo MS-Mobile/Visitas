@@ -73,27 +73,9 @@ jobs:
                 
                 console.log(`Successfully updated branch ${sourceBranch}`);
                 
-                // Add comment about automatic update
-                await github.rest.issues.createComment({
-                  owner,
-                  repo,
-                  issue_number: prNumber,
-                  body: '🤖 **Automatic Branch Update**\n\nThis branch has been automatically updated with the latest changes from master.'
-                });
-                
               } catch (error) {
                 if (error.status === 422) {
                   console.log(`Branch ${sourceBranch} has conflicts or is already up to date`);
-                  
-                  // Check if it's a conflict situation
-                  if (error.message && error.message.includes('merge conflict')) {
-                    await github.rest.issues.createComment({
-                      owner,
-                      repo,
-                      issue_number: prNumber,
-                      body: '⚠️ **Automatic Branch Update Failed**\n\nThis branch has merge conflicts with master. Please rebase or merge master locally to resolve conflicts.'
-                    });
-                  }
                 } else {
                   console.log(`Error updating branch ${sourceBranch}: ${error.message}`);
                 }
