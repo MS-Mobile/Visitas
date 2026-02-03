@@ -45,11 +45,14 @@ jobs:
           echo "Keystore file found!"
 
       - name: Create Google Services JSON
+        env:
+          GOOGLE_SERVICES_DEBUG: ${{ secrets.GOOGLE_SERVICES_JSON_DEBUG }}
+          GOOGLE_SERVICES_RELEASE: ${{ secrets.GOOGLE_SERVICES_JSON_RELEASE }}
         run: |
           # Create for both variants with separate configs
           mkdir -p app/src/debug app/src/release
-          echo '${{ secrets.GOOGLE_SERVICES_JSON_DEBUG }}' > app/src/debug/google-services.json
-          echo '${{ secrets.GOOGLE_SERVICES_JSON_RELEASE }}' > app/src/release/google-services.json
+          printf '%s' "$GOOGLE_SERVICES_DEBUG" > app/src/debug/google-services.json
+          printf '%s' "$GOOGLE_SERVICES_RELEASE" > app/src/release/google-services.json
           
           if [ ! -f "app/src/debug/google-services.json" ] || [ ! -f "app/src/release/google-services.json" ]; then
             echo "ERROR: google-services.json files were not created"
