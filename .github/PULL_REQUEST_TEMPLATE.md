@@ -1,4 +1,4 @@
-## Description
+## 📝 Description
 - Brief description of what this PR does
 
 ## 🐞 Type of Change
@@ -8,6 +8,7 @@
 - [ ] Breaking change
 - [ ] Documentation update
 - [ ] Refactoring
+- [ ] CI/CD
 - [ ] Other (please describe):
 
 <!-- ## 📷 Screenshots -->
