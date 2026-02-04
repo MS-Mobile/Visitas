@@ -33,10 +33,7 @@ class BackupViewModelTest {
     fun `onEvent with CreateBackup sets isLoading to true and then success result`() {
         // Arrange
         val mockUri = mock<Uri>()
-        val backupHandler = mock<BackupHandler> {
-            on { createBackupFile() } doReturn Result.success(mockUri)
-        }
-        val viewModel = createViewModel(backupHandler = backupHandler)
+        val viewModel = createViewModel(createBackupResult = Result.success(mockUri))
 
         // Act
         viewModel.onEvent(
@@ -59,10 +56,7 @@ class BackupViewModelTest {
     fun `onEvent with CreateBackup failure sets error result`() {
         // Arrange
         // Note: The ViewModel uses RestoreFailure for all failure cases (both backup creation and restore)
-        val backupHandler = mock<BackupHandler> {
-            on { createBackupFile() } doReturn Result.failure(Exception("Test error"))
-        }
-        val viewModel = createViewModel(backupHandler = backupHandler)
+        val viewModel = createViewModel(createBackupResult = Result.failure(Exception("Test error")))
 
         // Act
         viewModel.onEvent(
@@ -84,10 +78,7 @@ class BackupViewModelTest {
     fun `onEvent with RestoreBackup success sets restore success result`() {
         // Arrange
         val mockUri = mock<Uri>()
-        val backupHandler = mock<BackupHandler> {
-            on { restoreBackup(any()) } doReturn Result.success(Unit)
-        }
-        val viewModel = createViewModel(backupHandler = backupHandler)
+        val viewModel = createViewModel(restoreBackupResult = Result.success(Unit))
 
         // Act
         viewModel.onEvent(
@@ -110,10 +101,7 @@ class BackupViewModelTest {
     fun `onEvent with RestoreBackup failure sets restore failure result`() {
         // Arrange
         val mockUri = mock<Uri>()
-        val backupHandler = mock<BackupHandler> {
-            on { restoreBackup(any()) } doReturn Result.failure(Exception("Test error"))
-        }
-        val viewModel = createViewModel(backupHandler = backupHandler)
+        val viewModel = createViewModel(restoreBackupResult = Result.failure(Exception("Test error")))
 
         // Act
         viewModel.onEvent(
@@ -191,11 +179,17 @@ class BackupViewModelTest {
     }
 
     private fun createViewModel(
-        backupHandler: BackupHandler = mock()
+        createBackupResult: Result<Uri>? = null,
+        restoreBackupResult: Result<Unit>? = null
     ): BackupViewModel {
         val dispatchers = DispatcherProvider(
             io = mainDispatcherRule.dispatcher
         )
+        val backupHandler = mock<BackupHandler> {
+            createBackupResult?.let { on { createBackupFile() } doReturn it }
+            restoreBackupResult?.let { on { restoreBackup(any()) } doReturn it }
+        }
+
         return BackupViewModel(
             backupHandler = backupHandler,
             dispatchers = dispatchers
