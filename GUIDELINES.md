@@ -171,7 +171,48 @@ class ApplicationModule {
 - Unit tests: `app/src/test/` - JUnit tests for ViewModels and business logic
 - Instrumented tests: `app/src/androidTest/` - Hilt-enabled tests for repositories and database
 
-### Test Structure
+### Unit Test Structure
+
+- **Never pass mocks directly** to `createViewModel()` or similar factory methods
+- All mock configuration (stubbing with `on`/`doReturn`) must happen **inside** `createViewModel()`
+- Use **parameters** to control mock behavior (e.g., `createBackupResult: Result<Uri>? = null`)
+- Use `MockReferenceHolder` only when the test needs to **access** or **verify** the mock after creation
+- No `whenever` stubbing in test methods - all behavior is configured in the factory
+
+```kotlin
+// ✅ CORRECT - mock configured inside createViewModel with parameters
+private fun createViewModel(
+    createBackupResult: Result<Uri>? = null,
+    repositoryRef: MockReferenceHolder<FeatureRepository>? = null
+): FeatureViewModel {
+    val repository = mock<FeatureRepository> {
+        createBackupResult?.let { on { create() } doReturn it }
+    }
+    repositoryRef?.value = repository
+    
+    return FeatureViewModel(repository)
+}
+
+// Test uses parameters, accesses mock via ref if needed
+@Test
+fun `test description`() {
+    val repositoryRef = MockReferenceHolder<FeatureRepository>()
+    val viewModel = createViewModel(
+        createBackupResult = Result.success(mockUri),
+        repositoryRef = repositoryRef
+    )
+    val repository = requireNotNull(repositoryRef.value)
+    // verify(repository)...
+}
+
+// ❌ WRONG - passing configured mock directly
+val repository = mock<FeatureRepository> {
+    on { create() } doReturn Result.success(mockUri)
+}
+val viewModel = createViewModel(repository = repository)
+```
+
+### Android Test Structure
 
 ```kotlin
 @HiltAndroidTest
