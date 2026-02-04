@@ -13,8 +13,6 @@ import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.whenever
-
 class BackupViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
