@@ -77,10 +77,10 @@ constructor(
 
     private fun viewCreated() {
         newState {
-            loadSummary(selectedMonth)
             val summaryFilterOptions = SummaryMenuOption.entries
             copy(summaryFilterOptions = summaryFilterOptions)
         }
+        loadSummary(_uiState.value.selectedMonth)
     }
 
     fun onMonthPickerEvent(monthNavigatorEvent: MonthNavigatorEvent) {
