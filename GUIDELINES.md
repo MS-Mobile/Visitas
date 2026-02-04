@@ -186,7 +186,9 @@ private fun createViewModel(
     repositoryRef: MockReferenceHolder<FeatureRepository>? = null
 ): FeatureViewModel {
     val repository = mock<FeatureRepository> {
-        createBackupResult?.let { on { create() } doReturn it }
+        if (createBackupResult != null) {
+            on { create() } doReturn createBackupResult
+        }
     }
     repositoryRef?.value = repository
     
