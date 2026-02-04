@@ -310,7 +310,7 @@ class VisitListViewModelTest {
                 householderId = FIRST_HOUSEHOLDER_ID,
                 householderName = "Householder 1",
                 householderAddress = "Address 1",
-                type = VisitType.REGULAR,
+                type = VisitType.FIRST_VISIT,
                 householderLatitude = null,
                 householderLongitude = null
             ),

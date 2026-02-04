@@ -362,7 +362,7 @@ class VisitDetailViewModelTest {
             on { hasCalendarPermission() } doReturn false
         }
         val visitTimeValidator = mock<VisitTimeValidator> {
-            on { validate(any()) } doReturn true
+            on { isValidVisitTime(any(), any(), any()) } doReturn true
         }
         val dateTimeProvider = mock<DateTimeProvider> {
             on { nowLocalDateTime() } doReturn TEST_DATE_TIME
