@@ -59,6 +59,7 @@ class BackupViewModelTest {
     @Test
     fun `onEvent with CreateBackup failure sets error result`() {
         // Arrange
+        // Note: The ViewModel uses RestoreFailure for all failure cases (both backup creation and restore)
         val backupHandler = mock<BackupHandler> {
             onBlocking { createBackupFile() } doReturn Result.failure(Exception("Test error"))
         }
