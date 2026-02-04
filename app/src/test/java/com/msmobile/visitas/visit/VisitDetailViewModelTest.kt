@@ -338,17 +338,17 @@ class VisitDetailViewModelTest {
             io = mainDispatcherRule.dispatcher
         )
         val conversationRepository = mock<ConversationRepository> {
-            onBlocking { listAll() } doReturn createConversationList()
+            on { listAll() } doReturn createConversationList()
         }
         conversationRepositoryRef?.value = conversationRepository
 
         val householderRepository = mock<HouseholderRepository> {
-            onBlocking { getById(any()) } doReturn createHouseholder()
+            on { getById(any()) } doReturn createHouseholder()
         }
         householderRepositoryRef?.value = householderRepository
 
         val visitRepository = mock<VisitRepository> {
-            onBlocking { getAll(any()) } doReturn createVisitList()
+            on { getAll(any()) } doReturn createVisitList()
         }
         visitRepositoryRef?.value = visitRepository
 

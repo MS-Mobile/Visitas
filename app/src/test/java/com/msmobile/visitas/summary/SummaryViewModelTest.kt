@@ -161,7 +161,7 @@ class SummaryViewModelTest {
             io = mainDispatcherRule.dispatcher
         )
         val summaryRepository = mock<SummaryRepository> {
-            onBlocking { getSummary(any(), any()) } doReturn createSummaryResult()
+            on { getSummary(any(), any()) } doReturn createSummaryResult()
         }
         summaryRepositoryRef?.value = summaryRepository
 

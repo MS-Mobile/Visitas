@@ -34,7 +34,7 @@ class BackupViewModelTest {
         // Arrange
         val mockUri = mock<Uri>()
         val backupHandler = mock<BackupHandler> {
-            onBlocking { createBackupFile() } doReturn Result.success(mockUri)
+            on { createBackupFile() } doReturn Result.success(mockUri)
         }
         val viewModel = createViewModel(backupHandler = backupHandler)
 
@@ -60,7 +60,7 @@ class BackupViewModelTest {
         // Arrange
         // Note: The ViewModel uses RestoreFailure for all failure cases (both backup creation and restore)
         val backupHandler = mock<BackupHandler> {
-            onBlocking { createBackupFile() } doReturn Result.failure(Exception("Test error"))
+            on { createBackupFile() } doReturn Result.failure(Exception("Test error"))
         }
         val viewModel = createViewModel(backupHandler = backupHandler)
 
@@ -85,7 +85,7 @@ class BackupViewModelTest {
         // Arrange
         val mockUri = mock<Uri>()
         val backupHandler = mock<BackupHandler> {
-            onBlocking { restoreBackup(any()) } doReturn Result.success(Unit)
+            on { restoreBackup(any()) } doReturn Result.success(Unit)
         }
         val viewModel = createViewModel(backupHandler = backupHandler)
 
@@ -111,7 +111,7 @@ class BackupViewModelTest {
         // Arrange
         val mockUri = mock<Uri>()
         val backupHandler = mock<BackupHandler> {
-            onBlocking { restoreBackup(any()) } doReturn Result.failure(Exception("Test error"))
+            on { restoreBackup(any()) } doReturn Result.failure(Exception("Test error"))
         }
         val viewModel = createViewModel(backupHandler = backupHandler)
 

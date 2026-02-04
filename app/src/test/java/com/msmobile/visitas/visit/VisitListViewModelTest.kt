@@ -270,13 +270,13 @@ class VisitListViewModelTest {
             on { hasPermissions(any(), any()) } doReturn false
         }
         val visitHouseholderRepository = mock<VisitHouseholderRepository> {
-            onBlocking { getAll() } doReturn createVisitHouseholderList()
+            on { getAll() } doReturn createVisitHouseholderList()
         }
         visitHouseholderRepositoryRef?.value = visitHouseholderRepository
 
         val visitRepository = mock<VisitRepository>()
         val preferenceRepository = mock<PreferenceRepository> {
-            onBlocking { get() } doReturn Preference(
+            on { get() } doReturn Preference(
                 visitListDateFilterOption = VisitListDateFilterOption.All,
                 visitListDistanceFilterOption = VisitListDistanceFilterOption.All
             )

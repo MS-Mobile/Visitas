@@ -152,7 +152,7 @@ class ConversationListViewModelTest {
             io = mainDispatcherRule.dispatcher
         )
         val conversationRepository = mock<ConversationRepository> {
-            onBlocking { listAll() } doReturn createConversationList()
+            on { listAll() } doReturn createConversationList()
         }
         conversationRepositoryRef?.value = conversationRepository
 
