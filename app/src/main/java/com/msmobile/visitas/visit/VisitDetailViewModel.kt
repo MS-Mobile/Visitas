@@ -8,10 +8,12 @@ import com.msmobile.visitas.conversation.ConversationRepository
 import com.msmobile.visitas.extension.containsAllWords
 import com.msmobile.visitas.extension.split
 import com.msmobile.visitas.extension.subListInclusive
+import com.msmobile.visitas.extension.toString
 import com.msmobile.visitas.householder.Householder
 import com.msmobile.visitas.householder.HouseholderRepository
 import com.msmobile.visitas.util.AddressProvider
 import com.msmobile.visitas.util.CalendarEventManager
+import com.msmobile.visitas.util.ClipboardHandler
 import com.msmobile.visitas.util.DateTimeProvider
 import com.msmobile.visitas.util.DispatcherProvider
 import com.msmobile.visitas.util.IdProvider
@@ -24,6 +26,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
+import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 
@@ -40,7 +43,8 @@ class VisitDetailViewModel
     private val calendarEventManager: CalendarEventManager,
     private val visitTimeValidator: VisitTimeValidator,
     private val dateTimeProvider: DateTimeProvider,
-    private val latLongParser: LatLongParser
+    private val latLongParser: LatLongParser,
+    private val clipboardHandler: ClipboardHandler
 ) : ViewModel() {
     private val didEditableDataChange: Boolean
         get() {
@@ -133,6 +137,7 @@ class VisitDetailViewModel
             UiEvent.CalendarRationaleDismissed -> handleCalendarRationaleDismissed()
             UiEvent.CalendarPermissionGranted -> handleCalendarPermissionGranted()
             UiEvent.CalendarPermissionDialogShown -> handleCalendarPermissionDialogShown()
+            UiEvent.CopyVisitDataClicked -> copyVisitDataClicked()
         }
     }
 
@@ -149,6 +154,53 @@ class VisitDetailViewModel
     private fun snackbarDismissed() {
         newState {
             copy(eventState = UiEventState.Idle)
+        }
+    }
+
+    private fun copyVisitDataClicked() {
+        val state = _uiState.value
+        val householder = state.householder
+        val nextPendingVisit = state.visitList.firstOrNull { !it.isDone }
+
+        val text = buildString {
+            appendLine(householder.name)
+            appendLine(householder.address)
+
+            if (!householder.notes.isNullOrBlank()) {
+                appendLine(householder.notes)
+            }
+
+            if (householder.preferredDay != VisitPreferredDay.ANY) {
+                appendLine(householder.preferredDay.name.lowercase()
+                    .replaceFirstChar { it.uppercase() })
+            }
+
+            if (householder.preferredTime != VisitPreferredTime.ANY) {
+                appendLine(householder.preferredTime.name.lowercase()
+                    .replaceFirstChar { it.uppercase() })
+            }
+
+            val lat = householder.addressLatitude
+            val lng = householder.addressLongitude
+
+            if (lat != null && lng != null) {
+                appendLine("https://www.google.com/maps/search/?api=1&query=$lat,$lng")
+            }
+
+            if (nextPendingVisit != null) {
+                appendLine()
+                appendLine(nextPendingVisit.subject)
+                appendLine(nextPendingVisit.date.toString(Locale.getDefault()))
+                appendLine(nextPendingVisit.visitType.type.name.lowercase()
+                    .replace('_', ' ')
+                    .replaceFirstChar { it.uppercase() })
+            }
+        }.trim()
+
+        clipboardHandler.copyToClipboard(text)
+
+        newState {
+            copy(eventState = UiEventState.CopiedToClipboard)
         }
     }
 
@@ -1318,6 +1370,7 @@ class VisitDetailViewModel
         data object CalendarRationaleDismissed : UiEvent()
         data object CalendarPermissionGranted : UiEvent()
         data object CalendarPermissionDialogShown : UiEvent()
+        data object CopyVisitDataClicked : UiEvent()
         data object DiscardChangesAccepted : UiEvent()
         data object DiscardChangesDismissed : UiEvent()
     }
@@ -1335,6 +1388,7 @@ class VisitDetailViewModel
         data object Deleted : UiEventState()
         data object DiscardChangesConfirmation : UiEventState()
         data class NextVisitSuggestionShowing(val visit: VisitState) : UiEventState()
+        data object CopiedToClipboard : UiEventState()
     }
 
     data class UiState(

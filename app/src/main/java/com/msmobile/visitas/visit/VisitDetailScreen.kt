@@ -30,6 +30,7 @@ import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.ArrowDropDown
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.Refresh
@@ -43,6 +44,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
@@ -145,16 +147,31 @@ private fun VisitDetailScreenContent(
     }
     Scaffold(
         bottomBar = {
-            DetailFooter(
-                modifier = Modifier
-                    .background(color = MaterialTheme.colorScheme.surfaceContainer)
-                    .fillMaxWidth()
-                    .padding(borderPadding),
-                showDeleteButton = showDeleteButton,
-                onSaveClickedEvent = { onEvent(VisitDetailViewModel.UiEvent.SaveClicked) },
-                onCancelClickedEvent = { onEvent(VisitDetailViewModel.UiEvent.CancelClicked) },
-                onDeleteClicked = { onEvent(VisitDetailViewModel.UiEvent.DeleteClicked) }
-            )
+            Row {
+                Column(
+                    modifier = Modifier
+                        .weight(1f, true)
+                        .background(color = MaterialTheme.colorScheme.surfaceContainer)
+                        .padding(borderPadding)
+                ) {
+                    IconButton(
+                        onClick = {
+                            onEvent(VisitDetailViewModel.UiEvent.CopyVisitDataClicked)
+                        }
+                    ) {
+                       Icon(imageVector = Icons.Rounded.ContentCopy, contentDescription = null)
+                    }
+                }
+                DetailFooter(
+                    modifier = Modifier
+                        .background(color = MaterialTheme.colorScheme.surfaceContainer)
+                        .padding(borderPadding),
+                    showDeleteButton = showDeleteButton,
+                    onSaveClickedEvent = { onEvent(VisitDetailViewModel.UiEvent.SaveClicked) },
+                    onCancelClickedEvent = { onEvent(VisitDetailViewModel.UiEvent.CancelClicked) },
+                    onDeleteClicked = { onEvent(VisitDetailViewModel.UiEvent.DeleteClicked) }
+                )
+            }
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
@@ -914,6 +931,28 @@ private fun StateHandler(
                 }) {
                 Text(
                     text = stringResource(R.string.houlseholder_no_address_found),
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            }
+        }
+
+        is VisitDetailViewModel.UiEventState.CopiedToClipboard -> {
+            Snackbar(
+                modifier = Modifier.padding(borderPadding),
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                dismissAction = {
+                    IconButton(onClick = {
+                        onEvent(VisitDetailViewModel.UiEvent.SnackbarDismissed)
+                    }) {
+                        Icon(
+                            imageVector = Icons.Rounded.Close,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }) {
+                Text(
+                    text = stringResource(R.string.copied_to_clipboard),
                     color = MaterialTheme.colorScheme.onSecondaryContainer
                 )
             }
