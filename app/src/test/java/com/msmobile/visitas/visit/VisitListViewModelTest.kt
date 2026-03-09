@@ -313,20 +313,24 @@ class VisitListViewModelTest {
 
         // Load visits (second visit is scheduled for tomorrow)
         viewModel.onEvent(VisitListViewModel.UiEvent.ViewCreated)
+
+        // Simulate already being near the householder before enabling filters
+        locationFlow.value = nearbyLocation
+
+        // Now enable the date filter and nearby toggle — applyFilters() runs here
         viewModel.onEvent(
             VisitListViewModel.UiEvent.VisitsFilterOptionSelected(VisitListDateFilterOption.ScheduledForToday)
         )
         viewModel.onEvent(VisitListViewModel.UiEvent.ShowNearbyVisitsToggled(true))
 
-        // Act: walk near the second householder — visit from tomorrow should appear
-        locationFlow.value = nearbyLocation
+        // Assert: tomorrow's visit should be visible because we are nearby
         val secondVisitNearby = viewModel.uiState.value.visitList.find { it.visitId == SECOND_VISIT_ID }
         assertFalse(
             "Visit from a different day should be visible when nearby",
             secondVisitNearby?.hide ?: true
         )
 
-        // Act: walk away — visit from tomorrow should now hide
+        // Act: walk away — a subsequent location update must re-filter and hide it
         locationFlow.value = farLocation
         val secondVisitFar = viewModel.uiState.value.visitList.find { it.visitId == SECOND_VISIT_ID }
         assertTrue(
