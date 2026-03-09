@@ -179,7 +179,6 @@ constructor(
         }
     }
 
-
     private fun visitsFilterOptionSelected(option: VisitListDateFilterOption) {
         viewModelScope.launch(dispatchers.io) {
             val preference = preferenceRepository.get().copy(visitListDateFilterOption = option)
@@ -189,7 +188,6 @@ constructor(
             copy(selectedVisitFilterOption = option).applyFilters()
         }
     }
-
 
     private fun visitMapEventTriggered(visitMapEvent: VisitsMapEvent) {
         when (visitMapEvent) {
@@ -456,13 +454,18 @@ constructor(
     private fun onLocationChanged(location: UserLocationProvider.UserLocation) {
         if (location !is UserLocationProvider.UserLocation.Available) return
         newState {
-            calculateDistanceBetweenUserAndHouseholders(location)
+            val updated = calculateDistanceBetweenUserAndHouseholders(location)
                 .copy(
                     currentCoordinates = Pair(
                         location.latitude,
                         location.longitude
                     )
                 )
+            if (showNearbyVisits) {
+                updated.applyFilters()
+            } else {
+                updated
+            }
         }
     }
 
@@ -710,7 +713,6 @@ constructor(
             }
             return dateFilter
         }
-
 
     private val VisitHouseholder.asState: VisitHouseholderState
         get() {

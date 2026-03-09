@@ -287,10 +287,65 @@ class VisitListViewModelTest {
         assertFalse(viewModel.uiState.value.showLocationPermissionDialog)
     }
 
+    @Test
+    fun `nearby visit from different day hides after walking away`() {
+        // Arrange
+        val nearbyLocation = UserLocationProvider.UserLocation.Available(
+            latitude = 40.7128,
+            longitude = -74.0060
+        )
+        val farLocation = UserLocationProvider.UserLocation.Available(
+            latitude = 0.0,
+            longitude = 0.0
+        )
+        val locationFlowRef = MockReferenceHolder<MutableStateFlow<UserLocationProvider.UserLocation>>()
+
+        val viewModel = createViewModel(
+            hasLocationPermission = true,
+            locationFlowRef = locationFlowRef,
+            distanceResults = mapOf(
+                DistanceInput(nearbyLocation.latitude, nearbyLocation.longitude, 40.7128, -74.0060) to AddressProvider.AddressDistance.Nearby(50f),
+                DistanceInput(farLocation.latitude, farLocation.longitude, 40.7128, -74.0060) to AddressProvider.AddressDistance.FarAway(5000f)
+            ),
+            visitListDateFilterOption = VisitListDateFilterOption.ScheduledForToday
+        )
+        val locationFlow = requireNotNull(locationFlowRef.value)
+
+        // Load visits (second visit is scheduled for tomorrow)
+        viewModel.onEvent(VisitListViewModel.UiEvent.ViewCreated)
+
+        // Simulate already being near the householder before enabling filters
+        locationFlow.value = nearbyLocation
+
+        // Now enable the date filter and nearby toggle — applyFilters() runs here
+        viewModel.onEvent(
+            VisitListViewModel.UiEvent.VisitsFilterOptionSelected(VisitListDateFilterOption.ScheduledForToday)
+        )
+        viewModel.onEvent(VisitListViewModel.UiEvent.ShowNearbyVisitsToggled(true))
+
+        // Assert: tomorrow's visit should be visible because we are nearby
+        val secondVisitNearby = viewModel.uiState.value.visitList.find { it.visitId == SECOND_VISIT_ID }
+        assertFalse(
+            "Visit from a different day should be visible when nearby",
+            secondVisitNearby?.hide ?: true
+        )
+
+        // Act: walk away — a subsequent location update must re-filter and hide it
+        locationFlow.value = farLocation
+        val secondVisitFar = viewModel.uiState.value.visitList.find { it.visitId == SECOND_VISIT_ID }
+        assertTrue(
+            "Visit from a different day should hide after walking away",
+            secondVisitFar?.hide ?: false
+        )
+    }
+
     private fun createViewModel(
         visitHouseholderRepositoryRef: MockReferenceHolder<VisitHouseholderRepository>? = null,
         uriRef: MockReferenceHolder<Uri>? = null,
-        hasLocationPermission: Boolean = false
+        hasLocationPermission: Boolean = false,
+        locationFlowRef: MockReferenceHolder<MutableStateFlow<UserLocationProvider.UserLocation>>? = null,
+        distanceResults: Map<DistanceInput, AddressProvider.AddressDistance> = emptyMap(),
+        visitListDateFilterOption: VisitListDateFilterOption = VisitListDateFilterOption.All
     ): VisitListViewModel {
         val dispatchers = DispatcherProvider(
             io = mainDispatcherRule.dispatcher
@@ -299,6 +354,7 @@ class VisitListViewModelTest {
         uriRef?.value = mockUri
 
         val locationFlow = MutableStateFlow<UserLocationProvider.UserLocation>(UserLocationProvider.UserLocation.NotAvailable)
+        locationFlowRef?.value = locationFlow
         val userLocationProvider = mock<UserLocationProvider> {
             on { location } doReturn locationFlow
         }
@@ -313,11 +369,22 @@ class VisitListViewModelTest {
         val visitRepository = mock<VisitRepository>()
         val preferenceRepository = mock<PreferenceRepository> {
             on { get() } doReturn Preference(
-                visitListDateFilterOption = VisitListDateFilterOption.All,
+                visitListDateFilterOption = visitListDateFilterOption,
                 visitListDistanceFilterOption = VisitListDistanceFilterOption.All
             )
         }
-        val addressProvider = mock<AddressProvider>()
+        val actualAddressProvider = mock<AddressProvider> {
+            distanceResults.forEach { (input, result) ->
+                on {
+                    calculateDistance(
+                        startLatitude = input.startLatitude,
+                        startLongitude = input.startLongitude,
+                        endLatitude = input.endLatitude,
+                        endLongitude = input.endLongitude
+                    )
+                } doReturn result
+            }
+        }
         val osrmRoutingProvider = mock<OsrmRoutingProvider>()
         val calendarEventManager = mock<CalendarEventManager>()
         val moshi = mock<Moshi>()
@@ -328,7 +395,7 @@ class VisitListViewModelTest {
             visitRepository = visitRepository,
             visitHouseholderRepository = visitHouseholderRepository,
             preferenceRepository = preferenceRepository,
-            addressProvider = addressProvider,
+            addressProvider = actualAddressProvider,
             userLocationProvider = userLocationProvider,
             permissionChecker = permissionChecker,
             osrmRoutingProvider = osrmRoutingProvider,
@@ -371,4 +438,11 @@ class VisitListViewModelTest {
         private val FIRST_HOUSEHOLDER_ID = UUID.fromString("7a4e1c9b-6d2f-4a3e-8b5c-0f9d1e2a3c4b")
         private val SECOND_HOUSEHOLDER_ID = UUID.fromString("5c4b3a2f-1e9d-7c6b-4a3e-8b5c0f9d1e2a")
     }
+
+    private data class DistanceInput(
+        val startLatitude: Double,
+        val startLongitude: Double,
+        val endLatitude: Double,
+        val endLongitude: Double
+    )
 }
