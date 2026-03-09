@@ -583,7 +583,7 @@ constructor(
 
         // Launch route optimization in background
         val mapData = fetchOptimizedRoute(visitMapData)
-        val serializedMapData = visitMapAdapter.toJson(mapData)
+        val serializedMapData = visitMapAdapter.toJson(mapData) ?: return VisitMapState.Error
         val newMapState = VisitMapState.Visits(serialized = serializedMapData)
 
         return newMapState
