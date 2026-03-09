@@ -22,7 +22,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
@@ -86,7 +85,7 @@ constructor(
 
     private var nextRouteCalcJob: Job? = null
     private var nextRouteCalcInterval: Duration = INITIAL_ROUTE_CALC_INTERNAL
-    private var lastRouteCalcTime: Long = 0L
+    private var lastRouteCalcNanoTime: Long = 0L
     private var enableNearbyVisitsAfterPermission = false
     private var showVisitMapAfterPermission = false
 
@@ -522,11 +521,11 @@ constructor(
         val now = dateTimeProvider.nanoTime()
 
         // Reset the interval after an arbitrary amount of time without regenerating the route
-        if (now - lastRouteCalcTime > ROUTE_CALC_IDLE_THRESHOLD.inWholeNanoseconds) {
+        if (now - lastRouteCalcNanoTime > ROUTE_CALC_IDLE_THRESHOLD.inWholeNanoseconds) {
             nextRouteCalcInterval = INITIAL_ROUTE_CALC_INTERNAL
         }
 
-        lastRouteCalcTime = now
+        lastRouteCalcNanoTime = now
 
         nextRouteCalcJob = viewModelScope.launch(dispatchers.io) {
             val routeCalcInterval = nextRouteCalcInterval
