@@ -1,7 +1,5 @@
 package com.msmobile.visitas.visit
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
@@ -61,6 +59,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -87,6 +86,7 @@ import com.msmobile.visitas.extension.sharp
 import com.msmobile.visitas.extension.stringResource
 import com.msmobile.visitas.extension.textField
 import com.msmobile.visitas.extension.toString
+import com.msmobile.visitas.ui.icons.CopyDataIcon
 import com.msmobile.visitas.ui.views.DateTimePicker
 import com.msmobile.visitas.ui.views.DetailFooter
 import com.msmobile.visitas.ui.views.LazyColumnWithScrollbar
@@ -101,7 +101,6 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.VisitDetailScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.navigation.EmptyDestinationsNavigator
-import java.util.Locale
 import java.util.UUID
 
 @Destination<RootGraph>(style = DetailScreenStyle::class)
@@ -145,16 +144,31 @@ private fun VisitDetailScreenContent(
     }
     Scaffold(
         bottomBar = {
-            DetailFooter(
-                modifier = Modifier
-                    .background(color = MaterialTheme.colorScheme.surfaceContainer)
-                    .fillMaxWidth()
-                    .padding(borderPadding),
-                showDeleteButton = showDeleteButton,
-                onSaveClickedEvent = { onEvent(VisitDetailViewModel.UiEvent.SaveClicked) },
-                onCancelClickedEvent = { onEvent(VisitDetailViewModel.UiEvent.CancelClicked) },
-                onDeleteClicked = { onEvent(VisitDetailViewModel.UiEvent.DeleteClicked) }
-            )
+            Row {
+                Column(
+                    modifier = Modifier
+                        .weight(1f, true)
+                        .background(color = MaterialTheme.colorScheme.surfaceContainer)
+                        .padding(borderPadding)
+                ) {
+                    IconButton(
+                        onClick = {
+                            onEvent(VisitDetailViewModel.UiEvent.CopyVisitDataClicked)
+                        }
+                    ) {
+                        CopyDataIcon()
+                    }
+                }
+                DetailFooter(
+                    modifier = Modifier
+                        .background(color = MaterialTheme.colorScheme.surfaceContainer)
+                        .padding(borderPadding),
+                    showDeleteButton = showDeleteButton,
+                    onSaveClickedEvent = { onEvent(VisitDetailViewModel.UiEvent.SaveClicked) },
+                    onCancelClickedEvent = { onEvent(VisitDetailViewModel.UiEvent.CancelClicked) },
+                    onDeleteClicked = { onEvent(VisitDetailViewModel.UiEvent.DeleteClicked) }
+                )
+            }
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
@@ -563,7 +577,7 @@ private fun LazyItemScope.VisitItem(
                 .clickable {
                     onEvent(VisitDetailViewModel.UiEvent.VisitDateClicked(visit))
                 },
-            value = visit.date.toString(Locale.getDefault()),
+            value = visit.date.toString(LocalLocale.current.platformLocale),
             onValueChange = {},
             readOnly = true,
             enabled = false,
@@ -914,6 +928,28 @@ private fun StateHandler(
                 }) {
                 Text(
                     text = stringResource(R.string.houlseholder_no_address_found),
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            }
+        }
+
+        is VisitDetailViewModel.UiEventState.CopiedToClipboard -> {
+            Snackbar(
+                modifier = Modifier.padding(borderPadding),
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                dismissAction = {
+                    IconButton(onClick = {
+                        onEvent(VisitDetailViewModel.UiEvent.SnackbarDismissed)
+                    }) {
+                        Icon(
+                            imageVector = Icons.Rounded.Close,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }) {
+                Text(
+                    text = stringResource(R.string.copied_to_clipboard),
                     color = MaterialTheme.colorScheme.onSecondaryContainer
                 )
             }

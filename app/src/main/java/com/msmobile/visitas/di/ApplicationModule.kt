@@ -22,6 +22,7 @@ import com.msmobile.visitas.summary.SummaryRepository
 import com.msmobile.visitas.util.AddressProvider
 import com.msmobile.visitas.util.BackupHandler
 import com.msmobile.visitas.util.CalendarEventManager
+import com.msmobile.visitas.util.ClipboardHandler
 import com.msmobile.visitas.util.DateTimeProvider
 import com.msmobile.visitas.util.DefaultLogger
 import com.msmobile.visitas.util.DispatcherProvider
@@ -162,6 +163,12 @@ class ApplicationModule {
     @Provides
     fun permissionChecker(@ApplicationContext context: Context): PermissionChecker {
         return PermissionChecker(context)
+    }
+
+    @Singleton
+    @Provides
+    fun clipboardHandler(@ApplicationContext context: Context): ClipboardHandler {
+        return ClipboardHandler(context)
     }
 
     @Singleton

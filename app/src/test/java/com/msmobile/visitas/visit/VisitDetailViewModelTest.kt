@@ -6,12 +6,14 @@ import com.msmobile.visitas.householder.Householder
 import com.msmobile.visitas.householder.HouseholderRepository
 import com.msmobile.visitas.util.AddressProvider
 import com.msmobile.visitas.util.CalendarEventManager
+import com.msmobile.visitas.util.ClipboardHandler
 import com.msmobile.visitas.util.DateTimeProvider
 import com.msmobile.visitas.util.DispatcherProvider
 import com.msmobile.visitas.util.IdProvider
 import com.msmobile.visitas.util.LatLongParser
 import com.msmobile.visitas.util.MainDispatcherRule
 import com.msmobile.visitas.util.MockReferenceHolder
+import com.msmobile.visitas.util.VisitDataFormatter
 import com.msmobile.visitas.util.PermissionChecker
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertFalse
@@ -21,6 +23,7 @@ import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyBlocking
 import java.time.LocalDateTime
 import java.util.UUID
@@ -329,10 +332,188 @@ class VisitDetailViewModelTest {
         )
     }
 
+    @Test
+    fun `onEvent with CopyVisitDataClicked copies householder data to clipboard`() {
+        // Arrange
+        val clipboardHandlerRef = MockReferenceHolder<ClipboardHandler>()
+        val viewModel = createViewModel(clipboardHandlerRef = clipboardHandlerRef)
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.CopyVisitDataClicked)
+
+        // Assert
+        val clipboardHandler = requireNotNull(clipboardHandlerRef.value)
+        verify(clipboardHandler).copyToClipboard(any())
+        assertEquals(
+            VisitDetailViewModel.UiEventState.CopiedToClipboard,
+            viewModel.uiState.value.eventState
+        )
+    }
+
+    @Test
+    fun `onEvent with CopyVisitDataClicked includes name and address`() {
+        // Arrange
+        val clipboardHandlerRef = MockReferenceHolder<ClipboardHandler>()
+        val viewModel = createViewModel(clipboardHandlerRef = clipboardHandlerRef)
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.CopyVisitDataClicked)
+
+        // Assert
+        val clipboardHandler = requireNotNull(clipboardHandlerRef.value)
+        val captor = org.mockito.kotlin.argumentCaptor<String>()
+        verify(clipboardHandler).copyToClipboard(captor.capture())
+        val copiedText = captor.firstValue
+        assertTrue(copiedText.contains("Test Name"))
+        assertTrue(copiedText.contains("Test Address"))
+    }
+
+    @Test
+    fun `onEvent with CopyVisitDataClicked includes notes when present`() {
+        // Arrange
+        val clipboardHandlerRef = MockReferenceHolder<ClipboardHandler>()
+        val viewModel = createViewModel(clipboardHandlerRef = clipboardHandlerRef)
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.CopyVisitDataClicked)
+
+        // Assert
+        val clipboardHandler = requireNotNull(clipboardHandlerRef.value)
+        val captor = org.mockito.kotlin.argumentCaptor<String>()
+        verify(clipboardHandler).copyToClipboard(captor.capture())
+        val copiedText = captor.firstValue
+        assertTrue(copiedText.contains("Test Notes"))
+    }
+
+    @Test
+    fun `onEvent with CopyVisitDataClicked includes pending visit data`() {
+        // Arrange
+        val clipboardHandlerRef = MockReferenceHolder<ClipboardHandler>()
+        val viewModel = createViewModel(clipboardHandlerRef = clipboardHandlerRef)
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.CopyVisitDataClicked)
+
+        // Assert
+        val clipboardHandler = requireNotNull(clipboardHandlerRef.value)
+        val captor = org.mockito.kotlin.argumentCaptor<String>()
+        verify(clipboardHandler).copyToClipboard(captor.capture())
+        assertTrue(captor.firstValue.contains("Subject 1"))
+    }
+
+    @Test
+    fun `onEvent with CopyVisitDataClicked includes google maps url when lat long present`() {
+        // Arrange
+        val clipboardHandlerRef = MockReferenceHolder<ClipboardHandler>()
+        val viewModel = createViewModel(
+            clipboardHandlerRef = clipboardHandlerRef,
+            householderLatitude = 40.7128,
+            householderLongitude = -74.0060
+        )
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.CopyVisitDataClicked)
+
+        // Assert
+        val clipboardHandler = requireNotNull(clipboardHandlerRef.value)
+        val captor = org.mockito.kotlin.argumentCaptor<String>()
+        verify(clipboardHandler).copyToClipboard(captor.capture())
+        val copiedText = captor.firstValue
+        assertTrue(copiedText.contains("https://www.google.com/maps/search/?api=1&query=40.7128,-74.006"))
+    }
+
+    @Test
+    fun `onEvent with CopyVisitDataClicked excludes google maps url when lat long absent`() {
+        // Arrange
+        val clipboardHandlerRef = MockReferenceHolder<ClipboardHandler>()
+        val viewModel = createViewModel(clipboardHandlerRef = clipboardHandlerRef)
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.CopyVisitDataClicked)
+
+        // Assert
+        val clipboardHandler = requireNotNull(clipboardHandlerRef.value)
+        val captor = org.mockito.kotlin.argumentCaptor<String>()
+        verify(clipboardHandler).copyToClipboard(captor.capture())
+        val copiedText = captor.firstValue
+        assertFalse(copiedText.contains("google.com/maps"))
+    }
+
+    @Test
+    fun `onEvent with CopyVisitDataClicked excludes preferred day when ANY`() {
+        // Arrange
+        val clipboardHandlerRef = MockReferenceHolder<ClipboardHandler>()
+        val viewModel = createViewModel(clipboardHandlerRef = clipboardHandlerRef)
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.CopyVisitDataClicked)
+
+        // Assert
+        val clipboardHandler = requireNotNull(clipboardHandlerRef.value)
+        val captor = org.mockito.kotlin.argumentCaptor<String>()
+        verify(clipboardHandler).copyToClipboard(captor.capture())
+        val copiedText = captor.firstValue
+        assertFalse(copiedText.contains("Any"))
+    }
+
+    @Test
+    fun `onEvent with CopyVisitDataClicked includes preferred day when not ANY`() {
+        // Arrange
+        val clipboardHandlerRef = MockReferenceHolder<ClipboardHandler>()
+        val viewModel = createViewModel(
+            clipboardHandlerRef = clipboardHandlerRef,
+            householderPreferredDay = VisitPreferredDay.MONDAY
+        )
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.CopyVisitDataClicked)
+
+        // Assert
+        val clipboardHandler = requireNotNull(clipboardHandlerRef.value)
+        val captor = org.mockito.kotlin.argumentCaptor<String>()
+        verify(clipboardHandler).copyToClipboard(captor.capture())
+        val copiedText = captor.firstValue
+        assertTrue(copiedText.contains("Monday"))
+    }
+
+    @Test
+    fun `onEvent with CopyVisitDataClicked includes preferred time when not ANY`() {
+        // Arrange
+        val clipboardHandlerRef = MockReferenceHolder<ClipboardHandler>()
+        val viewModel = createViewModel(
+            clipboardHandlerRef = clipboardHandlerRef,
+            householderPreferredTime = VisitPreferredTime.MORNING
+        )
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.CopyVisitDataClicked)
+
+        // Assert
+        val clipboardHandler = requireNotNull(clipboardHandlerRef.value)
+        val captor = org.mockito.kotlin.argumentCaptor<String>()
+        verify(clipboardHandler).copyToClipboard(captor.capture())
+        val copiedText = captor.firstValue
+        assertTrue(copiedText.contains("Morning"))
+    }
+
     private fun createViewModel(
         conversationRepositoryRef: MockReferenceHolder<ConversationRepository>? = null,
         householderRepositoryRef: MockReferenceHolder<HouseholderRepository>? = null,
-        visitRepositoryRef: MockReferenceHolder<VisitRepository>? = null
+        visitRepositoryRef: MockReferenceHolder<VisitRepository>? = null,
+        clipboardHandlerRef: MockReferenceHolder<ClipboardHandler>? = null,
+        householderLatitude: Double? = null,
+        householderLongitude: Double? = null,
+        householderPreferredDay: VisitPreferredDay = VisitPreferredDay.ANY,
+        householderPreferredTime: VisitPreferredTime = VisitPreferredTime.ANY
     ): VisitDetailViewModel {
         val dispatchers = DispatcherProvider(
             io = mainDispatcherRule.dispatcher
@@ -343,7 +524,12 @@ class VisitDetailViewModelTest {
         conversationRepositoryRef?.value = conversationRepository
 
         val householderRepository = mock<HouseholderRepository> {
-            on { getById(any()) } doReturn createHouseholder()
+            on { getById(any()) } doReturn createHouseholder(
+                latitude = householderLatitude,
+                longitude = householderLongitude,
+                preferredDay = householderPreferredDay,
+                preferredTime = householderPreferredTime
+            )
         }
         householderRepositoryRef?.value = householderRepository
 
@@ -369,6 +555,9 @@ class VisitDetailViewModelTest {
             on { nowLocalDateTime() } doReturn TEST_DATE_TIME
         }
         val latLongParser = mock<LatLongParser>()
+        val clipboardHandler = mock<ClipboardHandler>()
+        val visitDataFormatter = VisitDataFormatter()
+        clipboardHandlerRef?.value = clipboardHandler
 
         return VisitDetailViewModel(
             dispatchers = dispatchers,
@@ -381,7 +570,9 @@ class VisitDetailViewModelTest {
             calendarEventManager = calendarEventManager,
             visitTimeValidator = visitTimeValidator,
             dateTimeProvider = dateTimeProvider,
-            latLongParser = latLongParser
+            latLongParser = latLongParser,
+            clipboardHandler = clipboardHandler,
+            visitDataFormatter = visitDataFormatter
         )
     }
 
@@ -411,14 +602,21 @@ class VisitDetailViewModelTest {
         )
     }
 
-    private fun createHouseholder(): Householder {
+    private fun createHouseholder(
+        latitude: Double? = null,
+        longitude: Double? = null,
+        preferredDay: VisitPreferredDay = VisitPreferredDay.ANY,
+        preferredTime: VisitPreferredTime = VisitPreferredTime.ANY
+    ): Householder {
         return Householder(
             id = HOUSEHOLDER_ID,
             name = "Test Name",
             address = "Test Address",
             notes = "Test Notes",
-            addressLatitude = null,
-            addressLongitude = null
+            addressLatitude = latitude,
+            addressLongitude = longitude,
+            preferredDay = preferredDay,
+            preferredTime = preferredTime
         )
     }
 

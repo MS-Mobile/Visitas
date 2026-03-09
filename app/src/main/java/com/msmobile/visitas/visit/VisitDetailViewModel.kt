@@ -12,8 +12,10 @@ import com.msmobile.visitas.householder.Householder
 import com.msmobile.visitas.householder.HouseholderRepository
 import com.msmobile.visitas.util.AddressProvider
 import com.msmobile.visitas.util.CalendarEventManager
+import com.msmobile.visitas.util.ClipboardHandler
 import com.msmobile.visitas.util.DateTimeProvider
 import com.msmobile.visitas.util.DispatcherProvider
+import com.msmobile.visitas.util.VisitDataFormatter
 import com.msmobile.visitas.util.IdProvider
 import com.msmobile.visitas.util.LatLongParser
 import com.msmobile.visitas.util.PermissionChecker
@@ -40,7 +42,9 @@ class VisitDetailViewModel
     private val calendarEventManager: CalendarEventManager,
     private val visitTimeValidator: VisitTimeValidator,
     private val dateTimeProvider: DateTimeProvider,
-    private val latLongParser: LatLongParser
+    private val latLongParser: LatLongParser,
+    private val clipboardHandler: ClipboardHandler,
+    private val visitDataFormatter: VisitDataFormatter
 ) : ViewModel() {
     private val didEditableDataChange: Boolean
         get() {
@@ -133,6 +137,7 @@ class VisitDetailViewModel
             UiEvent.CalendarRationaleDismissed -> handleCalendarRationaleDismissed()
             UiEvent.CalendarPermissionGranted -> handleCalendarPermissionGranted()
             UiEvent.CalendarPermissionDialogShown -> handleCalendarPermissionDialogShown()
+            UiEvent.CopyVisitDataClicked -> copyVisitDataClicked()
         }
     }
 
@@ -149,6 +154,30 @@ class VisitDetailViewModel
     private fun snackbarDismissed() {
         newState {
             copy(eventState = UiEventState.Idle)
+        }
+    }
+
+    private fun copyVisitDataClicked() {
+        val state = _uiState.value
+        val householder = state.householder
+        val nextPendingVisit = state.visitList.firstOrNull { !it.isDone }
+
+        val text = visitDataFormatter.format(
+            name = householder.name,
+            address = householder.address,
+            latitude = householder.addressLatitude,
+            longitude = householder.addressLongitude,
+            notes = householder.notes,
+            preferredDay = householder.preferredDay,
+            preferredTime = householder.preferredTime,
+            nextPendingVisitSubject = nextPendingVisit?.subject,
+            nextPendingVisitDate = nextPendingVisit?.date
+        )
+
+        clipboardHandler.copyToClipboard(text)
+
+        newState {
+            copy(eventState = UiEventState.CopiedToClipboard)
         }
     }
 
@@ -1318,6 +1347,7 @@ class VisitDetailViewModel
         data object CalendarRationaleDismissed : UiEvent()
         data object CalendarPermissionGranted : UiEvent()
         data object CalendarPermissionDialogShown : UiEvent()
+        data object CopyVisitDataClicked : UiEvent()
         data object DiscardChangesAccepted : UiEvent()
         data object DiscardChangesDismissed : UiEvent()
     }
@@ -1335,6 +1365,7 @@ class VisitDetailViewModel
         data object Deleted : UiEventState()
         data object DiscardChangesConfirmation : UiEventState()
         data class NextVisitSuggestionShowing(val visit: VisitState) : UiEventState()
+        data object CopiedToClipboard : UiEventState()
     }
 
     data class UiState(
