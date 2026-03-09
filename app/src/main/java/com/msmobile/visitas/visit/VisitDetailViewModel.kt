@@ -161,12 +161,23 @@ class VisitDetailViewModel
         val state = _uiState.value
         val householder = state.householder
         val nextPendingVisit = state.visitList.firstOrNull { !it.isDone }
+        val lat = householder.addressLatitude
+        val lng = householder.addressLongitude
 
         val text = buildString {
             appendLine(householder.name)
-            appendLine(householder.address)
+
+            if (householder.address.isNotEmpty()) {
+                appendLine()
+                appendLine(householder.address)
+            }
+
+            if (lat != null && lng != null) {
+                appendLine("https://www.google.com/maps/search/?api=1&query=$lat,$lng")
+            }
 
             if (!householder.notes.isNullOrBlank()) {
+                appendLine()
                 appendLine(householder.notes)
             }
 
@@ -180,20 +191,10 @@ class VisitDetailViewModel
                     .replaceFirstChar { it.uppercase() })
             }
 
-            val lat = householder.addressLatitude
-            val lng = householder.addressLongitude
-
-            if (lat != null && lng != null) {
-                appendLine("https://www.google.com/maps/search/?api=1&query=$lat,$lng")
-            }
-
             if (nextPendingVisit != null) {
                 appendLine()
                 appendLine(nextPendingVisit.subject)
                 appendLine(nextPendingVisit.date.toString(Locale.getDefault()))
-                appendLine(nextPendingVisit.visitType.type.name.lowercase()
-                    .replace('_', ' ')
-                    .replaceFirstChar { it.uppercase() })
             }
         }.trim()
 
