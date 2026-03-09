@@ -38,10 +38,8 @@ import com.msmobile.visitas.util.VisitMapAdapter
 import com.msmobile.visitas.visit.VisitDao
 import com.msmobile.visitas.visit.VisitHouseholderDao
 import com.msmobile.visitas.visit.VisitHouseholderRepository
-import com.msmobile.visitas.visit.VisitMapData
 import com.msmobile.visitas.visit.VisitRepository
 import com.msmobile.visitas.visit.VisitTimeValidator
-import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import dagger.Module
@@ -67,7 +65,7 @@ class ApplicationModule {
 
     @Provides
     @Singleton
-    fun visitMapAdapter(moshi: Moshi): JsonAdapter<List<VisitMapData>?> {
+    fun visitMapAdapter(moshi: Moshi): VisitMapAdapter {
         return VisitMapAdapter(moshi)
     }
 
