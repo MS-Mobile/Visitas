@@ -34,11 +34,14 @@ import com.msmobile.visitas.util.NetworkStatusTracker
 import com.msmobile.visitas.util.PermissionChecker
 import com.msmobile.visitas.util.TimerManager
 import com.msmobile.visitas.util.UserLocationProvider
+import com.msmobile.visitas.util.VisitMapAdapter
 import com.msmobile.visitas.visit.VisitDao
 import com.msmobile.visitas.visit.VisitHouseholderDao
 import com.msmobile.visitas.visit.VisitHouseholderRepository
+import com.msmobile.visitas.visit.VisitMapData
 import com.msmobile.visitas.visit.VisitRepository
 import com.msmobile.visitas.visit.VisitTimeValidator
+import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import dagger.Module
@@ -60,6 +63,12 @@ class ApplicationModule {
             .add(KotlinJsonAdapterFactory())
             .add(SerializationFactory)
             .build()
+    }
+
+    @Provides
+    @Singleton
+    fun visitMapAdapter(moshi: Moshi): JsonAdapter<List<VisitMapData>?> {
+        return VisitMapAdapter(moshi)
     }
 
     @Singleton
