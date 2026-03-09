@@ -52,7 +52,8 @@ constructor(
     private val userLocationProvider: UserLocationProvider,
     private val permissionChecker: PermissionChecker,
     private val osrmRoutingProvider: com.msmobile.visitas.routing.OsrmRoutingProvider,
-    private val calendarEventManager: CalendarEventManager
+    private val calendarEventManager: CalendarEventManager,
+    private val dateTimeProvider: com.msmobile.visitas.util.DateTimeProvider
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(
         UiState(
@@ -85,6 +86,7 @@ constructor(
 
     private var nextRouteCalcJob: Job? = null
     private var nextRouteCalcInterval: Duration = INITIAL_ROUTE_CALC_INTERNAL
+    private var lastRouteCalcTime: Long = 0L
     private var enableNearbyVisitsAfterPermission = false
     private var showVisitMapAfterPermission = false
 
@@ -516,6 +518,16 @@ constructor(
 
     private fun scheduleNextRouteCalculation(visitList: List<VisitHouseholderState>) {
         nextRouteCalcJob?.cancel()
+
+        val now = dateTimeProvider.nanoTime()
+
+        // Reset the interval after an arbitrary amount of time without regenerating the route
+        if (now - lastRouteCalcTime > ROUTE_CALC_IDLE_THRESHOLD.inWholeNanoseconds) {
+            nextRouteCalcInterval = INITIAL_ROUTE_CALC_INTERNAL
+        }
+
+        lastRouteCalcTime = now
+
         nextRouteCalcJob = viewModelScope.launch(dispatchers.io) {
             val routeCalcInterval = nextRouteCalcInterval
             nextRouteCalcInterval = SUBSEQUENT_ROUTE_CALC_INTERVAL
@@ -873,6 +885,7 @@ constructor(
 
     companion object {
         private val INITIAL_ROUTE_CALC_INTERNAL = 0.seconds
-        private val SUBSEQUENT_ROUTE_CALC_INTERVAL = 10.seconds
+        private val SUBSEQUENT_ROUTE_CALC_INTERVAL = 2.seconds
+        private val ROUTE_CALC_IDLE_THRESHOLD = 30.seconds
     }
 }
