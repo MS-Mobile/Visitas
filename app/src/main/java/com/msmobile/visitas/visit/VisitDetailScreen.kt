@@ -59,6 +59,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -100,7 +101,6 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.VisitDetailScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.navigation.EmptyDestinationsNavigator
-import java.util.Locale
 import java.util.UUID
 
 @Destination<RootGraph>(style = DetailScreenStyle::class)
@@ -577,7 +577,7 @@ private fun LazyItemScope.VisitItem(
                 .clickable {
                     onEvent(VisitDetailViewModel.UiEvent.VisitDateClicked(visit))
                 },
-            value = visit.date.toString(Locale.getDefault()),
+            value = visit.date.toString(LocalLocale.current.platformLocale),
             onValueChange = {},
             readOnly = true,
             enabled = false,
