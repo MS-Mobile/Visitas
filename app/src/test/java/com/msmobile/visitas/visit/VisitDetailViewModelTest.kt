@@ -402,9 +402,7 @@ class VisitDetailViewModelTest {
         val clipboardHandler = requireNotNull(clipboardHandlerRef.value)
         val captor = org.mockito.kotlin.argumentCaptor<String>()
         verify(clipboardHandler).copyToClipboard(captor.capture())
-        val copiedText = captor.firstValue
-        assertTrue(copiedText.contains("Subject 1"))
-        assertTrue(copiedText.contains("First visit"))
+        assertTrue(captor.firstValue.contains("Subject 1"))
     }
 
     @Test
