@@ -48,7 +48,7 @@ com.msmobile.visitas/
 
 ## Development
 
-See [GUIDELINES.md](GUIDELINES.md) for detailed development conventions and patterns.
+See [GUIDELINES.md](.github/GUIDELINES.md) for detailed development conventions and patterns.
 
 ## License
 

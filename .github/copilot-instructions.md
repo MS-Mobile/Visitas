@@ -4,7 +4,7 @@
 
 This is **Visitas**, an Android application built with Kotlin, Jetpack Compose, and modern Android architecture components.
 
-**Reference `GUIDELINES.md` for detailed project standards and conventions before making changes.**
+**Reference `.github/GUIDELINES.md` for detailed project standards and conventions before making changes.**
 
 ## Core Principles
 
