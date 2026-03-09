@@ -30,7 +30,6 @@ import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.ArrowDropDown
 import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.Refresh
@@ -60,6 +59,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -89,6 +89,7 @@ import com.msmobile.visitas.extension.sharp
 import com.msmobile.visitas.extension.stringResource
 import com.msmobile.visitas.extension.textField
 import com.msmobile.visitas.extension.toString
+import com.msmobile.visitas.ui.icons.CopyDataIcon
 import com.msmobile.visitas.ui.views.DateTimePicker
 import com.msmobile.visitas.ui.views.DetailFooter
 import com.msmobile.visitas.ui.views.LazyColumnWithScrollbar
@@ -159,7 +160,7 @@ private fun VisitDetailScreenContent(
                             onEvent(VisitDetailViewModel.UiEvent.CopyVisitDataClicked)
                         }
                     ) {
-                       Icon(imageVector = Icons.Rounded.ContentCopy, contentDescription = null)
+                        CopyDataIcon()
                     }
                 }
                 DetailFooter(
