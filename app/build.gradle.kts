@@ -50,8 +50,8 @@ android {
             )
             buildConfigField(
                 "String",
-                "SENTRY_DSN",
-                "\"${System.getenv("SENTRY_DSN") ?: ""}\""
+                EnvKeys.SENTRY_DSN,
+                "\"${System.getenv(EnvKeys.SENTRY_DSN) ?: ""}\""
             )
         }
         release {
@@ -69,8 +69,8 @@ android {
             )
             buildConfigField(
                 "String",
-                "SENTRY_DSN",
-                "\"${requireEnvVariable("SENTRY_DSN")}\""
+                EnvKeys.SENTRY_DSN,
+                "\"${requireEnvVariable(EnvKeys.SENTRY_DSN)}\""
             )
         }
     }
@@ -200,6 +200,7 @@ private object EnvKeys {
     const val KEYSTORE_PASSWORD = "KEYSTORE_PASSWORD"
     const val KEYSTORE_ALIAS = "KEYSTORE_ALIAS"
     const val ENCRYPTION_PASSPHRASE = "ENCRYPTION_PASSPHRASE"
+    const val SENTRY_DSN = "SENTRY_DSN"
 }
 
 private fun requireEnvVariable(key: String): String {
