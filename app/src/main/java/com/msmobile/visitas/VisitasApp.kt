@@ -12,8 +12,11 @@ class VisitasApp : Application() {
     }
 
     private fun initSentry() {
+        val dsn = BuildConfig.SENTRY_DSN
+        if (dsn.isBlank()) return
+
         SentryAndroid.init(this) { options ->
-            options.dsn = BuildConfig.SENTRY_DSN
+            options.dsn = dsn
             options.environment = if (BuildConfig.DEBUG) "debug" else "release"
             options.release = "${BuildConfig.APPLICATION_ID}@${BuildConfig.VERSION_NAME}+${BuildConfig.VERSION_CODE}"
             options.isEnableAutoSessionTracking = true

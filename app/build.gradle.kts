@@ -70,7 +70,7 @@ android {
             buildConfigField(
                 "String",
                 "SENTRY_DSN",
-                "\"${System.getenv("SENTRY_DSN") ?: ""}\""
+                "\"${requireEnvVariable("SENTRY_DSN")}\""
             )
         }
     }
