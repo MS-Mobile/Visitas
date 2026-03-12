@@ -107,8 +107,19 @@ sentry {
     autoUploadProguardMapping.set(
         System.getenv("SENTRY_AUTH_TOKEN")?.isNotEmpty() == true
     )
+    includeSourceContext.set(true)
 
-    autoInstallation.enabled.set(false)
+    tracingInstrumentation {
+        enabled.set(true)
+        features.set(
+            setOf(
+                io.sentry.android.gradle.extensions.InstrumentationFeature.DATABASE,
+                io.sentry.android.gradle.extensions.InstrumentationFeature.FILE_IO,
+                io.sentry.android.gradle.extensions.InstrumentationFeature.OKHTTP,
+                io.sentry.android.gradle.extensions.InstrumentationFeature.COMPOSE,
+            )
+        )
+    }
 }
 
 easylauncher {
@@ -150,7 +161,11 @@ dependencies {
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
     implementation(libs.androidx.security.crypto)
+    implementation(platform(libs.sentry.bom))
     implementation(libs.sentry.android)
+    implementation(libs.sentry.compose)
+    implementation(libs.sentry.okhttp)
+    implementation(libs.sentry.sqlite)
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging)
     implementation(libs.retrofit)

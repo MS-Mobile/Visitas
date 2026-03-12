@@ -73,7 +73,11 @@ play-appupdate-ktx = { group = "com.google.android.play", name = "app-update-ktx
 room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
-sentry-android = { group = "io.sentry", name = "sentry-android", version.ref = "sentry" }
+sentry-android = { group = "io.sentry", name = "sentry-android" }
+sentry-bom = { group = "io.sentry", name = "sentry-bom", version.ref = "sentry" }
+sentry-compose = { group = "io.sentry", name = "sentry-compose-android" }
+sentry-okhttp = { group = "io.sentry", name = "sentry-okhttp" }
+sentry-sqlite = { group = "io.sentry", name = "sentry-android-sqlite" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 okhttp-logging = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp" }
 retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
