@@ -105,7 +105,11 @@ sentry {
     authToken.set(System.getenv("SENTRY_AUTH_TOKEN") ?: "")
 
     autoUploadProguardMapping.set(
-        System.getenv("SENTRY_AUTH_TOKEN")?.isNotEmpty() == true
+        listOf(
+            System.getenv("SENTRY_AUTH_TOKEN"),
+            System.getenv("SENTRY_ORG"),
+            System.getenv("SENTRY_PROJECT")
+        ).all { !it.isNullOrBlank() }
     )
     includeSourceContext.set(true)
 
