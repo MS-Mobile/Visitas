@@ -152,6 +152,7 @@ dependencies {
     implementation(libs.ui)
     implementation(libs.ui.graphics)
     implementation(libs.ui.tooling.preview)
+    implementation(libs.compose.foundation)
     implementation(libs.material3)
     implementation(libs.compose.destinations.core)
     implementation(libs.moshi)
