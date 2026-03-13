@@ -5,8 +5,7 @@ plugins {
     alias(libs.plugins.org.jetbrains.kotlin.android) apply false
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.ktlint) apply false
-    alias(libs.plugins.google.gms.google.services) apply false
-    alias(libs.plugins.google.firebase.crashlytics) apply false
+    alias(libs.plugins.sentry.android.gradle.plugin) apply false
 }
 buildscript {
     dependencies {

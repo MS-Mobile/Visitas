@@ -35,6 +35,11 @@
         android:theme="@style/Theme.Visitas"
         tools:targetApi="36">
 
+        <!-- Disable Sentry auto-init; manual init in VisitasApp -->
+        <meta-data
+            android:name="io.sentry.auto-init"
+            android:value="false" />
+
         <!-- FileProvider for sharing backup files -->
         <provider
             android:name="androidx.core.content.FileProvider"
