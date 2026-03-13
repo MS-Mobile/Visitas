@@ -8,8 +8,7 @@ plugins {
     alias(libs.plugins.com.google.devtools.ksp)
     alias(libs.plugins.com.google.dagger.hilt.android)
     alias(libs.plugins.compose.compiler)
-    alias(libs.plugins.google.gms.google.services)
-    alias(libs.plugins.google.firebase.crashlytics)
+    alias(libs.plugins.sentry.android.gradle.plugin)
     alias(libs.plugins.easylauncher)
     alias(libs.plugins.androidx.room)
 }
@@ -49,6 +48,11 @@ android {
                 EnvKeys.ENCRYPTION_PASSPHRASE,
                 "\"${System.getenv(EnvKeys.ENCRYPTION_PASSPHRASE) ?: ""}\""
             )
+            buildConfigField(
+                "String",
+                EnvKeys.SENTRY_DSN,
+                "\"${System.getenv(EnvKeys.SENTRY_DSN) ?: ""}\""
+            )
         }
         release {
             proguardFiles(
@@ -62,6 +66,11 @@ android {
                 "String",
                 EnvKeys.ENCRYPTION_PASSPHRASE,
                 "\"${requireEnvVariable(EnvKeys.ENCRYPTION_PASSPHRASE)}\""
+            )
+            buildConfigField(
+                "String",
+                EnvKeys.SENTRY_DSN,
+                "\"${requireEnvVariable(EnvKeys.SENTRY_DSN)}\""
             )
         }
     }
@@ -88,6 +97,39 @@ kotlin {
 
 room {
     schemaDirectory("$projectDir/schemas")
+}
+
+sentry {
+    val sentryOrg = System.getenv(EnvKeys.SENTRY_ORG)
+    val sentryProject = System.getenv(EnvKeys.SENTRY_PROJECT)
+    val sentryAuthToken = System.getenv(EnvKeys.SENTRY_AUTH_TOKEN)
+
+    if (
+        !sentryOrg.isNullOrBlank()
+        && !sentryProject.isNullOrBlank()
+        && !sentryAuthToken.isNullOrBlank()
+    ) {
+        org.set(sentryOrg)
+        projectName.set(sentryProject)
+        authToken.set(sentryAuthToken)
+        autoUploadProguardMapping.set(true)
+        includeSourceContext.set(true)
+    } else {
+        autoUploadProguardMapping.set(false)
+        includeSourceContext.set(false)
+    }
+
+    tracingInstrumentation {
+        enabled.set(true)
+        features.set(
+            setOf(
+                io.sentry.android.gradle.extensions.InstrumentationFeature.DATABASE,
+                io.sentry.android.gradle.extensions.InstrumentationFeature.FILE_IO,
+                io.sentry.android.gradle.extensions.InstrumentationFeature.OKHTTP,
+                io.sentry.android.gradle.extensions.InstrumentationFeature.COMPOSE,
+            )
+        )
+    }
 }
 
 easylauncher {
@@ -130,7 +172,11 @@ dependencies {
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
     implementation(libs.androidx.security.crypto)
-    implementation(libs.firebase.crashlytics)
+    implementation(platform(libs.sentry.bom))
+    implementation(libs.sentry.android)
+    implementation(libs.sentry.compose)
+    implementation(libs.sentry.okhttp)
+    implementation(libs.sentry.sqlite)
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging)
     implementation(libs.retrofit)
@@ -165,6 +211,10 @@ private object EnvKeys {
     const val KEYSTORE_PASSWORD = "KEYSTORE_PASSWORD"
     const val KEYSTORE_ALIAS = "KEYSTORE_ALIAS"
     const val ENCRYPTION_PASSPHRASE = "ENCRYPTION_PASSPHRASE"
+    const val SENTRY_DSN = "SENTRY_DSN"
+    const val SENTRY_ORG = "SENTRY_ORG"
+    const val SENTRY_PROJECT = "SENTRY_PROJECT"
+    const val SENTRY_AUTH_TOKEN = "SENTRY_AUTH_TOKEN"
 }
 
 private fun requireEnvVariable(key: String): String {
