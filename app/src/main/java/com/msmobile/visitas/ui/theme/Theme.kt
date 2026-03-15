@@ -11,6 +11,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -49,15 +50,22 @@ fun VisitasTheme(
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
             if (darkTheme) {
-                dynamicDarkColorScheme(context).copy(
-                    surface = Color.Black,
-                    surfaceVariant = DarkGrey,
-                    background = Color.Black,
-                    error = DarkRed,
-                    surfaceContainer = DarkGrey
-                )
+                dynamicDarkColorScheme(context).let { scheme ->
+                    scheme.copy(
+                        surface = Color.Black,
+                        surfaceVariant = DarkGrey,
+                        background = Color.Black,
+                        error = DarkRed,
+                        surfaceContainer = scheme.primaryContainer
+                    )
+                }
             } else {
-                dynamicLightColorScheme(context).copy(error = DarkRed)
+                dynamicLightColorScheme(context).let { scheme ->
+                    scheme.copy(
+                        error = DarkRed,
+                        surfaceContainer = lerp(scheme.secondaryContainer, scheme.surfaceContainerLow, 0.7f),
+                    )
+                }
             }
         }
 

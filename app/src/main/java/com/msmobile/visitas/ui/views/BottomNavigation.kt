@@ -3,10 +3,7 @@ package com.msmobile.visitas.ui.views
 import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Home
-import androidx.compose.material.icons.rounded.People
-import androidx.compose.material.icons.rounded.RecordVoiceOver
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -17,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import com.msmobile.visitas.R
@@ -31,7 +29,13 @@ fun BottomNavigation(
     onNavigateToTab: (DirectionDestinationSpec) -> Unit
 ) {
     var activeTab by remember { mutableStateOf(currentDestination) }
-    NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer) {
+    NavigationBar(
+        containerColor = lerp(
+            MaterialTheme.colorScheme.secondaryContainer,
+            MaterialTheme.colorScheme.surfaceContainerLow,
+            0.7f
+        ),
+    ) {
         BottomNavigationTab.entries.forEach { tab ->
             NavigationBarItem(
                 icon = { Icon(tab.icon, contentDescription = stringResource(id = tab.textId)) },
@@ -54,5 +58,9 @@ private enum class BottomNavigationTab(
     @param:StringRes val textId: Int
 ) {
     Visits(VisitListScreenDestination, Icons.Rounded.Home, R.string.visits),
-    Conversation(ConversationListScreenDestination, Icons.AutoMirrored.Default.MenuBook, R.string.conversations),
+    Conversation(
+        ConversationListScreenDestination,
+        Icons.AutoMirrored.Default.MenuBook,
+        R.string.conversations
+    ),
 }
