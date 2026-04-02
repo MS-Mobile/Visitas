@@ -3,8 +3,6 @@ package com.msmobile.visitas
 import com.msmobile.visitas.util.IntentState
 import com.msmobile.visitas.util.MainDispatcherRule
 import com.msmobile.visitas.util.MockReferenceHolder
-import com.msmobile.visitas.util.TimerManager
-import com.msmobile.visitas.util.TimerManager.TimerState
 import com.ramcosta.composedestinations.generated.destinations.ConversationDetailScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.ConversationListScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.VisitDetailScreenDestination
@@ -12,12 +10,9 @@ import com.ramcosta.composedestinations.generated.destinations.VisitListScreenDe
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertTrue
-import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Rule
 import org.junit.Test
-import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import kotlin.time.Duration.Companion.seconds
 
 class MainActivityViewModelTest {
     @get:Rule
@@ -33,9 +28,7 @@ class MainActivityViewModelTest {
         assertEquals(IntentState.None, state.intentState)
         assertFalse(state.scaffoldState.showBottomBar)
         assertFalse(state.scaffoldState.showFAB)
-        assertFalse(state.scaffoldState.showTimerFAB)
         assertEquals(MainActivityViewModel.UiEventState.Idle, state.eventState)
-        assertFalse(state.isTimerRunning)
     }
 
     @Test
@@ -44,8 +37,7 @@ class MainActivityViewModelTest {
         val viewModel = createViewModel()
         val newScaffoldState = MainActivityViewModel.ScaffoldState(
             showBottomBar = true,
-            showFAB = true,
-            showTimerFAB = true
+            showFAB = true
         )
 
         // Act
@@ -55,7 +47,6 @@ class MainActivityViewModelTest {
         val state = viewModel.uiState.value
         assertTrue(state.scaffoldState.showBottomBar)
         assertTrue(state.scaffoldState.showFAB)
-        assertTrue(state.scaffoldState.showTimerFAB)
     }
 
     @Test
@@ -103,25 +94,6 @@ class MainActivityViewModelTest {
     }
 
     @Test
-    fun `onEvent with TimerFabClicked toggles isTimerRunning`() {
-        // Arrange
-        val viewModel = createViewModel()
-        assertFalse(viewModel.uiState.value.isTimerRunning)
-
-        // Act
-        viewModel.onEvent(MainActivityViewModel.UiEvent.TimerFabClicked)
-
-        // Assert
-        assertTrue(viewModel.uiState.value.isTimerRunning)
-
-        // Act again
-        viewModel.onEvent(MainActivityViewModel.UiEvent.TimerFabClicked)
-
-        // Assert
-        assertFalse(viewModel.uiState.value.isTimerRunning)
-    }
-
-    @Test
     fun `onEvent with IntentStateChanged updates intentState`() {
         // Arrange
         val uriRef = MockReferenceHolder<android.net.Uri>()
@@ -164,58 +136,12 @@ class MainActivityViewModelTest {
         assertEquals(MainActivityViewModel.UiEventState.Idle, viewModel.uiState.value.eventState)
     }
 
-    @Test
-    fun `timer running state updates isTimerRunning to true`() {
-        // Arrange
-        val timerFlowRef = MockReferenceHolder<MutableStateFlow<TimerState>>()
-        val viewModel = createViewModel(timerFlowRef = timerFlowRef)
-        val timerFlow = requireNotNull(timerFlowRef.value)
-
-        // Act
-        timerFlow.value = TimerState.Running(
-            elapsedTime = 10.seconds,
-            tickUnit = 1.seconds
-        )
-
-        // Assert
-        assertTrue(viewModel.uiState.value.isTimerRunning)
-    }
-
-    @Test
-    fun `timer paused state updates isTimerRunning to false`() {
-        // Arrange
-        val timerFlowRef = MockReferenceHolder<MutableStateFlow<TimerState>>()
-        val viewModel = createViewModel(
-            initialTimerState = TimerState.Running(10.seconds, 1.seconds),
-            timerFlowRef = timerFlowRef
-        )
-        val timerFlow = requireNotNull(timerFlowRef.value)
-        assertTrue(viewModel.uiState.value.isTimerRunning)
-
-        // Act
-        timerFlow.value = TimerState.Paused(
-            elapsedTime = 10.seconds,
-            tickUnit = 1.seconds
-        )
-
-        // Assert
-        assertFalse(viewModel.uiState.value.isTimerRunning)
-    }
-
     private fun createViewModel(
-        initialTimerState: TimerState = TimerState.Stopped,
-        timerFlowRef: MockReferenceHolder<MutableStateFlow<TimerState>>? = null,
         uriRef: MockReferenceHolder<android.net.Uri>? = null
     ): MainActivityViewModel {
-        val timerFlow = MutableStateFlow(initialTimerState)
-        timerFlowRef?.value = timerFlow
-
         val mockUri = mock<android.net.Uri>()
         uriRef?.value = mockUri
 
-        val timerManager = mock<TimerManager> {
-            on { timer } doReturn timerFlow
-        }
-        return MainActivityViewModel(timerManager)
+        return MainActivityViewModel()
     }
 }

@@ -1,15 +1,10 @@
 package com.msmobile.visitas
 
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Pause
-import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -19,7 +14,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.ui.views.BottomNavigation
 import com.msmobile.visitas.util.IntentState
@@ -38,36 +32,17 @@ fun AppScaffold(
     content: @Composable (PaddingValues) -> Unit
 ) {
     val showBottomBar = uiState.scaffoldState.showBottomBar
-    val timerFABIcon = if (uiState.isTimerRunning) {
-        Icons.Rounded.Pause
-    } else {
-        Icons.Rounded.PlayArrow
-    }
     VisitasTheme {
         Scaffold(floatingActionButton = {
-            Column {
-                if (uiState.scaffoldState.showTimerFAB) {
-                    FloatingActionButton(onClick = {
-                        onEvent(MainActivityViewModel.UiEvent.TimerFabClicked)
-                    }) {
-                        Icon(
-                            timerFABIcon,
-                            stringResource(id = R.string.start_timer)
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(6.dp))
+            if (uiState.scaffoldState.showFAB) {
+                FloatingActionButton(onClick = {
+                    onEvent(MainActivityViewModel.UiEvent.FabClicked(currentDestination = currentDestination))
+                }) {
+                    Icon(
+                        Icons.Rounded.Add,
+                        stringResource(id = R.string.add)
+                    )
                 }
-                if (uiState.scaffoldState.showFAB) {
-                    FloatingActionButton(onClick = {
-                        onEvent(MainActivityViewModel.UiEvent.FabClicked(currentDestination = currentDestination))
-                    }) {
-                        Icon(
-                            Icons.Rounded.Add,
-                            stringResource(id = R.string.add)
-                        )
-                    }
-                }
-
             }
         }, bottomBar = {
             if (showBottomBar) {
@@ -112,11 +87,9 @@ private fun PreviewAppScaffold() {
         uiState = MainActivityViewModel.UiState(
             scaffoldState = MainActivityViewModel.ScaffoldState(
                 showBottomBar = true,
-                showFAB = true,
-                showTimerFAB = true
+                showFAB = true
             ),
             eventState = MainActivityViewModel.UiEventState.Idle,
-            isTimerRunning = true,
             intentState = IntentState.None
         ),
         currentDestination = VisitListScreenDestination,

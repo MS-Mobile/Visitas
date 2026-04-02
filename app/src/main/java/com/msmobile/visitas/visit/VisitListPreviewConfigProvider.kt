@@ -65,7 +65,6 @@ private val previewMainActivityUiState = MainActivityViewModel.UiState(
         showFAB = true
     ),
     eventState = MainActivityViewModel.UiEventState.Idle,
-    isTimerRunning = false,
     intentState = IntentState.None
 )
 

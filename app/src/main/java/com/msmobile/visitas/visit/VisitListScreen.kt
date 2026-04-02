@@ -152,8 +152,7 @@ fun VisitListScreen(
         scaffoldConfigurationChanged(
             MainActivityViewModel.ScaffoldState(
                 showBottomBar = !isKeyboardOpen,
-                showFAB = true,
-                showTimerFAB = false
+                showFAB = true
             )
         )
     }

@@ -30,7 +30,6 @@ import com.msmobile.visitas.util.LocaleProvider
 import com.msmobile.visitas.util.Logger
 import com.msmobile.visitas.util.NetworkStatusTracker
 import com.msmobile.visitas.util.PermissionChecker
-import com.msmobile.visitas.util.TimerManager
 import com.msmobile.visitas.util.UserLocationProvider
 import com.msmobile.visitas.util.VisitMapAdapter
 import com.msmobile.visitas.visit.VisitDao
@@ -132,12 +131,6 @@ class ApplicationModule {
             locationProviderClient = locationProviderClient,
             looper = Looper.getMainLooper()
         )
-    }
-
-    @Singleton
-    @Provides
-    fun timer(): TimerManager {
-        return TimerManager()
     }
 
     @Singleton
