@@ -152,8 +152,7 @@ fun VisitListScreen(
         scaffoldConfigurationChanged(
             MainActivityViewModel.ScaffoldState(
                 showBottomBar = !isKeyboardOpen,
-                showFAB = true,
-                showTimerFAB = false
+                showFAB = true
             )
         )
     }
@@ -316,19 +315,15 @@ private fun SummaryCard(
     val searchValue = visitListUiState.filter.search
     val returnVisitCount = summaryUiState.returnVisitCount
     val bibleStudyCount = summaryUiState.bibleStudyCount
-    val fieldServiceHours = summaryUiState.totalFieldServiceSeconds
     val currentMonth = summaryUiState.selectedMonth
     val shouldShowSummaryDetails = summaryUiState.shouldShowSummaryDetails
-    val shouldShowSummaryHours = summaryUiState.shouldShowSummaryHours
 
     SummaryCardContent(
         searchValue = searchValue,
         returnVisitCount = returnVisitCount,
         bibleStudyCount = bibleStudyCount,
-        fieldServiceHours = fieldServiceHours,
         currentMonth = currentMonth,
         shouldShowSummaryDetails = shouldShowSummaryDetails,
-        shouldShowSummaryHours = shouldShowSummaryHours,
         onSummaryEvent = onSummaryEvent,
         onMonthPickerEvent = onMonthPickerEvent,
         onVisitListEvent = onVisitListEvent,
@@ -342,10 +337,8 @@ private fun SummaryCardContent(
     searchValue: String,
     returnVisitCount: String,
     bibleStudyCount: String,
-    fieldServiceHours: String,
     currentMonth: LocalDateTime,
     shouldShowSummaryDetails: Boolean,
-    shouldShowSummaryHours: Boolean,
     onSummaryEvent: (event: SummaryViewModel.UiEvent) -> Unit,
     onMonthPickerEvent: (monthNavigatorEvent: MonthNavigatorEvent) -> Unit,
     onVisitListEvent: (uiEvent: VisitListViewModel.UiEvent) -> Unit,
@@ -400,10 +393,8 @@ private fun SummaryCardContent(
         SummaryCardDetails(
             returnVisitCount = returnVisitCount,
             bibleStudyCount = bibleStudyCount,
-            fieldServiceHours = fieldServiceHours,
             currentMonth = currentMonth,
             shouldShowSummaryDetails = shouldShowSummaryDetails,
-            shouldShowSummaryHours = shouldShowSummaryHours,
             onVisitListEvent = onVisitListEvent,
             onBackupEvent = onBackupEvent,
             onMonthPickerEvent = onMonthPickerEvent
@@ -416,10 +407,8 @@ private fun SummaryCardContent(
 fun ColumnScope.SummaryCardDetails(
     returnVisitCount: String,
     bibleStudyCount: String,
-    fieldServiceHours: String,
     currentMonth: LocalDateTime,
     shouldShowSummaryDetails: Boolean,
-    shouldShowSummaryHours: Boolean,
     onVisitListEvent: (VisitListViewModel.UiEvent) -> Unit,
     onBackupEvent: (BackupViewModel.UiEvent) -> Unit,
     onMonthPickerEvent: (MonthNavigatorEvent) -> Unit
@@ -449,16 +438,6 @@ fun ColumnScope.SummaryCardDetails(
                         .weight(1f)
                         .padding(horizontal = horizontalFieldPadding.times(2))
                 ) {
-                    if (shouldShowSummaryHours) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = stringResource(id = R.string.field_service_hours),
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                            Spacer(modifier = Modifier.padding(4.dp))
-                            Text(text = fieldServiceHours, textAlign = TextAlign.End)
-                        }
-                    }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = stringResource(id = R.string.return_visits),

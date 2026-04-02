@@ -1,10 +1,7 @@
 package com.msmobile.visitas
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.msmobile.visitas.util.IntentState
-import com.msmobile.visitas.util.TimerManager
-import com.msmobile.visitas.util.TimerManager.TimerState
 import com.ramcosta.composedestinations.generated.destinations.ConversationDetailScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.ConversationListScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.VisitDetailScreenDestination
@@ -13,8 +10,6 @@ import com.ramcosta.composedestinations.spec.DestinationSpec
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 
@@ -23,22 +18,15 @@ typealias OnIntentStateHandled = () -> Unit
 
 @HiltViewModel
 class MainActivityViewModel
-@Inject constructor(
-    timerManager: TimerManager
-) : ViewModel() {
+@Inject constructor() : ViewModel() {
     private val _uiState = MutableStateFlow(
         UiState(
             intentState = IntentState.None,
             scaffoldState = ScaffoldState(),
-            eventState = UiEventState.Idle,
-            isTimerRunning = false
+            eventState = UiEventState.Idle
         )
     )
     val uiState: StateFlow<UiState> = _uiState
-
-    init {
-        timerManager.timer.onEach(::timerChanged).launchIn(viewModelScope)
-    }
 
     fun onEvent(uiEvent: UiEvent) {
         when (uiEvent) {
@@ -46,27 +34,8 @@ class MainActivityViewModel
             is UiEvent.ScaffoldConfigurationChanged -> scaffoldConfigurationChanged(uiEvent.scaffoldState)
             is UiEvent.FabClickHandled -> fabClickHandled()
             is UiEvent.NetworkStatusChangeAcknowledged -> networkStatusChangeAcknowledged()
-            is UiEvent.TimerFabClicked -> timerFabClicked()
             is UiEvent.IntentStateChanged -> intentStateChanged(uiEvent.intentState)
             is UiEvent.IntentStateHandled -> intentStateHandled()
-        }
-    }
-
-    private fun timerChanged(timerState: TimerState) {
-        when (timerState) {
-            is TimerState.Running -> newState {
-                copy(isTimerRunning = true)
-            }
-
-            is TimerState.Paused, TimerState.Stopped -> newState {
-                copy(isTimerRunning = false)
-            }
-        }
-    }
-
-    private fun timerFabClicked() {
-        newState {
-            copy(isTimerRunning = !isTimerRunning)
         }
     }
 
@@ -125,15 +94,13 @@ class MainActivityViewModel
         data class ScaffoldConfigurationChanged(val scaffoldState: ScaffoldState) : UiEvent()
         data object FabClickHandled : UiEvent()
         data object NetworkStatusChangeAcknowledged : UiEvent()
-        data object TimerFabClicked : UiEvent()
         data class IntentStateChanged(val intentState: IntentState) : UiEvent()
         data object IntentStateHandled : UiEvent()
     }
 
     data class ScaffoldState(
         val showBottomBar: Boolean = false,
-        val showFAB: Boolean = false,
-        val showTimerFAB: Boolean = false
+        val showFAB: Boolean = false
     )
 
     sealed class UiEventState {
@@ -147,7 +114,6 @@ class MainActivityViewModel
     data class UiState(
         val intentState: IntentState,
         val scaffoldState: ScaffoldState,
-        val eventState: UiEventState,
-        val isTimerRunning: Boolean
+        val eventState: UiEventState
     )
 }

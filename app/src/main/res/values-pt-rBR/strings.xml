@@ -59,9 +59,6 @@
     <string name="go_current_month_summary">Ir para mês atual</string>
     <string name="show_summary_details">Mostrar detalhes</string>
     <string name="houlseholder_no_address_found">Nenhum endereço encontrado</string>
-    <string name="start_timer">Iniciar</string>
-    <string name="pause_timer">Pausar</string>
-    <string name="field_service_in_progress">Tempo em andamento</string>
     <string name="no_visits_found">Por aqui não encontrei nada!</string>
     <string name="grant_permissions">Permitir</string>
     <string name="location_permission_message">Esta funcionalidade precisa de acesso à sua localização para funcionar.</string>

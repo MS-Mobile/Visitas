@@ -28,7 +28,6 @@ class SummaryViewModelTest {
         val state = viewModel.uiState.value
         assertEquals("", state.returnVisitCount)
         assertEquals("", state.bibleStudyCount)
-        assertEquals("", state.totalFieldServiceSeconds)
         assertFalse(state.isSummaryMenuExpanded)
         assertTrue(state.summaryFilterOptions.isEmpty())
         assertFalse(state.shouldShowSummaryDetails)
@@ -174,9 +173,7 @@ class SummaryViewModelTest {
     private fun createSummaryResult(): SummaryResult {
         return SummaryResult(
             returnVisitCount = 5,
-            bibleStudyCount = 2,
-            totalFieldServiceSeconds = 3600,
-            fieldServiceInProgressSeconds = 0
+            bibleStudyCount = 2
         )
     }
 }
