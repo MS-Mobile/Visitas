@@ -388,7 +388,7 @@ private fun HouseholderAddressActionButton(
         Icon(
             modifier = Modifier.rotate(animatedRotationValue),
             imageVector = Icons.Rounded.Refresh,
-            contentDescription = null
+            contentDescription = stringResource(id = R.string.loading_address_content_description)
         )
     } else {
         when (addressState) {
@@ -402,7 +402,7 @@ private fun HouseholderAddressActionButton(
                 IconButton(onClick = {
                     onEvent(VisitDetailViewModel.UiEvent.LoadAddressClicked)
                 }) {
-                    Icon(imageVector = Icons.Rounded.LocationOn, contentDescription = null)
+                    Icon(imageVector = Icons.Rounded.LocationOn, contentDescription = stringResource(id = R.string.load_address_content_description))
                 }
             }
 
@@ -410,7 +410,7 @@ private fun HouseholderAddressActionButton(
                 IconButton(onClick = {
                     onEvent(VisitDetailViewModel.UiEvent.LookUpAddressFromLatLongClicked)
                 }) {
-                    Icon(imageVector = Icons.Rounded.TravelExplore, contentDescription = null)
+                    Icon(imageVector = Icons.Rounded.TravelExplore, contentDescription = stringResource(id = R.string.lookup_address_content_description))
                 }
             }
 
@@ -454,7 +454,7 @@ private fun PreferredDayDropdown(
             trailingIcon = {
                 Icon(
                     imageVector = Icons.Rounded.ArrowDropDown,
-                    contentDescription = null
+                    contentDescription = stringResource(id = R.string.expand_preferred_day_list_content_description)
                 )
             },
             colors = ReadOnlyTextFieldColors,
@@ -516,7 +516,7 @@ private fun PreferredTimeDropdown(
             trailingIcon = {
                 Icon(
                     imageVector = Icons.Rounded.ArrowDropDown,
-                    contentDescription = null
+                    contentDescription = stringResource(id = R.string.expand_preferred_time_list_content_description)
                 )
             },
             colors = ReadOnlyTextFieldColors,
@@ -921,7 +921,7 @@ private fun StateHandler(
                     }) {
                         Icon(
                             imageVector = Icons.Rounded.Close,
-                            contentDescription = null,
+                            contentDescription = stringResource(R.string.close_icon_content_description),
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -943,7 +943,7 @@ private fun StateHandler(
                     }) {
                         Icon(
                             imageVector = Icons.Rounded.Close,
-                            contentDescription = null,
+                            contentDescription = stringResource(R.string.close_icon_content_description),
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                     }

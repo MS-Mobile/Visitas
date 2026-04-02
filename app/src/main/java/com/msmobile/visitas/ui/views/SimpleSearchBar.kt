@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import com.msmobile.visitas.R
+import com.msmobile.visitas.visit.VisitDetailViewModel
 
 @Composable
 fun SimpleSearchBar(
@@ -42,17 +43,10 @@ fun SimpleSearchBar(
                 AnimatedVisibility(visible = isSearchEmpty) {
                     Icon(
                         imageVector = Icons.Outlined.Search,
-                        contentDescription = null
+                        contentDescription = stringResource(id = R.string.search_icon_content_description)
                     )
                 }
-                AnimatedVisibility(visible = !isSearchEmpty) {
-                    IconButton(onClick = onFilterCleared) {
-                        Icon(
-                            imageVector = Icons.Outlined.Close,
-                            contentDescription = stringResource(id = R.string.clear_text)
-                        )
-                    }
-                }
+                TextFieldClearButton(show = !isSearchEmpty, onClear = onFilterCleared)
             }
         }
     )

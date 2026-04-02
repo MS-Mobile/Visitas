@@ -6,6 +6,8 @@ import androidx.compose.material.icons.outlined.Clear
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.msmobile.visitas.R
 
 @Composable
 fun TextFieldClearButton(show: Boolean, onClear: () -> Unit) {
@@ -15,7 +17,7 @@ fun TextFieldClearButton(show: Boolean, onClear: () -> Unit) {
         ) {
             Icon(
                 imageVector = Icons.Outlined.Clear,
-                contentDescription = null
+                contentDescription = stringResource(id = R.string.clear_text_content_description)
             )
         }
     }

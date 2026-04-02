@@ -22,7 +22,7 @@ fun RestoreBackupDialog(
         icon = {
             Icon(
                 imageVector = Icons.Rounded.Restore,
-                contentDescription = null,
+                contentDescription = stringResource(R.string.restore_backup_icon_content_description),
                 tint = MaterialTheme.colorScheme.primary
             )
         },

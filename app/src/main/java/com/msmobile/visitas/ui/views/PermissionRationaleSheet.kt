@@ -53,7 +53,7 @@ fun PermissionRationaleSheet(
                 ) {
                     Icon(
                         imageVector = icon,
-                        contentDescription = null,
+                        contentDescription = stringResource(R.string.permission_rationale_icon_content_description),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier
                             .size(48.dp)

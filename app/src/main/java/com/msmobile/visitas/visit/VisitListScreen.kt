@@ -387,7 +387,10 @@ private fun SummaryCardContent(
                     )
                 )
             }) {
-                Icon(imageVector = showDetailsButtonIcon, contentDescription = null)
+                Icon(
+                    imageVector = showDetailsButtonIcon,
+                    contentDescription = stringResource(R.string.show_summary_details_content_description)
+                )
             }
         }
         SummaryCardDetails(
@@ -513,7 +516,7 @@ private fun VisitsList(
                     }) {
                     Icon(
                         imageVector = Icons.Rounded.Map,
-                        contentDescription = null,
+                        contentDescription = stringResource(R.string.show_visits_map_content_description),
                         tint = MaterialTheme.colorScheme.primary,
                     )
                 }
@@ -545,7 +548,7 @@ private fun VisitsList(
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.FindInPage,
-                                contentDescription = null,
+                                contentDescription = stringResource(R.string.no_visits_found_icon_content_description),
                                 modifier = Modifier.size(24.dp)
                             )
                             Text(
@@ -614,7 +617,10 @@ private fun VisitListFilterMenu(
     IconButton(onClick = {
         onEvent(VisitListViewModel.UiEvent.VisitsFilterButtonClicked)
     }) {
-        Icon(imageVector = Icons.Rounded.FilterList, contentDescription = null)
+        Icon(
+            imageVector = Icons.Rounded.FilterList,
+            contentDescription = stringResource(R.string.filter_visits_content_description)
+        )
         DropdownMenu(
             expanded = uiState.isVisitsFilterMenuExpanded,
             onDismissRequest = {
@@ -628,11 +634,12 @@ private fun VisitListFilterMenu(
             )
             HorizontalDivider()
             uiState.visitsFilterOptions.map { option ->
+                val visitFilterOption = stringResource(id = option.description.textResId)
                 DropdownMenuItem(text = {
-                    Text(text = stringResource(id = option.description.textResId))
+                    Text(text = visitFilterOption)
                 }, trailingIcon = {
                     if (uiState.selectedVisitFilterOption == option) {
-                        Icon(imageVector = Icons.Rounded.Check, contentDescription = null)
+                        Icon(imageVector = Icons.Rounded.Check, contentDescription = visitFilterOption)
                     }
                 }, onClick = {
                     onEvent(VisitListViewModel.UiEvent.VisitsFilterOptionSelected(option = option))
@@ -777,7 +784,7 @@ private fun VisitCard(
                             }) {
                             Icon(
                                 imageVector = Icons.Rounded.Explore,
-                                contentDescription = null,
+                                contentDescription = stringResource(R.string.open_map_directions_content_description),
                                 tint = MaterialTheme.colorScheme.primary,
                             )
                         }

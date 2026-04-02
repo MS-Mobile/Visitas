@@ -30,7 +30,7 @@
     <string name="previous_month">Mês anterior</string>
     <string name="next_month">Próximo mês</string>
     <string name="search">Procurar</string>
-    <string name="clear_text">Limpar texto</string>
+    <string name="clear_text_content_description">Limpar texto</string>
     <string name="visits_scheduled_for_today">Hoje</string>
     <string name="visits_scheduled_for_tomorrow">Amanhã</string>
     <string name="visits_scheduled_for_next_days">Outros dias</string>
@@ -107,4 +107,20 @@
     <string name="calendar_permission_message">Permissão de calendário é necessária para agendar lembretes de visitas.</string>
     <string name="update_downloaded_restart">Atualização baixada. Reiniciando o app…</string>
     <string name="copied_to_clipboard">Copiado para a área de transferência</string>
+
+    <!-- Content descriptions -->
+    <string name="loading_address_content_description">Carregando endereço</string>
+    <string name="load_address_content_description">Carregar endereço da localização atual</string>
+    <string name="lookup_address_content_description">Buscar endereço pelas coordenadas</string>
+    <string name="expand_preferred_day_list_content_description">Expandir lista de dias preferidos</string>
+    <string name="expand_preferred_time_list_content_description">Expandir lista de horários preferidos</string>
+    <string name="close_icon_content_description">Fechar</string>
+    <string name="show_summary_details_content_description">Exibir detalhes do resumo</string>
+    <string name="show_visits_map_content_description">Exibir mapa de visitas</string>
+    <string name="no_visits_found_icon_content_description">Nenhuma visita encontrada</string>
+    <string name="filter_visits_content_description">Filtrar visitas</string>
+    <string name="open_map_directions_content_description">Abrir rotas no mapa</string>
+    <string name="permission_rationale_icon_content_description">Permissão necessária</string>
+    <string name="search_icon_content_description">Pesquisar</string>
+    <string name="restore_backup_icon_content_description">Restaurar backup</string>
 </resources>

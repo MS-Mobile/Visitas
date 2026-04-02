@@ -32,7 +32,7 @@
     <string name="previous_month">Previous month</string>
     <string name="next_month">Next month</string>
     <string name="search">Search</string>
-    <string name="clear_text">Clear text</string>
+    <string name="clear_text_content_description">Clear text</string>
     <string name="visits_scheduled_for_today">Today</string>
     <string name="visits_scheduled_for_tomorrow">Tomorrow</string>
     <string name="visits_scheduled_for_next_days">Other days</string>
@@ -109,4 +109,20 @@
     <string name="calendar_permission_message">Calendar permission is needed to schedule visit reminders.</string>
     <string name="update_downloaded_restart">Update downloaded. Restarting app…</string>
     <string name="copied_to_clipboard">Copied to clipboard</string>
+
+    <!-- Content descriptions -->
+    <string name="loading_address_content_description">Loading address</string>
+    <string name="load_address_content_description">Load address from current location</string>
+    <string name="lookup_address_content_description">Look up address from coordinates</string>
+    <string name="expand_preferred_day_list_content_description">Expand preferred day list</string>
+    <string name="expand_preferred_time_list_content_description">Expand preferred time list</string>
+    <string name="close_icon_content_description">Close</string>
+    <string name="show_summary_details_content_description">Show summary details</string>
+    <string name="show_visits_map_content_description">Show visits map</string>
+    <string name="no_visits_found_icon_content_description">No visits found</string>
+    <string name="filter_visits_content_description">Filter visits</string>
+    <string name="open_map_directions_content_description">Open map directions</string>
+    <string name="permission_rationale_icon_content_description">Permission required</string>
+    <string name="search_icon_content_description">Search</string>
+    <string name="restore_backup_icon_content_description">Restore backup</string>
 </resources>
