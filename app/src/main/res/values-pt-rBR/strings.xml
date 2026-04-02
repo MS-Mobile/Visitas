@@ -106,4 +106,5 @@
     <string name="visit_time_error">Horário da visita não corresponde à preferência do morador</string>
     <string name="calendar_permission_message">Permissão de calendário é necessária para agendar lembretes de visitas.</string>
     <string name="update_downloaded_restart">Atualização baixada. Reiniciando o app…</string>
+    <string name="copied_to_clipboard">Copiado para a área de transferência</string>
 </resources>
