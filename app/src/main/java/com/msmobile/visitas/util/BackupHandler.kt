@@ -146,12 +146,6 @@ class BackupHandler @Inject constructor(
             this.conversationDao().save(conversation)
         }
 
-        // Copy all field services
-        val fieldServices = backupDatabase.fieldServiceDao().listAll()
-        fieldServices.forEach { fieldService ->
-            this.fieldServiceDao().save(fieldService)
-        }
-
         // Copy all visits
         val visits = backupDatabase.visitDao().listAll()
         visits.forEach { visit ->

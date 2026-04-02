@@ -91,10 +91,6 @@
             </intent-filter>
         </activity>
 
-        <service
-            android:name=".VisitasService"
-            android:exported="false"
-            android:foregroundServiceType="specialUse" />
     </application>
 
 </manifest>

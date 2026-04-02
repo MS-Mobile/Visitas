@@ -162,7 +162,6 @@ fun BackupScreenPreview() {
                 showFAB = false
             ),
             eventState = MainActivityViewModel.UiEventState.Idle,
-            isTimerRunning = false,
             intentState = IntentState.None
         ),
         currentDestination = VisitListScreenDestination,

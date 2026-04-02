@@ -61,9 +61,6 @@
     <string name="go_current_month_summary">Go to current month summary</string>
     <string name="show_summary_details">Show summary details</string>
     <string name="houlseholder_no_address_found">No address found</string>
-    <string name="start_timer">Start timer</string>
-    <string name="pause_timer">Pause timer</string>
-    <string name="field_service_in_progress">Field service in progress</string>
     <string name="no_visits_found">No visits found!</string>
     <string name="grant_permissions">Grant permissions</string>
     <string name="location_permission_message">This feature requires location permission.</string>

@@ -8,8 +8,6 @@ import com.google.android.gms.location.LocationServices
 import com.msmobile.visitas.VisitasDatabase
 import com.msmobile.visitas.conversation.ConversationDao
 import com.msmobile.visitas.conversation.ConversationRepository
-import com.msmobile.visitas.fieldservice.FieldServiceDao
-import com.msmobile.visitas.fieldservice.FieldServiceRepository
 import com.msmobile.visitas.householder.HouseholderDao
 import com.msmobile.visitas.householder.HouseholderRepository
 import com.msmobile.visitas.preference.PreferenceDao
@@ -32,7 +30,6 @@ import com.msmobile.visitas.util.LocaleProvider
 import com.msmobile.visitas.util.Logger
 import com.msmobile.visitas.util.NetworkStatusTracker
 import com.msmobile.visitas.util.PermissionChecker
-import com.msmobile.visitas.util.TimerManager
 import com.msmobile.visitas.util.UserLocationProvider
 import com.msmobile.visitas.util.VisitMapAdapter
 import com.msmobile.visitas.visit.VisitDao
@@ -113,12 +110,6 @@ class ApplicationModule {
 
     @Singleton
     @Provides
-    fun fieldServiceRepository(fieldServiceDao: FieldServiceDao): FieldServiceRepository {
-        return FieldServiceRepository(fieldServiceDao = fieldServiceDao)
-    }
-
-    @Singleton
-    @Provides
     fun geocoder(@ApplicationContext appContext: Context): Geocoder {
         return Geocoder(appContext)
     }
@@ -140,12 +131,6 @@ class ApplicationModule {
             locationProviderClient = locationProviderClient,
             looper = Looper.getMainLooper()
         )
-    }
-
-    @Singleton
-    @Provides
-    fun timer(): TimerManager {
-        return TimerManager()
     }
 
     @Singleton
@@ -297,12 +282,6 @@ class ApplicationModule {
     @Provides
     fun summaryDao(roomDatabase: VisitasDatabase): SummaryDao {
         return roomDatabase.summaryDao()
-    }
-
-    @Singleton
-    @Provides
-    fun fieldServiceDao(roomDatabase: VisitasDatabase): FieldServiceDao {
-        return roomDatabase.fieldServiceDao()
     }
 
     @Singleton

@@ -7,8 +7,6 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.msmobile.visitas.conversation.Conversation
 import com.msmobile.visitas.conversation.ConversationDao
-import com.msmobile.visitas.fieldservice.FieldService
-import com.msmobile.visitas.fieldservice.FieldServiceDao
 import com.msmobile.visitas.householder.Householder
 import com.msmobile.visitas.householder.HouseholderDao
 import com.msmobile.visitas.migration.MIGRATION_1_2
@@ -16,6 +14,7 @@ import com.msmobile.visitas.migration.MIGRATION_2_3
 import com.msmobile.visitas.migration.MIGRATION_3_4
 import com.msmobile.visitas.migration.MIGRATION_4_5
 import com.msmobile.visitas.migration.MIGRATION_5_6
+import com.msmobile.visitas.migration.MIGRATION_6_7
 import com.msmobile.visitas.preference.Preference
 import com.msmobile.visitas.preference.PreferenceDao
 import com.msmobile.visitas.preference.PreferenceTypeConverters
@@ -32,21 +31,19 @@ import java.io.File
     entities = [
         Conversation::class,
         Householder::class,
-        FieldService::class,
         Visit::class,
         Preference::class
     ],
     views = [
         VisitHouseholder::class
     ],
-    version = 6
+    version = 7
 )
 @TypeConverters(RoomUUIDConverter::class, RoomLocalDateTimeConverter::class, PreferenceTypeConverters::class)
 abstract class VisitasDatabase : RoomDatabase() {
     abstract fun conversationDao(): ConversationDao
     abstract fun householderDao(): HouseholderDao
     abstract fun summaryDao(): SummaryDao
-    abstract fun fieldServiceDao(): FieldServiceDao
     abstract fun visitDao(): VisitDao
     abstract fun visitHouseholderDao(): VisitHouseholderDao
     abstract fun preferenceDao(): PreferenceDao
@@ -59,7 +56,8 @@ abstract class VisitasDatabase : RoomDatabase() {
             MIGRATION_2_3,
             MIGRATION_3_4,
             MIGRATION_4_5,
-            MIGRATION_5_6
+            MIGRATION_5_6,
+            MIGRATION_6_7
         )
 
         fun build(context: Context): VisitasDatabase {
