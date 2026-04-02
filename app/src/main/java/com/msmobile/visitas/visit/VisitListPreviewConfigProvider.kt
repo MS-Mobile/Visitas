@@ -72,7 +72,6 @@ private val previewMainActivityUiState = MainActivityViewModel.UiState(
 private val previewSummaryUiState = SummaryViewModel.UiState(
     returnVisitCount = "0",
     bibleStudyCount = "0",
-    totalFieldServiceSeconds = "0",
     selectedMonth = LocalDateTime.now(),
     shouldShowSummaryDetails = false,
     isSummaryMenuExpanded = false,

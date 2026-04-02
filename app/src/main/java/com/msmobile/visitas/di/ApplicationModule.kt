@@ -8,8 +8,6 @@ import com.google.android.gms.location.LocationServices
 import com.msmobile.visitas.VisitasDatabase
 import com.msmobile.visitas.conversation.ConversationDao
 import com.msmobile.visitas.conversation.ConversationRepository
-import com.msmobile.visitas.fieldservice.FieldServiceDao
-import com.msmobile.visitas.fieldservice.FieldServiceRepository
 import com.msmobile.visitas.householder.HouseholderDao
 import com.msmobile.visitas.householder.HouseholderRepository
 import com.msmobile.visitas.preference.PreferenceDao
@@ -109,12 +107,6 @@ class ApplicationModule {
     @Provides
     fun preferenceRepository(preferenceDao: PreferenceDao): PreferenceRepository {
         return PreferenceRepository(preferenceDao = preferenceDao)
-    }
-
-    @Singleton
-    @Provides
-    fun fieldServiceRepository(fieldServiceDao: FieldServiceDao): FieldServiceRepository {
-        return FieldServiceRepository(fieldServiceDao = fieldServiceDao)
     }
 
     @Singleton
@@ -297,12 +289,6 @@ class ApplicationModule {
     @Provides
     fun summaryDao(roomDatabase: VisitasDatabase): SummaryDao {
         return roomDatabase.summaryDao()
-    }
-
-    @Singleton
-    @Provides
-    fun fieldServiceDao(roomDatabase: VisitasDatabase): FieldServiceDao {
-        return roomDatabase.fieldServiceDao()
     }
 
     @Singleton

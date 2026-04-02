@@ -15,7 +15,6 @@ import java.time.LocalDateTime
 import java.time.temporal.TemporalAdjusters.firstDayOfMonth
 import java.time.temporal.TemporalAdjusters.lastDayOfMonth
 import javax.inject.Inject
-import kotlin.time.Duration.Companion.seconds
 
 @HiltViewModel
 class SummaryViewModel
@@ -28,7 +27,6 @@ constructor(
         UiState(
             returnVisitCount = "",
             bibleStudyCount = "",
-            totalFieldServiceSeconds = "",
             selectedMonth = LocalDateTime.now(),
             isSummaryMenuExpanded = false,
             summaryFilterOptions = listOf(),
@@ -122,14 +120,11 @@ constructor(
             val summary = summaryRepository.getSummary(start, end)
             val returnVisitCount = summary.returnVisitCount.toString()
             val bibleStudyCount = summary.bibleStudyCount.toString()
-            val totalFieldServiceSeconds = summary.totalFieldServiceSeconds
-            val totalFieldServiceTime = totalFieldServiceSeconds.seconds.toString()
 
             newState {
                 copy(
                     returnVisitCount = returnVisitCount,
                     bibleStudyCount = bibleStudyCount,
-                    totalFieldServiceSeconds = totalFieldServiceTime,
                 )
             }
         }
@@ -154,11 +149,9 @@ constructor(
     data class UiState(
         val returnVisitCount: String,
         val bibleStudyCount: String,
-        val totalFieldServiceSeconds: String,
         val selectedMonth: LocalDateTime,
         val isSummaryMenuExpanded: Boolean,
         val summaryFilterOptions: List<SummaryMenuOption>,
-        val shouldShowSummaryDetails: Boolean,
-        val shouldShowSummaryHours: Boolean = false
+        val shouldShowSummaryDetails: Boolean
     )
 }
