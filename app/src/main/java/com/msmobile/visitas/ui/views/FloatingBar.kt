@@ -22,11 +22,7 @@ fun FloatingBar(
         modifier = modifier.offset(y = -ScreenOffset),
         expanded = true,
         colors = FloatingToolbarDefaults.standardFloatingToolbarColors(
-            toolbarContainerColor = lerp(
-                MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
-                0.2f
-            )
+            toolbarContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh
         ),
         floatingActionButton = floatingActionButton,
         expandedShadowElevation = FloatingToolbarDefaults.ContainerExpandedElevationWithFab * 3,
