@@ -56,7 +56,8 @@ fun VisitasTheme(
                         surfaceVariant = DarkGrey,
                         background = Color.Black,
                         error = DarkRed,
-                        surfaceContainer = DarkGrey2
+                        surfaceContainer = DarkGrey2,
+                        surfaceContainerHigh = LightGrey
                     )
                 }
             } else {
