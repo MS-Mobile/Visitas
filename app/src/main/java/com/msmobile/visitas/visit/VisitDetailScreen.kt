@@ -205,15 +205,6 @@ private fun VisitDetailScreenContent(
             },
             onFabClickedEvent = {
                 onEvent(VisitDetailViewModel.UiEvent.AddVisitClicked)
-            },
-            extraButtons = {
-                IconButton(
-                    onClick = {
-                        onEvent(VisitDetailViewModel.UiEvent.CopyVisitDataClicked)
-                    }
-                ) {
-                    CopyDataIcon()
-                }
             }
         )
     }
@@ -278,6 +269,16 @@ private fun HouseholderDetail(
         value = householder.name,
         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
         trailingIcon = {
+            if (householder.showCopyData) {
+                IconButton(
+                    onClick = {
+                        onEvent(VisitDetailViewModel.UiEvent.CopyVisitDataClicked)
+                    }
+                ) {
+                    CopyDataIcon()
+                }
+                return@TextField
+            }
             TextFieldClearButton(householder.showClearName, onClear = {
                 onEvent(VisitDetailViewModel.UiEvent.ClearNameClicked)
             })
