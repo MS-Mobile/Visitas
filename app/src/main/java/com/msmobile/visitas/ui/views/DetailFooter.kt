@@ -33,8 +33,7 @@ fun DetailFooter(
     onSaveClickedEvent: () -> Unit,
     onCancelClickedEvent: () -> Unit,
     onDeleteClicked: () -> Unit,
-    onFabClickedEvent: () -> Unit,
-    extraButtons: @Composable () -> Unit = {}
+    onFabClickedEvent: () -> Unit
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         if (showDeleteButton) {
@@ -71,9 +70,6 @@ fun DetailFooter(
                             contentDescription = stringResource(id = R.string.cancel)
                         )
                     }
-
-                    extraButtons()
-
                     IconButton(onClick = onSaveClickedEvent) {
                         Icon(
                             imageVector = Icons.Rounded.DoneOutline,
