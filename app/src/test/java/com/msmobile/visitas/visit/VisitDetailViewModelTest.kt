@@ -294,22 +294,9 @@ class VisitDetailViewModelTest {
 
 
     @Test
-    fun `onEvent with NameFocusChanged gaining focus with empty name shows showCopyData`() {
+    fun `onEvent with NameFocusChanged gaining focus hides showCopyData`() {
         // Arrange
         val viewModel = createViewModel()
-
-        // Act
-        viewModel.onEvent(VisitDetailViewModel.UiEvent.NameFocusChanged(hasFocus = true))
-
-        // Assert
-        assertTrue(viewModel.uiState.value.householder.showCopyData)
-    }
-
-    @Test
-    fun `onEvent with NameFocusChanged gaining focus with non-empty name hides showCopyData`() {
-        // Arrange
-        val viewModel = createViewModel()
-        viewModel.onEvent(VisitDetailViewModel.UiEvent.HouseholderNameChanged("Test Name"))
 
         // Act
         viewModel.onEvent(VisitDetailViewModel.UiEvent.NameFocusChanged(hasFocus = true))
@@ -319,26 +306,26 @@ class VisitDetailViewModelTest {
     }
 
     @Test
-    fun `onEvent with NameFocusChanged losing focus hides showCopyData`() {
+    fun `onEvent with NameFocusChanged losing focus shows showCopyData`() {
         // Arrange
         val viewModel = createViewModel()
         viewModel.onEvent(VisitDetailViewModel.UiEvent.NameFocusChanged(hasFocus = true))
-        assertTrue(viewModel.uiState.value.householder.showCopyData)
+        assertFalse(viewModel.uiState.value.householder.showCopyData)
 
         // Act
         viewModel.onEvent(VisitDetailViewModel.UiEvent.NameFocusChanged(hasFocus = false))
 
         // Assert
-        assertFalse(viewModel.uiState.value.householder.showCopyData)
+        assertTrue(viewModel.uiState.value.householder.showCopyData)
     }
 
     @Test
-    fun `initial state has showCopyData false`() {
+    fun `initial state has showCopyData true`() {
         // Arrange & Act
         val viewModel = createViewModel()
 
         // Assert
-        assertFalse(viewModel.uiState.value.householder.showCopyData)
+        assertTrue(viewModel.uiState.value.householder.showCopyData)
     }
 
     @Test
