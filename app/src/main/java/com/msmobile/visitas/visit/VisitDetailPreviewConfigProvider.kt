@@ -138,6 +138,16 @@ internal class VisitDetailPreviewConfigProvider : PreviewParameterProvider<Visit
             isDarkMode = false
         ),
         VisitDetailPreviewConfig(
+            configName = "Delete Button",
+            mainActivityUiState = previewMainActivityUiState,
+            householderId = UUID.randomUUID(),
+            uiState = previewVisitDetailUiState.copy(
+                visitList = listOf(previewFirstVisitUiState.copy(canBeRemoved = false)),
+                showDeleteButton = true
+            ),
+            isDarkMode = false
+        ),
+        VisitDetailPreviewConfig(
             configName = "Notes Collapsed",
             mainActivityUiState = previewMainActivityUiState,
             householderId = UUID.randomUUID(),
@@ -272,5 +282,6 @@ private val previewVisitDetailUiState = VisitDetailViewModel.UiState(
     visitList = listOf(previewFirstVisitUiState),
     conversationList = listOf(),
     visitTypeList = listOf(),
-    eventState = VisitDetailViewModel.UiEventState.Idle
+    eventState = VisitDetailViewModel.UiEventState.Idle,
+    showDeleteButton = false
 )
