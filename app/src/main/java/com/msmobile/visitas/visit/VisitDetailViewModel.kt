@@ -409,7 +409,7 @@ class VisitDetailViewModel
     private fun nameFocusChanged(hasFocus: Boolean) {
         newState {
             val showClearName = hasFocus && householder.name.isNotEmpty()
-            val showCopyData = hasFocus && !showClearName
+            val showCopyData = !hasFocus
             copy(
                 householder = householder.copy(
                     showClearName = showClearName,
@@ -965,7 +965,7 @@ class VisitDetailViewModel
             isNotesExpanded = false,
             addressState = HouseholderAddressState.LoadLocation,
             showClearNotes = false,
-            showCopyData = false,
+            showCopyData = true,
             isLoadingAddress = false
         )
     }
@@ -1125,7 +1125,7 @@ class VisitDetailViewModel
                 address = address,
                 notes = notes,
                 showClearName = false,
-                showCopyData = false,
+                showCopyData = true,
                 addressState = addressState,
                 showClearNotes = false,
                 isNotesExpanded = false, // Notes collapsed by default; user can expand if needed
