@@ -33,6 +33,7 @@
     <string name="next_month">Next month</string>
     <string name="search">Search</string>
     <string name="clear_text_content_description">Clear text</string>
+    <string name="copy_data_content_description">Copy visit data</string>
     <string name="visits_scheduled_for_today">Today</string>
     <string name="visits_scheduled_for_tomorrow">Tomorrow</string>
     <string name="visits_scheduled_for_next_days">Other days</string>

@@ -32,6 +32,7 @@
     <string name="next_month">Mes siguiente</string>
     <string name="search">Buscar</string>
     <string name="clear_text_content_description">Borrar texto</string>
+    <string name="copy_data_content_description">Copiar datos de la visita</string>
     <string name="visits_scheduled_for_today">Hoy</string>
     <string name="visits_scheduled_for_tomorrow">Mañana</string>
     <string name="visits_scheduled_for_next_days">Otros días</string>

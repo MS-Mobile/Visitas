@@ -294,6 +294,41 @@ class VisitDetailViewModelTest {
 
 
     @Test
+    fun `onEvent with NameFocusChanged gaining focus hides showCopyData`() {
+        // Arrange
+        val viewModel = createViewModel()
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.NameFocusChanged(hasFocus = true))
+
+        // Assert
+        assertFalse(viewModel.uiState.value.householder.showCopyData)
+    }
+
+    @Test
+    fun `onEvent with NameFocusChanged losing focus shows showCopyData`() {
+        // Arrange
+        val viewModel = createViewModel()
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.NameFocusChanged(hasFocus = true))
+        assertFalse(viewModel.uiState.value.householder.showCopyData)
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.NameFocusChanged(hasFocus = false))
+
+        // Assert
+        assertTrue(viewModel.uiState.value.householder.showCopyData)
+    }
+
+    @Test
+    fun `initial state has showCopyData true`() {
+        // Arrange & Act
+        val viewModel = createViewModel()
+
+        // Assert
+        assertTrue(viewModel.uiState.value.householder.showCopyData)
+    }
+
+    @Test
     fun `onEvent with AddVisitClicked adds a new visit`() {
         // Arrange
         val viewModel = createViewModel()
