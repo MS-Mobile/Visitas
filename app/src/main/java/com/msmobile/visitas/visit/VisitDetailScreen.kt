@@ -93,6 +93,7 @@ import com.msmobile.visitas.ui.icons.CopyDataIcon
 import com.msmobile.visitas.ui.theme.PreviewFoldable
 import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
+import com.msmobile.visitas.ui.views.CopyDataButton
 import com.msmobile.visitas.ui.views.DateTimePicker
 import com.msmobile.visitas.ui.views.DetailFooter
 import com.msmobile.visitas.ui.views.LazyColumnWithScrollbar
@@ -269,16 +270,9 @@ private fun HouseholderDetail(
         value = householder.name,
         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
         trailingIcon = {
-            if (householder.showCopyData) {
-                IconButton(
-                    onClick = {
-                        onEvent(VisitDetailViewModel.UiEvent.CopyVisitDataClicked)
-                    }
-                ) {
-                    CopyDataIcon()
-                }
-                return@TextField
-            }
+            CopyDataButton(householder.showCopyData, onClick = {
+                onEvent(VisitDetailViewModel.UiEvent.CopyVisitDataClicked)
+            })
             TextFieldClearButton(householder.showClearName, onClear = {
                 onEvent(VisitDetailViewModel.UiEvent.ClearNameClicked)
             })
