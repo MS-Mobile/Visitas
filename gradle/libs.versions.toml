@@ -32,7 +32,7 @@ retrofit = "3.0.0"
 room = "2.8.4"
 screenshot-validation-api = "0.0.1-alpha14"
 security-crypto = "1.1.0"
-sentry = "8.40.0"
+sentry = "8.41.0"
 sentry-gradle-plugin = "6.6.0"
 
 [libraries]
