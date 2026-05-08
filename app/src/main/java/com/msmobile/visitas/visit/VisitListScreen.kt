@@ -481,26 +481,19 @@ private fun VisitsList(
                 .fillMaxWidth()
                 .padding(top = verticalFieldPadding),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.End
         ) {
-            Text(
-                text = stringResource(id = R.string.visits),
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(horizontal = horizontalFieldPadding)
-            )
-            Row {
-                IconButton(
-                    onClick = {
-                        onVisitListEvent(VisitListViewModel.UiEvent.VisitMapSheetClicked)
-                    }) {
-                    Icon(
-                        imageVector = Icons.Rounded.Map,
-                        contentDescription = stringResource(R.string.show_visits_map_content_description),
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                }
-                VisitListFilterMenu(uiState = visitListUiState, onEvent = onVisitListEvent)
+            IconButton(
+                onClick = {
+                    onVisitListEvent(VisitListViewModel.UiEvent.VisitMapSheetClicked)
+                }) {
+                Icon(
+                    imageVector = Icons.Rounded.Map,
+                    contentDescription = stringResource(R.string.show_visits_map_content_description),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
             }
+            VisitListFilterMenu(uiState = visitListUiState, onEvent = onVisitListEvent)
         }
         val listState = rememberLazyListState()
         LazyColumnWithScrollbar(listState = listState) {
