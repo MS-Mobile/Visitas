@@ -55,6 +55,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -358,15 +359,19 @@ private fun HouseholderDetail(
         }
     )
     HorizontalDivider()
-    PreferredDayDropdown(
-        householder = householder,
-        onEvent = onEvent
-    )
-    HorizontalDivider()
-    PreferredTimeDropdown(
-        householder = householder,
-        onEvent = onEvent
-    )
+    Row {
+        PreferredDayDropdown(
+            modifier = Modifier.weight(.5f),
+            householder = householder,
+            onEvent = onEvent
+        )
+        VerticalDivider()
+        PreferredTimeDropdown(
+            modifier = Modifier.weight(.5f),
+            householder = householder,
+            onEvent = onEvent
+        )
+    }
     HorizontalDivider()
     val textStyle = LocalTextStyle.current
     val textMeasurer = rememberTextMeasurer()
@@ -491,6 +496,7 @@ private fun HouseholderAddressActionButton(
 
 @Composable
 private fun PreferredDayDropdown(
+    modifier: Modifier = Modifier,
     householder: VisitDetailViewModel.HouseholderState,
     onEvent: (VisitDetailViewModel.UiEvent) -> Unit
 ) {
@@ -509,7 +515,7 @@ private fun PreferredDayDropdown(
         VisitPreferredDay.WEEKENDS -> stringResource(R.string.preferred_day_weekends)
     }
 
-    Column {
+    Column(modifier = modifier) {
         TextField(
             modifier = Modifier
                 .fillMaxWidth()
@@ -559,6 +565,7 @@ private fun PreferredDayDropdown(
 
 @Composable
 private fun PreferredTimeDropdown(
+    modifier: Modifier = Modifier,
     householder: VisitDetailViewModel.HouseholderState,
     onEvent: (VisitDetailViewModel.UiEvent) -> Unit
 ) {
@@ -571,7 +578,7 @@ private fun PreferredTimeDropdown(
         VisitPreferredTime.EVENING -> stringResource(R.string.preferred_time_evening)
     }
 
-    Column {
+    Column(modifier = modifier) {
         TextField(
             modifier = Modifier
                 .fillMaxWidth()
