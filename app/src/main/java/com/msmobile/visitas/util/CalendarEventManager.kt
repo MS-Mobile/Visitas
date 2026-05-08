@@ -7,9 +7,9 @@ import android.content.Context
 import android.provider.CalendarContract
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.time.Duration
 import java.time.LocalDateTime
 import java.time.ZoneId
-import java.time.Duration
 
 class CalendarEventManager(
     private val context: Context,
