@@ -63,6 +63,7 @@ fun AppScaffold(
                         floatingActionButton = {
                             if (uiState.scaffoldState.showFAB) {
                                 FloatingAddButton(
+                                    modifier = Modifier.offset(y = -FloatingToolbarDefaults.ScreenOffset),
                                     onFabClickedEvent = {
                                         onEvent(
                                             MainActivityViewModel.UiEvent.FabClicked(
@@ -74,7 +75,10 @@ fun AppScaffold(
                             }
                         },
                         content = {
-                            BottomNavigationTabs(currentDestination, onNavigateToTab)
+                            BottomNavigationTabs(
+                                currentDestination,
+                                onNavigateToTab
+                            )
                         }
                     )
                 }
