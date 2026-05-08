@@ -8,6 +8,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Save
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -16,17 +18,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.msmobile.visitas.R
 import com.msmobile.visitas.ui.theme.PreviewFoldable
 import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun FloatingBar(
     modifier: Modifier = Modifier,
     floatingActionButton: @Composable () -> Unit,
-    buttonsHorizontalArrangement: Arrangement.Horizontal = Arrangement.SpaceEvenly,
+    buttonsHorizontalArrangement: Arrangement.Horizontal = Arrangement.spacedBy(FloatingBarDefaults.ButtonsPadding),
+    buttonsModifier: Modifier = Modifier
+        .padding(horizontal = FloatingBarDefaults.ButtonsPadding),
     content: @Composable RowScope.() -> Unit
 ) {
     Row(
@@ -41,7 +47,7 @@ fun FloatingBar(
             tonalElevation = 6.dp
         ) {
             Row(
-                modifier = Modifier.padding(8.dp),
+                modifier = buttonsModifier.padding(8.dp),
                 horizontalArrangement = buttonsHorizontalArrangement,
                 verticalAlignment = Alignment.CenterVertically,
                 content = content
@@ -49,6 +55,14 @@ fun FloatingBar(
         }
         floatingActionButton()
     }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+private object FloatingBarDefaults {
+    val ButtonsPadding: Dp
+        get() {
+            return FloatingToolbarDefaults.ScreenOffset * 2
+        }
 }
 
 @PreviewPhone

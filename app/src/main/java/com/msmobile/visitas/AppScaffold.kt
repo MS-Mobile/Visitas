@@ -22,6 +22,7 @@ import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.ui.views.BottomNavigationTabs
 import com.msmobile.visitas.ui.views.FloatingAddButton
 import com.msmobile.visitas.ui.views.FloatingBar
+import com.msmobile.visitas.util.borderPadding
 import com.msmobile.visitas.util.verticalFieldPadding
 import com.ramcosta.composedestinations.spec.DestinationSpec
 import com.ramcosta.composedestinations.spec.Direction
@@ -64,7 +65,9 @@ fun AppScaffold(
                         floatingActionButton = {
                             if (uiState.scaffoldState.showFAB) {
                                 FloatingAddButton(
-                                    modifier = Modifier.offset(y = -FloatingToolbarDefaults.ScreenOffset),
+                                    modifier = Modifier
+                                        .offset(y = -FloatingToolbarDefaults.ScreenOffset)
+                                        .padding(end = borderPadding),
                                     onFabClickedEvent = {
                                         onEvent(
                                             MainActivityViewModel.UiEvent.FabClicked(

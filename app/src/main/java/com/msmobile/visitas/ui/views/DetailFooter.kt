@@ -1,5 +1,6 @@
 package com.msmobile.visitas.ui.views
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -33,6 +34,8 @@ fun DetailFooter(
         if (showDeleteButton) {
             FloatingBar(
                 modifier = Modifier.padding(horizontal = borderPadding),
+                buttonsHorizontalArrangement = Arrangement.Center,
+                buttonsModifier = Modifier,
                 floatingActionButton = {},
                 content = {
                     IconButton(onClick = onDeleteClicked) {
@@ -48,22 +51,23 @@ fun DetailFooter(
         FloatingBar(
             modifier = Modifier.weight(weight = .5f, fill = false),
             floatingActionButton = {
-                FloatingAddButton(onFabClickedEvent = onFabClickedEvent)
+                FloatingAddButton(
+                    modifier = Modifier.padding(end = borderPadding),
+                    onFabClickedEvent = onFabClickedEvent
+                )
             },
             content = {
-                Row {
-                    IconButton(onClick = onCancelClickedEvent) {
-                        Icon(
-                            imageVector = Icons.Rounded.ArrowBackIosNew,
-                            contentDescription = stringResource(id = R.string.cancel)
-                        )
-                    }
-                    IconButton(onClick = onSaveClickedEvent) {
-                        Icon(
-                            imageVector = Icons.Rounded.DoneOutline,
-                            contentDescription = stringResource(id = R.string.save)
-                        )
-                    }
+                IconButton(onClick = onCancelClickedEvent) {
+                    Icon(
+                        imageVector = Icons.Rounded.ArrowBackIosNew,
+                        contentDescription = stringResource(id = R.string.cancel)
+                    )
+                }
+                IconButton(onClick = onSaveClickedEvent) {
+                    Icon(
+                        imageVector = Icons.Rounded.DoneOutline,
+                        contentDescription = stringResource(id = R.string.save)
+                    )
                 }
             }
         )
