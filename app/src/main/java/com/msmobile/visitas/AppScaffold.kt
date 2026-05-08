@@ -1,22 +1,25 @@
 package com.msmobile.visitas
 
 import androidx.annotation.VisibleForTesting
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import com.msmobile.visitas.ui.theme.PreviewFoldable
 import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
-import com.msmobile.visitas.ui.views.BottomNavigation
+import com.msmobile.visitas.ui.views.BottomNavigationTabs
 import com.msmobile.visitas.ui.views.FloatingAddButton
 import com.msmobile.visitas.ui.views.FloatingBar
 import com.ramcosta.composedestinations.spec.DestinationSpec
@@ -34,22 +37,29 @@ fun AppScaffold(
     content: @Composable (PaddingValues) -> Unit
 ) {
     val showBottomBar = uiState.scaffoldState.showBottomBar
-    Scaffold { paddingValues ->
-        Surface(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(
-                    top = paddingValues.calculateTopPadding(),
-                    bottom = paddingValues.calculateBottomPadding()
-                ),
-            color = MaterialTheme.colorScheme.background
-        ) {
-            content(paddingValues)
-            StateHandler(uiState, onEvent, onNavigate)
+    Scaffold(
+        content = { paddingValues ->
+            Surface(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(
+                        top = paddingValues.calculateTopPadding(),
+                        bottom = paddingValues.calculateBottomPadding()
+                    ),
+                color = MaterialTheme.colorScheme.background
+            ) {
+                content(paddingValues)
+                StateHandler(uiState, onEvent, onNavigate)
+            }
+        },
+        bottomBar = {
             if (showBottomBar) {
-                Box(modifier = Modifier.fillMaxSize()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
+                ) {
                     FloatingBar(
-                        modifier = Modifier.align(Alignment.BottomCenter),
+                        modifier = Modifier.offset(y = -FloatingToolbarDefaults.ScreenOffset),
                         floatingActionButton = {
                             if (uiState.scaffoldState.showFAB) {
                                 FloatingAddButton(
@@ -70,7 +80,7 @@ fun AppScaffold(
                 }
             }
         }
-    }
+    )
 }
 
 @Composable
