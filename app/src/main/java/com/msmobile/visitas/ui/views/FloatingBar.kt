@@ -26,6 +26,7 @@ import com.msmobile.visitas.ui.theme.VisitasTheme
 fun FloatingBar(
     modifier: Modifier = Modifier,
     floatingActionButton: @Composable () -> Unit,
+    buttonsHorizontalArrangement: Arrangement.Horizontal = Arrangement.SpaceEvenly,
     content: @Composable RowScope.() -> Unit
 ) {
     Row(
@@ -41,7 +42,7 @@ fun FloatingBar(
         ) {
             Row(
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalArrangement = buttonsHorizontalArrangement,
                 verticalAlignment = Alignment.CenterVertically,
                 content = content
             )
