@@ -7,6 +7,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingToolbarDefaults.vibrantFloatingToolbarColors
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import com.msmobile.visitas.ui.theme.PreviewFoldable
 import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
@@ -14,9 +15,11 @@ import com.msmobile.visitas.ui.theme.VisitasTheme
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun FloatingAddButton(
+    modifier: Modifier = Modifier,
     onFabClickedEvent: () -> Unit
 ) {
     FloatingActionButton(
+        modifier = modifier,
         onClick = onFabClickedEvent,
         containerColor = vibrantFloatingToolbarColors().fabContainerColor,
         contentColor = vibrantFloatingToolbarColors().fabContentColor
