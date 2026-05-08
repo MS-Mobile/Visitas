@@ -13,8 +13,8 @@ import com.msmobile.visitas.util.IdProvider
 import com.msmobile.visitas.util.LatLongParser
 import com.msmobile.visitas.util.MainDispatcherRule
 import com.msmobile.visitas.util.MockReferenceHolder
-import com.msmobile.visitas.util.VisitDataFormatter
 import com.msmobile.visitas.util.PermissionChecker
+import com.msmobile.visitas.util.VisitDataFormatter
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertTrue
