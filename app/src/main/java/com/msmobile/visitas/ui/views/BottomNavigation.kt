@@ -26,7 +26,7 @@ import com.ramcosta.composedestinations.spec.DestinationSpec
 import com.ramcosta.composedestinations.spec.DirectionDestinationSpec
 
 @Composable
-fun BottomNavigation(
+fun BottomNavigationTabs(
     currentDestination: DestinationSpec,
     onNavigateToTab: (DirectionDestinationSpec) -> Unit
 ) {
@@ -53,6 +53,18 @@ fun BottomNavigation(
     }
 }
 
+@Composable
+@PreviewPhone
+@PreviewFoldable
+private fun BottomNavigationTabsPreview() {
+    VisitasTheme {
+        BottomNavigationTabs(
+            currentDestination = VisitListScreenDestination,
+            onNavigateToTab = {}
+        )
+    }
+}
+
 private enum class BottomNavigationTab(
     val destination: DirectionDestinationSpec,
     val icon: ImageVector,
@@ -64,16 +76,4 @@ private enum class BottomNavigationTab(
         Icons.AutoMirrored.Default.MenuBook,
         R.string.conversations
     ),
-}
-
-@Composable
-@PreviewPhone
-@PreviewFoldable
-private fun BottomNavigationPreview() {
-    VisitasTheme {
-        BottomNavigation(
-            currentDestination = VisitListScreenDestination,
-            onNavigateToTab = {}
-        )
-    }
 }

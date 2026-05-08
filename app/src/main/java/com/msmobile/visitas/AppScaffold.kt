@@ -64,7 +64,7 @@ fun AppScaffold(
                             }
                         },
                         content = {
-                            BottomNavigation(currentDestination, onNavigateToTab)
+                            BottomNavigationTabs(currentDestination, onNavigateToTab)
                         }
                     )
                 }
