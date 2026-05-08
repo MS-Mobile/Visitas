@@ -124,4 +124,7 @@
     <string name="permission_rationale_icon_content_description">Permissão necessária</string>
     <string name="search_icon_content_description">Pesquisar</string>
     <string name="restore_backup_icon_content_description">Restaurar backup</string>
+    <string name="expand_text_content_description">Expandir texto</string>
+    <string name="collapse_text_content_description">Recolher texto</string>
+    <string name="settings">Configurações</string>
 </resources>

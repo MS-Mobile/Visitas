@@ -8,12 +8,14 @@ import com.msmobile.visitas.OnScaffoldConfigurationChanged
 import com.msmobile.visitas.backup.BackupViewModel
 import com.msmobile.visitas.conversation.ConversationDetailViewModel
 import com.msmobile.visitas.conversation.ConversationListViewModel
+import com.msmobile.visitas.settings.SettingsDetailViewModel
 import com.msmobile.visitas.summary.SummaryViewModel
 import com.msmobile.visitas.util.IntentState
 import com.msmobile.visitas.visit.VisitDetailViewModel
 import com.msmobile.visitas.visit.VisitListViewModel
 import com.ramcosta.composedestinations.generated.destinations.ConversationDetailScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.ConversationListScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.SettingsScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.VisitDetailScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.VisitListScreenDestination
 import com.ramcosta.composedestinations.navigation.DependenciesContainerBuilder
@@ -47,6 +49,10 @@ fun navigationDependencies(
         }
         destination(ConversationDetailScreenDestination) {
             dependency(hiltViewModel<ConversationDetailViewModel>())
+            dependency(scaffoldConfigurationChanged)
+        }
+        destination(SettingsScreenDestination) {
+            dependency(hiltViewModel<SettingsDetailViewModel>())
             dependency(scaffoldConfigurationChanged)
         }
     }
