@@ -5,11 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FloatingToolbarDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -21,6 +17,7 @@ import com.msmobile.visitas.ui.theme.PreviewFoldable
 import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.ui.views.BottomNavigation
+import com.msmobile.visitas.ui.views.FloatingAddButton
 import com.msmobile.visitas.ui.views.FloatingBar
 import com.ramcosta.composedestinations.spec.DestinationSpec
 import com.ramcosta.composedestinations.spec.Direction
@@ -55,17 +52,15 @@ fun AppScaffold(
                         modifier = Modifier.align(Alignment.BottomCenter),
                         floatingActionButton = {
                             if (uiState.scaffoldState.showFAB) {
-                                FloatingToolbarDefaults.VibrantFloatingActionButton(
-                                    onClick = {
+                                FloatingAddButton(
+                                    onFabClickedEvent = {
                                         onEvent(
                                             MainActivityViewModel.UiEvent.FabClicked(
                                                 currentDestination = currentDestination
                                             )
                                         )
                                     }
-                                ) {
-                                    Icon(Icons.Filled.Add, contentDescription = null)
-                                }
+                                )
                             }
                         },
                         content = {
