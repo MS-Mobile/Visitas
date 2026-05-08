@@ -29,11 +29,11 @@ fun FloatingBar(
     content: @Composable RowScope.() -> Unit
 ) {
     Row(
-        modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Surface(
+            modifier = modifier,
             shape = RoundedCornerShape(50),
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
             shadowElevation = 6.dp,
