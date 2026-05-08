@@ -1113,19 +1113,11 @@ internal fun VisitDetailScreenPreview(
     @PreviewParameter(VisitDetailPreviewConfigProvider::class) config: VisitDetailPreviewConfig
 ) {
     VisitasTheme {
-        AppScaffold(
-            uiState = config.mainActivityUiState,
-            currentDestination = VisitDetailScreenDestination,
-            onEvent = {},
-            onNavigateToTab = {},
-            onNavigate = {}
-        ) {
-            VisitDetailScreenContent(
-                navigator = EmptyDestinationsNavigator,
-                householderId = config.householderId,
-                uiState = config.uiState,
-                onEvent = {}
-            )
-        }
+        VisitDetailScreenContent(
+            navigator = EmptyDestinationsNavigator,
+            householderId = config.householderId,
+            uiState = config.uiState,
+            onEvent = {}
+        )
     }
 }

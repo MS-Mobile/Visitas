@@ -43,12 +43,7 @@ fun AppScaffold(
     Scaffold(
         content = { paddingValues ->
             Surface(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(
-                        top = paddingValues.calculateTopPadding() + FloatingToolbarDefaults.ScreenOffset,
-                        bottom = paddingValues.calculateBottomPadding()
-                    ),
+                modifier = Modifier.fillMaxSize(),
                 color = MaterialTheme.colorScheme.background
             ) {
                 content(paddingValues)

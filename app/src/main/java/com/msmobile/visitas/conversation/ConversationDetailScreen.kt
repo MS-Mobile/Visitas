@@ -393,18 +393,10 @@ internal fun ConversationDetailScreenPreview(
     @PreviewParameter(ConversationDetailPreviewConfigProvider::class) config: ConversationDetailPreviewConfig
 ) {
     VisitasTheme {
-        AppScaffold(
-            uiState = config.mainActivityUiState,
-            currentDestination = VisitDetailScreenDestination,
+        ConversationDetailScreenContent(
+            uiState = config.uiState,
             onEvent = {},
-            onNavigateToTab = {},
-            onNavigate = {}
-        ) {
-            ConversationDetailScreenContent(
-                uiState = config.uiState,
-                onEvent = {},
-                onNavigateUp = {}
-            )
-        }
+            onNavigateUp = {}
+        )
     }
 }
