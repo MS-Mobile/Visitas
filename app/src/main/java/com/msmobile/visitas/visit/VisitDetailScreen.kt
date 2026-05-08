@@ -147,6 +147,7 @@ private fun VisitDetailScreenContent(
     uiState: VisitDetailViewModel.UiState,
     onEvent: (VisitDetailViewModel.UiEvent) -> Unit
 ) {
+    val visitsTitle = stringResource(R.string.visits)
     LaunchedEffect(key1 = null) {
         onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId))
     }
@@ -158,7 +159,7 @@ private fun VisitDetailScreenContent(
         topBar = {
             var menuExpanded by remember { mutableStateOf(false) }
             TopAppBar(
-                title = {},
+                title = { Text(text = visitsTitle) },
                 actions = {
                     IconButton(onClick = { menuExpanded = true }) {
                         Icon(

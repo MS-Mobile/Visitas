@@ -117,11 +117,12 @@ private fun ConversationDetailScreenContent(
     onEvent: (ConversationDetailViewModel.UiEvent) -> Unit,
     onNavigateUp: () -> Unit = {}
 ) {
+    val conversationsTitle = stringResource(R.string.conversations)
     Scaffold(
         topBar = {
             var menuExpanded by remember { mutableStateOf(false) }
             TopAppBar(
-                title = {},
+                title = { Text(text = conversationsTitle) },
                 actions = {
                     IconButton(onClick = { menuExpanded = true }) {
                         Icon(
