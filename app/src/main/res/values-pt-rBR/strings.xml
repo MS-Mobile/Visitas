@@ -88,9 +88,9 @@
     <string name="current_location">Localização atual</string>
     <string name="no_visits_to_show_on_the_map">Nenhuma visita para mostrar no mapa</string>
     <string name="error_loading_visits_map">Erro ao carregar o mapa de visitas.</string>
-    <string name="preferred_day">Dia preferido</string>
-    <string name="preferred_time">Horário preferido</string>
-    <string name="preferred_day_any">Qualquer dia</string>
+    <string name="preferred_day">Dia</string>
+    <string name="preferred_time">Horário</string>
+    <string name="preferred_day_any">Qualquer</string>
     <string name="preferred_day_sunday">Domingo</string>
     <string name="preferred_day_monday">Segunda</string>
     <string name="preferred_day_tuesday">Terça</string>
@@ -98,9 +98,9 @@
     <string name="preferred_day_thursday">Quinta</string>
     <string name="preferred_day_friday">Sexta</string>
     <string name="preferred_day_saturday">Sábado</string>
-    <string name="preferred_day_weekdays">Dias de semana</string>
-    <string name="preferred_day_weekends">Fim de semana</string>
-    <string name="preferred_time_any">Qualquer horário</string>
+    <string name="preferred_day_weekdays">Seg–Sex</string>
+    <string name="preferred_day_weekends">Sáb–Dom</string>
+    <string name="preferred_time_any">Qualquer</string>
     <string name="preferred_time_morning">Manhã</string>
     <string name="preferred_time_afternoon">Tarde</string>
     <string name="preferred_time_evening">Noite</string>
@@ -124,4 +124,7 @@
     <string name="permission_rationale_icon_content_description">Permissão necessária</string>
     <string name="search_icon_content_description">Pesquisar</string>
     <string name="restore_backup_icon_content_description">Restaurar backup</string>
+    <string name="expand_text_content_description">Expandir texto</string>
+    <string name="collapse_text_content_description">Recolher texto</string>
+    <string name="settings">Configurações</string>
 </resources>

@@ -63,6 +63,7 @@ fun ConversationListScreen(
 ) {
     val uiState: ConversationListViewModel.UiState by viewModel.uiState.collectAsStateWithLifecycle()
     val onEvent = viewModel::onEvent
+    val conversationsTitle = stringResource(R.string.conversations)
     val onNavigate = { direction: Direction ->
         navigator.navigate(direction)
     }
@@ -71,7 +72,8 @@ fun ConversationListScreen(
         scaffoldConfigurationChanged(
             MainActivityViewModel.ScaffoldState(
                 showBottomBar = true,
-                showFAB = true
+                showFAB = true,
+                title = conversationsTitle
             )
         )
         onEvent(ConversationListViewModel.UiEvent.ViewCreated)
@@ -92,8 +94,9 @@ private fun ConversationListScreenContent(
     onConversationListEvent: (ConversationListViewModel.UiEvent) -> Unit,
     onNavigate: (Direction) -> Unit
 ) {
-
+    val topPadding = paddingValues.calculateTopPadding()
     Column(
+        modifier = Modifier.padding(top = topPadding),
         verticalArrangement = Arrangement.spacedBy(verticalFieldPadding)
     ) {
         SummaryCard(
@@ -174,12 +177,6 @@ private fun ConversationListHeader() {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(
-            text = stringResource(id = R.string.conversations),
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier
-                .padding(horizontal = horizontalFieldPadding)
-        )
         // To match the Visits list height
         Spacer(modifier = Modifier.height(ButtonDefaults.MinHeight))
     }

@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
@@ -27,7 +28,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.ArrowDropDown
+import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.material.icons.rounded.LocationOn
@@ -37,7 +40,9 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -49,6 +54,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -132,7 +139,7 @@ fun VisitDetailScreen(
     VisitDetailScreenContent(navigator, householderId, uiState, onEvent)
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun VisitDetailScreenContent(
     navigator: DestinationsNavigator,
@@ -140,9 +147,7 @@ private fun VisitDetailScreenContent(
     uiState: VisitDetailViewModel.UiState,
     onEvent: (VisitDetailViewModel.UiEvent) -> Unit
 ) {
-    val showDeleteButton = uiState.showDeleteButton
-    val isKeyboardOpen by isKeyboardOpen()
-
+    val visitsTitle = stringResource(R.string.visits)
     LaunchedEffect(key1 = null) {
         onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId))
     }
@@ -150,68 +155,110 @@ private fun VisitDetailScreenContent(
     OnBackPressed {
         onEvent(VisitDetailViewModel.UiEvent.CancelClicked)
     }
-    Scaffold { paddingValues ->
-        val bottomPadding by remember { mutableStateOf(paddingValues.calculateBottomPadding()) }
-        VisitDetail(
-            bottomPadding = bottomPadding,
-            uiState = uiState,
-            onEvent = onEvent
-        )
-        if (uiState.showLocationPermissionDialog) {
-            RequestLocationPermission {
-                onEvent(VisitDetailViewModel.UiEvent.LocationPermissionDialogShown)
-                onEvent(VisitDetailViewModel.UiEvent.LocationPermissionGranted)
+    Scaffold(
+        topBar = {
+            var menuExpanded by remember { mutableStateOf(false) }
+            TopAppBar(
+                title = { Text(text = visitsTitle) },
+                actions = {
+                    IconButton(onClick = { menuExpanded = true }) {
+                        Icon(
+                            imageVector = Icons.Rounded.MoreVert,
+                            contentDescription = stringResource(id = R.string.more_options)
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Rounded.Delete,
+                                    contentDescription = null
+                                )
+                            },
+                            text = { Text(stringResource(id = R.string.delete)) },
+                            onClick = {
+                                menuExpanded = false
+                                onEvent(VisitDetailViewModel.UiEvent.DeleteClicked)
+                            }
+                        )
+                    }
+                }
+            )
+        },
+        content = { paddingValues ->
+            val topPadding = paddingValues.calculateTopPadding()
+            val bottomPadding = paddingValues.calculateBottomPadding()
+            VisitDetail(
+                topPadding = topPadding,
+                bottomPadding = bottomPadding,
+                uiState = uiState,
+                onEvent = onEvent
+            )
+            if (uiState.showLocationPermissionDialog) {
+                RequestLocationPermission {
+                    onEvent(VisitDetailViewModel.UiEvent.LocationPermissionDialogShown)
+                    onEvent(VisitDetailViewModel.UiEvent.LocationPermissionGranted)
+                }
+            }
+            if (uiState.showCalendarPermissionDialog) {
+                RequestCalendarPermission {
+                    onEvent(VisitDetailViewModel.UiEvent.CalendarPermissionDialogShown)
+                    onEvent(VisitDetailViewModel.UiEvent.CalendarPermissionGranted)
+                }
+            }
+            PermissionRationaleSheet(
+                isVisible = uiState.showLocationRationale,
+                message = stringResource(R.string.location_permission_message),
+                icon = Icons.Rounded.LocationOn,
+                onDismiss = {
+                    onEvent(VisitDetailViewModel.UiEvent.LocationRationaleDismissed)
+                },
+                onConfirm = {
+                    onEvent(VisitDetailViewModel.UiEvent.LocationRationaleAccepted)
+                }
+            )
+            PermissionRationaleSheet(
+                isVisible = uiState.showCalendarRationale,
+                message = stringResource(R.string.calendar_permission_message),
+                icon = Icons.Rounded.DateRange,
+                onDismiss = {
+                    onEvent(VisitDetailViewModel.UiEvent.CalendarRationaleDismissed)
+                },
+                onConfirm = {
+                    onEvent(VisitDetailViewModel.UiEvent.CalendarRationaleAccepted)
+                }
+            )
+            StateHandler(uiState = uiState, navigator = navigator, onEvent = onEvent)
+
+        },
+        bottomBar = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                DetailFooter(
+                    modifier = Modifier.offset(y = -FloatingToolbarDefaults.ScreenOffset),
+                    onBackClicked = {
+                        onEvent(VisitDetailViewModel.UiEvent.CancelClicked)
+                    },
+                    onSaveClickedEvent = {
+                        onEvent(VisitDetailViewModel.UiEvent.SaveClicked)
+                    },
+                    onFabClickedEvent = {
+                        onEvent(VisitDetailViewModel.UiEvent.AddVisitClicked)
+                    }
+                )
             }
         }
-        if (uiState.showCalendarPermissionDialog) {
-            RequestCalendarPermission {
-                onEvent(VisitDetailViewModel.UiEvent.CalendarPermissionDialogShown)
-                onEvent(VisitDetailViewModel.UiEvent.CalendarPermissionGranted)
-            }
-        }
-        PermissionRationaleSheet(
-            isVisible = uiState.showLocationRationale,
-            message = stringResource(R.string.location_permission_message),
-            icon = Icons.Rounded.LocationOn,
-            onDismiss = {
-                onEvent(VisitDetailViewModel.UiEvent.LocationRationaleDismissed)
-            },
-            onConfirm = {
-                onEvent(VisitDetailViewModel.UiEvent.LocationRationaleAccepted)
-            }
-        )
-        PermissionRationaleSheet(
-            isVisible = uiState.showCalendarRationale,
-            message = stringResource(R.string.calendar_permission_message),
-            icon = Icons.Rounded.DateRange,
-            onDismiss = {
-                onEvent(VisitDetailViewModel.UiEvent.CalendarRationaleDismissed)
-            },
-            onConfirm = {
-                onEvent(VisitDetailViewModel.UiEvent.CalendarRationaleAccepted)
-            }
-        )
-        StateHandler(uiState = uiState, navigator = navigator, onEvent = onEvent)
-        DetailFooter(
-            showDeleteButton = showDeleteButton,
-            onSaveClickedEvent = {
-                onEvent(VisitDetailViewModel.UiEvent.SaveClicked)
-            },
-            onCancelClickedEvent = {
-                onEvent(VisitDetailViewModel.UiEvent.CancelClicked)
-            },
-            onDeleteClicked = {
-                onEvent(VisitDetailViewModel.UiEvent.DeleteClicked)
-            },
-            onFabClickedEvent = {
-                onEvent(VisitDetailViewModel.UiEvent.AddVisitClicked)
-            }
-        )
-    }
+    )
 }
 
 @Composable
 private fun VisitDetail(
+    topPadding: Dp,
     bottomPadding: Dp,
     uiState: VisitDetailViewModel.UiState,
     onEvent: (VisitDetailViewModel.UiEvent) -> Unit
@@ -222,6 +269,7 @@ private fun VisitDetail(
         LazyColumn(
             state = listState,
             modifier = Modifier
+                .padding(top = topPadding)
                 .padding(horizontal = borderPadding),
             verticalArrangement = Arrangement.spacedBy(verticalFieldPadding)
         ) {
@@ -312,15 +360,19 @@ private fun HouseholderDetail(
         }
     )
     HorizontalDivider()
-    PreferredDayDropdown(
-        householder = householder,
-        onEvent = onEvent
-    )
-    HorizontalDivider()
-    PreferredTimeDropdown(
-        householder = householder,
-        onEvent = onEvent
-    )
+    Row {
+        PreferredDayDropdown(
+            modifier = Modifier.weight(.5f),
+            householder = householder,
+            onEvent = onEvent
+        )
+        VerticalDivider()
+        PreferredTimeDropdown(
+            modifier = Modifier.weight(.5f),
+            householder = householder,
+            onEvent = onEvent
+        )
+    }
     HorizontalDivider()
     val textStyle = LocalTextStyle.current
     val textMeasurer = rememberTextMeasurer()
@@ -445,6 +497,7 @@ private fun HouseholderAddressActionButton(
 
 @Composable
 private fun PreferredDayDropdown(
+    modifier: Modifier = Modifier,
     householder: VisitDetailViewModel.HouseholderState,
     onEvent: (VisitDetailViewModel.UiEvent) -> Unit
 ) {
@@ -463,7 +516,7 @@ private fun PreferredDayDropdown(
         VisitPreferredDay.WEEKENDS -> stringResource(R.string.preferred_day_weekends)
     }
 
-    Column {
+    Column(modifier = modifier) {
         TextField(
             modifier = Modifier
                 .fillMaxWidth()
@@ -513,6 +566,7 @@ private fun PreferredDayDropdown(
 
 @Composable
 private fun PreferredTimeDropdown(
+    modifier: Modifier = Modifier,
     householder: VisitDetailViewModel.HouseholderState,
     onEvent: (VisitDetailViewModel.UiEvent) -> Unit
 ) {
@@ -525,7 +579,7 @@ private fun PreferredTimeDropdown(
         VisitPreferredTime.EVENING -> stringResource(R.string.preferred_time_evening)
     }
 
-    Column {
+    Column(modifier = modifier) {
         TextField(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1067,19 +1121,11 @@ internal fun VisitDetailScreenPreview(
     @PreviewParameter(VisitDetailPreviewConfigProvider::class) config: VisitDetailPreviewConfig
 ) {
     VisitasTheme {
-        AppScaffold(
-            uiState = config.mainActivityUiState,
-            currentDestination = VisitDetailScreenDestination,
-            onEvent = {},
-            onNavigateToTab = {},
-            onNavigate = {}
-        ) {
-            VisitDetailScreenContent(
-                navigator = EmptyDestinationsNavigator,
-                householderId = config.householderId,
-                uiState = config.uiState,
-                onEvent = {}
-            )
-        }
+        VisitDetailScreenContent(
+            navigator = EmptyDestinationsNavigator,
+            householderId = config.householderId,
+            uiState = config.uiState,
+            onEvent = {}
+        )
     }
 }

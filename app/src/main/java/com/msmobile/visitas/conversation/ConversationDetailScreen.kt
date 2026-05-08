@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -16,7 +17,14 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -25,9 +33,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
@@ -57,6 +69,7 @@ import com.msmobile.visitas.util.DetailScreenStyle
 import com.msmobile.visitas.util.borderPadding
 import com.msmobile.visitas.util.floatingBarBottomPadding
 import com.msmobile.visitas.util.verticalFieldPadding
+import com.msmobile.visitas.visit.VisitDetailViewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.VisitDetailScreenDestination
@@ -92,38 +105,81 @@ fun ConversationDetailScreen(
     }
     ConversationDetailScreenContent(
         uiState = uiState,
-        showDeleteButton = firstConversationId != null,
         onEvent = onEvent,
         onNavigateUp = onNavigateUp
     )
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun ConversationDetailScreenContent(
     uiState: ConversationDetailViewModel.UiState,
-    showDeleteButton: Boolean,
     onEvent: (ConversationDetailViewModel.UiEvent) -> Unit,
     onNavigateUp: () -> Unit = {}
 ) {
-    Scaffold { paddingValues ->
-        ConversationItems(
-            bottomPadding = paddingValues.calculateBottomPadding(),
-            uiState = uiState,
-            onEvent = onEvent
-        )
-        StateHandler(uiState, onEvent, onNavigateUp)
-        DetailFooter(
-            showDeleteButton = showDeleteButton,
-            onSaveClickedEvent = { onEvent(ConversationDetailViewModel.UiEvent.SaveClicked) },
-            onCancelClickedEvent = { onEvent(ConversationDetailViewModel.UiEvent.CancelClicked) },
-            onDeleteClicked = { onEvent(ConversationDetailViewModel.UiEvent.DeleteClicked) },
-            onFabClickedEvent = { onEvent(ConversationDetailViewModel.UiEvent.AddClicked) },
-        )
-    }
+    val conversationsTitle = stringResource(R.string.conversations)
+    Scaffold(
+        topBar = {
+            var menuExpanded by remember { mutableStateOf(false) }
+            TopAppBar(
+                title = { Text(text = conversationsTitle) },
+                actions = {
+                    IconButton(onClick = { menuExpanded = true }) {
+                        Icon(
+                            imageVector = Icons.Rounded.MoreVert,
+                            contentDescription = stringResource(id = R.string.more_options)
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Rounded.Delete,
+                                    contentDescription = null
+                                )
+                            },
+                            text = { Text(stringResource(id = R.string.delete)) },
+                            onClick = {
+                                menuExpanded = false
+                                onEvent(ConversationDetailViewModel.UiEvent.DeleteClicked)
+                            }
+                        )
+                    }
+                }
+            )
+        },
+        content = { paddingValues ->
+            val topPadding = paddingValues.calculateTopPadding()
+            val bottomPadding = paddingValues.calculateBottomPadding()
+            ConversationItems(
+                topPadding = topPadding,
+                bottomPadding = bottomPadding,
+                uiState = uiState,
+                onEvent = onEvent
+            )
+            StateHandler(uiState, onEvent, onNavigateUp)
+        }, bottomBar = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                DetailFooter(
+                    modifier = Modifier.offset(y = -FloatingToolbarDefaults.ScreenOffset),
+                    onBackClicked = { onEvent(ConversationDetailViewModel.UiEvent.CancelClicked) },
+                    onSaveClickedEvent = { onEvent(ConversationDetailViewModel.UiEvent.SaveClicked) },
+                    onFabClickedEvent = { onEvent(ConversationDetailViewModel.UiEvent.AddClicked) },
+                )
+            }
+        }
+    )
 }
 
 @Composable
 private fun ConversationItems(
+    topPadding: Dp,
     bottomPadding: Dp,
     uiState: ConversationDetailViewModel.UiState,
     onEvent: (ConversationDetailViewModel.UiEvent) -> Unit,
@@ -133,7 +189,9 @@ private fun ConversationItems(
     LazyColumnWithScrollbar(listState = listState) {
         LazyColumn(
             state = listState,
-            modifier = Modifier.padding(borderPadding),
+            modifier = Modifier
+                .padding(top = topPadding)
+                .padding(horizontal = borderPadding),
             verticalArrangement = Arrangement.spacedBy(verticalFieldPadding)
         ) {
             items(conversationList, key = { it.id }) { conversation ->
@@ -336,19 +394,10 @@ internal fun ConversationDetailScreenPreview(
     @PreviewParameter(ConversationDetailPreviewConfigProvider::class) config: ConversationDetailPreviewConfig
 ) {
     VisitasTheme {
-        AppScaffold(
-            uiState = config.mainActivityUiState,
-            currentDestination = VisitDetailScreenDestination,
+        ConversationDetailScreenContent(
+            uiState = config.uiState,
             onEvent = {},
-            onNavigateToTab = {},
-            onNavigate = {}
-        ) {
-            ConversationDetailScreenContent(
-                uiState = config.uiState,
-                showDeleteButton = config.showDeleteButton,
-                onEvent = {},
-                onNavigateUp = {}
-            )
-        }
+            onNavigateUp = {}
+        )
     }
 }

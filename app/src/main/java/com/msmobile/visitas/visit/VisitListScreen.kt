@@ -26,7 +26,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.rounded.Backup
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Explore
 import androidx.compose.material.icons.rounded.FilterList
@@ -139,6 +138,7 @@ fun VisitListScreen(
         navigator.navigate(direction)
     }
     val isKeyboardOpen by isKeyboardOpen()
+    val visitsTitle = stringResource(R.string.visits)
     val onVisitMapEvent = { visitMapEvent: VisitsMapEvent ->
         visitListViewModel.onEvent(
             VisitListViewModel.UiEvent.VisitMapEventTriggered(
@@ -146,11 +146,13 @@ fun VisitListScreen(
             )
         )
     }
+
     LaunchedEffect(key1 = isKeyboardOpen) {
         scaffoldConfigurationChanged(
             MainActivityViewModel.ScaffoldState(
                 showBottomBar = !isKeyboardOpen,
-                showFAB = true
+                showFAB = true,
+                title = visitsTitle
             )
         )
     }
@@ -186,8 +188,9 @@ private fun VisitListScreenContent(
     onIntentStateHandled: OnIntentStateHandled,
     onVisitMapEvent: (VisitsMapEvent) -> Unit
 ) {
-    intentState
+    val topPadding = paddingValues.calculateTopPadding()
     Column(
+        modifier = Modifier.padding(top = topPadding),
         verticalArrangement = Arrangement.spacedBy(verticalFieldPadding)
     ) {
         SummaryCard(
@@ -195,7 +198,6 @@ private fun VisitListScreenContent(
             visitListUiState = visitListUiState,
             onSummaryEvent = onSummaryEvent,
             onVisitListEvent = onVisitListEvent,
-            onBackupEvent = onBackupSheetEvent,
             onMonthPickerEvent = onMonthPickerEvent,
         )
         VisitsList(
@@ -307,7 +309,6 @@ private fun SummaryCard(
     visitListUiState: VisitListViewModel.UiState,
     onSummaryEvent: (SummaryViewModel.UiEvent) -> Unit,
     onVisitListEvent: (VisitListViewModel.UiEvent) -> Unit,
-    onBackupEvent: (BackupViewModel.UiEvent) -> Unit,
     onMonthPickerEvent: (MonthNavigatorEvent) -> Unit
 ) {
     val searchValue = visitListUiState.filter.search
@@ -324,8 +325,7 @@ private fun SummaryCard(
         shouldShowSummaryDetails = shouldShowSummaryDetails,
         onSummaryEvent = onSummaryEvent,
         onMonthPickerEvent = onMonthPickerEvent,
-        onVisitListEvent = onVisitListEvent,
-        onBackupEvent = onBackupEvent
+        onVisitListEvent = onVisitListEvent
     )
 }
 
@@ -339,8 +339,7 @@ private fun SummaryCardContent(
     shouldShowSummaryDetails: Boolean,
     onSummaryEvent: (event: SummaryViewModel.UiEvent) -> Unit,
     onMonthPickerEvent: (monthNavigatorEvent: MonthNavigatorEvent) -> Unit,
-    onVisitListEvent: (uiEvent: VisitListViewModel.UiEvent) -> Unit,
-    onBackupEvent: (BackupViewModel.UiEvent) -> Unit
+    onVisitListEvent: (uiEvent: VisitListViewModel.UiEvent) -> Unit
 ) {
     val isSearchEmpty = searchValue.isEmpty()
     LaunchedEffect(key1 = null) {
@@ -396,8 +395,6 @@ private fun SummaryCardContent(
             bibleStudyCount = bibleStudyCount,
             currentMonth = currentMonth,
             shouldShowSummaryDetails = shouldShowSummaryDetails,
-            onVisitListEvent = onVisitListEvent,
-            onBackupEvent = onBackupEvent,
             onMonthPickerEvent = onMonthPickerEvent
         )
     }
@@ -410,8 +407,6 @@ fun ColumnScope.SummaryCardDetails(
     bibleStudyCount: String,
     currentMonth: LocalDateTime,
     shouldShowSummaryDetails: Boolean,
-    onVisitListEvent: (VisitListViewModel.UiEvent) -> Unit,
-    onBackupEvent: (BackupViewModel.UiEvent) -> Unit,
     onMonthPickerEvent: (MonthNavigatorEvent) -> Unit
 ) {
     AnimatedVisibility(visible = shouldShowSummaryDetails) {
@@ -433,38 +428,27 @@ fun ColumnScope.SummaryCardDetails(
                 text = stringResource(id = R.string.monthly_summary),
                 style = MaterialTheme.typography.bodyLargeEmphasized
             )
-            Row(modifier = Modifier.fillMaxWidth()) {
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = horizontalFieldPadding.times(2))
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = stringResource(id = R.string.return_visits),
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                        Spacer(modifier = Modifier.padding(4.dp))
-                        Text(text = returnVisitCount, textAlign = TextAlign.End)
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = stringResource(id = R.string.bible_studies)
-                                    + stringResource(id = R.string.colon),
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                        Spacer(modifier = Modifier.padding(4.dp))
-                        Text(text = bibleStudyCount, textAlign = TextAlign.End)
-                    }
-                }
-                IconButton(onClick = {
-                    onBackupEvent(BackupViewModel.UiEvent.BackupCanceled)
-                    onVisitListEvent(VisitListViewModel.UiEvent.BackupButtonClicked)
-                }) {
-                    Icon(
-                        imageVector = Icons.Rounded.Backup,
-                        contentDescription = stringResource(id = R.string.create_backup)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = horizontalFieldPadding.times(2))
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = stringResource(id = R.string.return_visits),
+                        style = MaterialTheme.typography.bodyLarge
                     )
+                    Spacer(modifier = Modifier.padding(4.dp))
+                    Text(text = returnVisitCount, textAlign = TextAlign.End)
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = stringResource(id = R.string.bible_studies)
+                                + stringResource(id = R.string.colon),
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                    Spacer(modifier = Modifier.padding(4.dp))
+                    Text(text = bibleStudyCount, textAlign = TextAlign.End)
                 }
             }
             Spacer(modifier = Modifier.padding(vertical = verticalFieldPadding))
@@ -500,26 +484,19 @@ private fun VisitsList(
                 .fillMaxWidth()
                 .padding(top = verticalFieldPadding),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.End
         ) {
-            Text(
-                text = stringResource(id = R.string.visits),
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(horizontal = horizontalFieldPadding)
-            )
-            Row {
-                IconButton(
-                    onClick = {
-                        onVisitListEvent(VisitListViewModel.UiEvent.VisitMapSheetClicked)
-                    }) {
-                    Icon(
-                        imageVector = Icons.Rounded.Map,
-                        contentDescription = stringResource(R.string.show_visits_map_content_description),
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                }
-                VisitListFilterMenu(uiState = visitListUiState, onEvent = onVisitListEvent)
+            IconButton(
+                onClick = {
+                    onVisitListEvent(VisitListViewModel.UiEvent.VisitMapSheetClicked)
+                }) {
+                Icon(
+                    imageVector = Icons.Rounded.Map,
+                    contentDescription = stringResource(R.string.show_visits_map_content_description),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
             }
+            VisitListFilterMenu(uiState = visitListUiState, onEvent = onVisitListEvent)
         }
         val listState = rememberLazyListState()
         LazyColumnWithScrollbar(listState = listState) {
