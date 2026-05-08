@@ -1,8 +1,9 @@
 [versions]
 activity-compose = "1.13.0"
 agp = "9.2.1"
+android-compile-sdk="36"
 android-min-sdk="26"
-android-sdk="36"
+android-target-sdk="36"
 androidx-test = "1.7.0"
 androidx-test-ext-junit = "1.3.0"
 com-google-devtools-ksp = "2.3.7"
