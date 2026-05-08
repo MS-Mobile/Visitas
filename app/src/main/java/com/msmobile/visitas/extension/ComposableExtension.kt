@@ -45,7 +45,6 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.msmobile.visitas.util.StringResource
-import kotlin.collections.remove
 
 @Composable
 fun stringResource(resource: StringResource): String {

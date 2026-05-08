@@ -23,7 +23,6 @@ import com.msmobile.visitas.ui.theme.PreviewFoldable
 import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.util.borderPadding
-import com.msmobile.visitas.util.horizontalFieldPadding
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable

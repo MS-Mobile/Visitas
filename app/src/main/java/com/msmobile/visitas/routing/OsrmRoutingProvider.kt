@@ -5,7 +5,10 @@ import com.msmobile.visitas.util.Logger
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.math.*
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.math.sqrt
 
 @Singleton
 class OsrmRoutingProvider @Inject constructor(
