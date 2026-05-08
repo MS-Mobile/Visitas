@@ -22,6 +22,7 @@ import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.ui.views.BottomNavigationTabs
 import com.msmobile.visitas.ui.views.FloatingAddButton
 import com.msmobile.visitas.ui.views.FloatingBar
+import com.msmobile.visitas.util.verticalFieldPadding
 import com.ramcosta.composedestinations.spec.DestinationSpec
 import com.ramcosta.composedestinations.spec.Direction
 import com.ramcosta.composedestinations.spec.DirectionDestinationSpec
@@ -43,7 +44,7 @@ fun AppScaffold(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(
-                        top = paddingValues.calculateTopPadding(),
+                        top = paddingValues.calculateTopPadding() + FloatingToolbarDefaults.ScreenOffset,
                         bottom = paddingValues.calculateBottomPadding()
                     ),
                 color = MaterialTheme.colorScheme.background
