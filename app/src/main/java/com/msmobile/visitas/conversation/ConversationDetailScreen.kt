@@ -151,8 +151,8 @@ private fun ConversationDetailScreenContent(
             )
         },
         content = { paddingValues ->
-            val topPadding by remember { mutableStateOf(paddingValues.calculateTopPadding()) }
-            val bottomPadding by remember { mutableStateOf(paddingValues.calculateBottomPadding()) }
+            val topPadding = paddingValues.calculateTopPadding()
+            val bottomPadding = paddingValues.calculateBottomPadding()
             ConversationItems(
                 topPadding = topPadding,
                 bottomPadding = bottomPadding,

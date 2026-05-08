@@ -94,7 +94,7 @@ private fun ConversationListScreenContent(
     onConversationListEvent: (ConversationListViewModel.UiEvent) -> Unit,
     onNavigate: (Direction) -> Unit
 ) {
-    val topPadding by remember { mutableStateOf(paddingValues.calculateTopPadding()) }
+    val topPadding = paddingValues.calculateTopPadding()
     Column(
         modifier = Modifier.padding(top = topPadding),
         verticalArrangement = Arrangement.spacedBy(verticalFieldPadding)

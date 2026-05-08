@@ -188,8 +188,8 @@ private fun VisitDetailScreenContent(
             )
         },
         content = { paddingValues ->
-            val topPadding by remember { mutableStateOf(paddingValues.calculateTopPadding()) }
-            val bottomPadding by remember { mutableStateOf(paddingValues.calculateBottomPadding()) }
+            val topPadding = paddingValues.calculateTopPadding()
+            val bottomPadding = paddingValues.calculateBottomPadding()
             VisitDetail(
                 topPadding = topPadding,
                 bottomPadding = bottomPadding,
