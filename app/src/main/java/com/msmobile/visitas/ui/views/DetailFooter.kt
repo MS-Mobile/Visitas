@@ -24,30 +24,11 @@ import com.msmobile.visitas.util.borderPadding
 @Composable
 fun DetailFooter(
     modifier: Modifier = Modifier,
-    showDeleteButton: Boolean,
     onSaveClickedEvent: () -> Unit,
-    onCancelClickedEvent: () -> Unit,
     onDeleteClicked: () -> Unit,
     onFabClickedEvent: () -> Unit
 ) {
     Row(modifier = modifier) {
-        if (showDeleteButton) {
-            FloatingBar(
-                modifier = Modifier.padding(horizontal = borderPadding),
-                buttonsHorizontalArrangement = Arrangement.Center,
-                buttonsModifier = Modifier,
-                floatingActionButton = {},
-                content = {
-                    IconButton(onClick = onDeleteClicked) {
-                        Icon(
-                            imageVector = Icons.Rounded.Delete,
-                            contentDescription = stringResource(id = R.string.delete)
-                        )
-                    }
-                }
-            )
-        }
-
         FloatingBar(
             modifier = Modifier.weight(weight = .5f, fill = false),
             floatingActionButton = {
@@ -57,10 +38,10 @@ fun DetailFooter(
                 )
             },
             content = {
-                IconButton(onClick = onCancelClickedEvent) {
+                IconButton(onClick = onDeleteClicked) {
                     Icon(
-                        imageVector = Icons.Rounded.ArrowBackIosNew,
-                        contentDescription = stringResource(id = R.string.cancel)
+                        imageVector = Icons.Rounded.Delete,
+                        contentDescription = stringResource(id = R.string.delete)
                     )
                 }
                 IconButton(onClick = onSaveClickedEvent) {
@@ -81,9 +62,7 @@ private fun DetailFooterPreview() {
     VisitasTheme {
         Surface {
             DetailFooter(
-                showDeleteButton = false,
                 onSaveClickedEvent = {},
-                onCancelClickedEvent = {},
                 onDeleteClicked = {},
                 onFabClickedEvent = {}
             )
@@ -97,9 +76,7 @@ private fun DetailFooterPreview() {
 private fun DetailFooterWithDeletePreview() {
     VisitasTheme {
         DetailFooter(
-            showDeleteButton = true,
             onSaveClickedEvent = {},
-            onCancelClickedEvent = {},
             onDeleteClicked = {},
             onFabClickedEvent = {}
         )

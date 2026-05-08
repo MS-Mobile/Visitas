@@ -28,6 +28,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.rounded.ArrowBackIosNew
 import androidx.compose.material.icons.rounded.ArrowDropDown
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DateRange
@@ -142,9 +143,6 @@ private fun VisitDetailScreenContent(
     uiState: VisitDetailViewModel.UiState,
     onEvent: (VisitDetailViewModel.UiEvent) -> Unit
 ) {
-    val showDeleteButton = uiState.showDeleteButton
-    val isKeyboardOpen by isKeyboardOpen()
-
     LaunchedEffect(key1 = null) {
         onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId))
     }
@@ -153,9 +151,21 @@ private fun VisitDetailScreenContent(
         onEvent(VisitDetailViewModel.UiEvent.CancelClicked)
     }
     Scaffold(
+        topBar = {
+            IconButton(onClick = {
+                onEvent(VisitDetailViewModel.UiEvent.CancelClicked)
+            }) {
+                Icon(
+                    imageVector = Icons.Rounded.ArrowBackIosNew,
+                    contentDescription = stringResource(id = R.string.cancel)
+                )
+            }
+        },
         content = { paddingValues ->
+            val topPadding by remember { mutableStateOf(paddingValues.calculateTopPadding()) }
             val bottomPadding by remember { mutableStateOf(paddingValues.calculateBottomPadding()) }
             VisitDetail(
+                topPadding = topPadding,
                 bottomPadding = bottomPadding,
                 uiState = uiState,
                 onEvent = onEvent
@@ -204,12 +214,8 @@ private fun VisitDetailScreenContent(
             ) {
                 DetailFooter(
                     modifier = Modifier.offset(y = -FloatingToolbarDefaults.ScreenOffset),
-                    showDeleteButton = showDeleteButton,
                     onSaveClickedEvent = {
                         onEvent(VisitDetailViewModel.UiEvent.SaveClicked)
-                    },
-                    onCancelClickedEvent = {
-                        onEvent(VisitDetailViewModel.UiEvent.CancelClicked)
                     },
                     onDeleteClicked = {
                         onEvent(VisitDetailViewModel.UiEvent.DeleteClicked)
@@ -225,6 +231,7 @@ private fun VisitDetailScreenContent(
 
 @Composable
 private fun VisitDetail(
+    topPadding: Dp,
     bottomPadding: Dp,
     uiState: VisitDetailViewModel.UiState,
     onEvent: (VisitDetailViewModel.UiEvent) -> Unit
@@ -235,6 +242,7 @@ private fun VisitDetail(
         LazyColumn(
             state = listState,
             modifier = Modifier
+                .padding(top = topPadding)
                 .padding(horizontal = borderPadding),
             verticalArrangement = Arrangement.spacedBy(verticalFieldPadding)
         ) {

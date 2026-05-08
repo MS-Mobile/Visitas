@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.rounded.ArrowBackIosNew
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingToolbarDefaults
@@ -31,6 +32,8 @@ import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
@@ -60,6 +63,7 @@ import com.msmobile.visitas.util.DetailScreenStyle
 import com.msmobile.visitas.util.borderPadding
 import com.msmobile.visitas.util.floatingBarBottomPadding
 import com.msmobile.visitas.util.verticalFieldPadding
+import com.msmobile.visitas.visit.VisitDetailViewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.VisitDetailScreenDestination
@@ -95,7 +99,6 @@ fun ConversationDetailScreen(
     }
     ConversationDetailScreenContent(
         uiState = uiState,
-        showDeleteButton = firstConversationId != null,
         onEvent = onEvent,
         onNavigateUp = onNavigateUp
     )
@@ -105,14 +108,26 @@ fun ConversationDetailScreen(
 @Composable
 private fun ConversationDetailScreenContent(
     uiState: ConversationDetailViewModel.UiState,
-    showDeleteButton: Boolean,
     onEvent: (ConversationDetailViewModel.UiEvent) -> Unit,
     onNavigateUp: () -> Unit = {}
 ) {
     Scaffold(
+        topBar = {
+            IconButton(onClick = {
+                onEvent(ConversationDetailViewModel.UiEvent.CancelClicked)
+            }) {
+                Icon(
+                    imageVector = Icons.Rounded.ArrowBackIosNew,
+                    contentDescription = stringResource(id = R.string.cancel)
+                )
+            }
+        },
         content = { paddingValues ->
+            val topPadding by remember { mutableStateOf(paddingValues.calculateTopPadding()) }
+            val bottomPadding by remember { mutableStateOf(paddingValues.calculateBottomPadding()) }
             ConversationItems(
-                bottomPadding = paddingValues.calculateBottomPadding(),
+                topPadding = topPadding,
+                bottomPadding = bottomPadding,
                 uiState = uiState,
                 onEvent = onEvent
             )
@@ -124,9 +139,7 @@ private fun ConversationDetailScreenContent(
             ) {
                 DetailFooter(
                     modifier = Modifier.offset(y = -FloatingToolbarDefaults.ScreenOffset),
-                    showDeleteButton = showDeleteButton,
                     onSaveClickedEvent = { onEvent(ConversationDetailViewModel.UiEvent.SaveClicked) },
-                    onCancelClickedEvent = { onEvent(ConversationDetailViewModel.UiEvent.CancelClicked) },
                     onDeleteClicked = { onEvent(ConversationDetailViewModel.UiEvent.DeleteClicked) },
                     onFabClickedEvent = { onEvent(ConversationDetailViewModel.UiEvent.AddClicked) },
                 )
@@ -137,6 +150,7 @@ private fun ConversationDetailScreenContent(
 
 @Composable
 private fun ConversationItems(
+    topPadding: Dp,
     bottomPadding: Dp,
     uiState: ConversationDetailViewModel.UiState,
     onEvent: (ConversationDetailViewModel.UiEvent) -> Unit,
@@ -146,7 +160,9 @@ private fun ConversationItems(
     LazyColumnWithScrollbar(listState = listState) {
         LazyColumn(
             state = listState,
-            modifier = Modifier.padding(borderPadding),
+            modifier = Modifier
+                .padding(top = topPadding)
+                .padding(horizontal = borderPadding),
             verticalArrangement = Arrangement.spacedBy(verticalFieldPadding)
         ) {
             items(conversationList, key = { it.id }) { conversation ->
@@ -358,7 +374,6 @@ internal fun ConversationDetailScreenPreview(
         ) {
             ConversationDetailScreenContent(
                 uiState = config.uiState,
-                showDeleteButton = config.showDeleteButton,
                 onEvent = {},
                 onNavigateUp = {}
             )
