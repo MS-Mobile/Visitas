@@ -22,8 +22,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -65,6 +63,7 @@ fun ConversationListScreen(
 ) {
     val uiState: ConversationListViewModel.UiState by viewModel.uiState.collectAsStateWithLifecycle()
     val onEvent = viewModel::onEvent
+    val conversationsTitle = stringResource(R.string.conversations)
     val onNavigate = { direction: Direction ->
         navigator.navigate(direction)
     }
@@ -73,7 +72,8 @@ fun ConversationListScreen(
         scaffoldConfigurationChanged(
             MainActivityViewModel.ScaffoldState(
                 showBottomBar = true,
-                showFAB = true
+                showFAB = true,
+                title = conversationsTitle
             )
         )
         onEvent(ConversationListViewModel.UiEvent.ViewCreated)
@@ -177,12 +177,6 @@ private fun ConversationListHeader() {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(
-            text = stringResource(id = R.string.conversations),
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier
-                .padding(horizontal = horizontalFieldPadding)
-        )
         // To match the Visits list height
         Spacer(modifier = Modifier.height(ButtonDefaults.MinHeight))
     }

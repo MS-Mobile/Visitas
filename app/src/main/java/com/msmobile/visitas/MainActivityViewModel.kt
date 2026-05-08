@@ -100,7 +100,8 @@ class MainActivityViewModel
 
     data class ScaffoldState(
         val showBottomBar: Boolean = false,
-        val showFAB: Boolean = false
+        val showFAB: Boolean = false,
+        val title: String = ""
     )
 
     sealed class UiEventState {

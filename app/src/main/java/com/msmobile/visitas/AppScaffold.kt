@@ -55,7 +55,7 @@ fun AppScaffold(
             if (showBottomBar) {
                 var menuExpanded by remember { mutableStateOf(false) }
                 TopAppBar(
-                    title = { Text(text = stringResource(id = R.string.app_name)) },
+                    title = { Text(text = uiState.scaffoldState.title) },
                     actions = {
                         IconButton(onClick = { menuExpanded = true }) {
                             Icon(

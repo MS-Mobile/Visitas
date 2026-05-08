@@ -138,6 +138,7 @@ fun VisitListScreen(
         navigator.navigate(direction)
     }
     val isKeyboardOpen by isKeyboardOpen()
+    val visitsTitle = stringResource(R.string.visits)
     val onVisitMapEvent = { visitMapEvent: VisitsMapEvent ->
         visitListViewModel.onEvent(
             VisitListViewModel.UiEvent.VisitMapEventTriggered(
@@ -145,11 +146,13 @@ fun VisitListScreen(
             )
         )
     }
+
     LaunchedEffect(key1 = isKeyboardOpen) {
         scaffoldConfigurationChanged(
             MainActivityViewModel.ScaffoldState(
                 showBottomBar = !isKeyboardOpen,
-                showFAB = true
+                showFAB = true,
+                title = visitsTitle
             )
         )
     }
