@@ -28,8 +28,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.rounded.ArrowBackIosNew
+import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.ArrowDropDown
+import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.material.icons.rounded.LocationOn
@@ -39,6 +40,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -52,6 +54,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -135,7 +138,7 @@ fun VisitDetailScreen(
     VisitDetailScreenContent(navigator, householderId, uiState, onEvent)
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun VisitDetailScreenContent(
     navigator: DestinationsNavigator,
@@ -152,14 +155,36 @@ private fun VisitDetailScreenContent(
     }
     Scaffold(
         topBar = {
-            IconButton(onClick = {
-                onEvent(VisitDetailViewModel.UiEvent.CancelClicked)
-            }) {
-                Icon(
-                    imageVector = Icons.Rounded.ArrowBackIosNew,
-                    contentDescription = stringResource(id = R.string.cancel)
-                )
-            }
+            var menuExpanded by remember { mutableStateOf(false) }
+            TopAppBar(
+                title = {},
+                actions = {
+                    IconButton(onClick = { menuExpanded = true }) {
+                        Icon(
+                            imageVector = Icons.Rounded.MoreVert,
+                            contentDescription = stringResource(id = R.string.more_options)
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Rounded.Delete,
+                                    contentDescription = null
+                                )
+                            },
+                            text = { Text(stringResource(id = R.string.delete)) },
+                            onClick = {
+                                menuExpanded = false
+                                onEvent(VisitDetailViewModel.UiEvent.DeleteClicked)
+                            }
+                        )
+                    }
+                }
+            )
         },
         content = { paddingValues ->
             val topPadding by remember { mutableStateOf(paddingValues.calculateTopPadding()) }
@@ -214,11 +239,11 @@ private fun VisitDetailScreenContent(
             ) {
                 DetailFooter(
                     modifier = Modifier.offset(y = -FloatingToolbarDefaults.ScreenOffset),
+                    onBackClicked = {
+                        onEvent(VisitDetailViewModel.UiEvent.CancelClicked)
+                    },
                     onSaveClickedEvent = {
                         onEvent(VisitDetailViewModel.UiEvent.SaveClicked)
-                    },
-                    onDeleteClicked = {
-                        onEvent(VisitDetailViewModel.UiEvent.DeleteClicked)
                     },
                     onFabClickedEvent = {
                         onEvent(VisitDetailViewModel.UiEvent.AddVisitClicked)

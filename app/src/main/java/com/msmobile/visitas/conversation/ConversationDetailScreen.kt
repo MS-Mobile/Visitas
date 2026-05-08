@@ -17,8 +17,12 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.rounded.ArrowBackIosNew
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -29,11 +33,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
@@ -104,7 +110,7 @@ fun ConversationDetailScreen(
     )
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun ConversationDetailScreenContent(
     uiState: ConversationDetailViewModel.UiState,
@@ -113,14 +119,36 @@ private fun ConversationDetailScreenContent(
 ) {
     Scaffold(
         topBar = {
-            IconButton(onClick = {
-                onEvent(ConversationDetailViewModel.UiEvent.CancelClicked)
-            }) {
-                Icon(
-                    imageVector = Icons.Rounded.ArrowBackIosNew,
-                    contentDescription = stringResource(id = R.string.cancel)
-                )
-            }
+            var menuExpanded by remember { mutableStateOf(false) }
+            TopAppBar(
+                title = {},
+                actions = {
+                    IconButton(onClick = { menuExpanded = true }) {
+                        Icon(
+                            imageVector = Icons.Rounded.MoreVert,
+                            contentDescription = stringResource(id = R.string.more_options)
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Rounded.Delete,
+                                    contentDescription = null
+                                )
+                            },
+                            text = { Text(stringResource(id = R.string.delete)) },
+                            onClick = {
+                                menuExpanded = false
+                                onEvent(ConversationDetailViewModel.UiEvent.DeleteClicked)
+                            }
+                        )
+                    }
+                }
+            )
         },
         content = { paddingValues ->
             val topPadding by remember { mutableStateOf(paddingValues.calculateTopPadding()) }
@@ -139,8 +167,8 @@ private fun ConversationDetailScreenContent(
             ) {
                 DetailFooter(
                     modifier = Modifier.offset(y = -FloatingToolbarDefaults.ScreenOffset),
+                    onBackClicked = { onEvent(ConversationDetailViewModel.UiEvent.CancelClicked) },
                     onSaveClickedEvent = { onEvent(ConversationDetailViewModel.UiEvent.SaveClicked) },
-                    onDeleteClicked = { onEvent(ConversationDetailViewModel.UiEvent.DeleteClicked) },
                     onFabClickedEvent = { onEvent(ConversationDetailViewModel.UiEvent.AddClicked) },
                 )
             }

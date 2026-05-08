@@ -1,11 +1,9 @@
 package com.msmobile.visitas.ui.views
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBackIosNew
-import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.DoneOutline
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
@@ -24,8 +22,8 @@ import com.msmobile.visitas.util.borderPadding
 @Composable
 fun DetailFooter(
     modifier: Modifier = Modifier,
+    onBackClicked: () -> Unit,
     onSaveClickedEvent: () -> Unit,
-    onDeleteClicked: () -> Unit,
     onFabClickedEvent: () -> Unit
 ) {
     Row(modifier = modifier) {
@@ -38,10 +36,10 @@ fun DetailFooter(
                 )
             },
             content = {
-                IconButton(onClick = onDeleteClicked) {
+                IconButton(onClick = onBackClicked) {
                     Icon(
-                        imageVector = Icons.Rounded.Delete,
-                        contentDescription = stringResource(id = R.string.delete)
+                        imageVector = Icons.Rounded.ArrowBackIosNew,
+                        contentDescription = stringResource(id = R.string.cancel)
                     )
                 }
                 IconButton(onClick = onSaveClickedEvent) {
@@ -62,8 +60,8 @@ private fun DetailFooterPreview() {
     VisitasTheme {
         Surface {
             DetailFooter(
+                onBackClicked = {},
                 onSaveClickedEvent = {},
-                onDeleteClicked = {},
                 onFabClickedEvent = {}
             )
         }
@@ -76,8 +74,8 @@ private fun DetailFooterPreview() {
 private fun DetailFooterWithDeletePreview() {
     VisitasTheme {
         DetailFooter(
+            onBackClicked = {},
             onSaveClickedEvent = {},
-            onDeleteClicked = {},
             onFabClickedEvent = {}
         )
     }
