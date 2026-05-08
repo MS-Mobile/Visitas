@@ -185,7 +185,7 @@ private fun VisitListScreenContent(
     onIntentStateHandled: OnIntentStateHandled,
     onVisitMapEvent: (VisitsMapEvent) -> Unit
 ) {
-    val topPadding by remember { mutableStateOf(paddingValues.calculateTopPadding()) }
+    val topPadding = paddingValues.calculateTopPadding()
     Column(
         modifier = Modifier.padding(top = topPadding),
         verticalArrangement = Arrangement.spacedBy(verticalFieldPadding)
