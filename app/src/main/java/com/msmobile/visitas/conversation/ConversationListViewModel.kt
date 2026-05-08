@@ -4,14 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.msmobile.visitas.extension.containsAllWords
 import com.msmobile.visitas.util.DispatcherProvider
-import com.msmobile.visitas.visit.VisitListViewModel.VisitDistanceFilter
-import com.msmobile.visitas.visit.VisitListViewModel.VisitHouseholderState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.LocalDate
 import java.util.UUID
 import javax.inject.Inject
 
