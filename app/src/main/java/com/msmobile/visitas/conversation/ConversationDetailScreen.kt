@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -17,6 +18,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -98,6 +101,7 @@ fun ConversationDetailScreen(
     )
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ConversationDetailScreenContent(
     uiState: ConversationDetailViewModel.UiState,
@@ -105,21 +109,30 @@ private fun ConversationDetailScreenContent(
     onEvent: (ConversationDetailViewModel.UiEvent) -> Unit,
     onNavigateUp: () -> Unit = {}
 ) {
-    Scaffold { paddingValues ->
-        ConversationItems(
-            bottomPadding = paddingValues.calculateBottomPadding(),
-            uiState = uiState,
-            onEvent = onEvent
-        )
-        StateHandler(uiState, onEvent, onNavigateUp)
-        DetailFooter(
-            showDeleteButton = showDeleteButton,
-            onSaveClickedEvent = { onEvent(ConversationDetailViewModel.UiEvent.SaveClicked) },
-            onCancelClickedEvent = { onEvent(ConversationDetailViewModel.UiEvent.CancelClicked) },
-            onDeleteClicked = { onEvent(ConversationDetailViewModel.UiEvent.DeleteClicked) },
-            onFabClickedEvent = { onEvent(ConversationDetailViewModel.UiEvent.AddClicked) },
-        )
-    }
+    Scaffold(
+        content = { paddingValues ->
+            ConversationItems(
+                bottomPadding = paddingValues.calculateBottomPadding(),
+                uiState = uiState,
+                onEvent = onEvent
+            )
+            StateHandler(uiState, onEvent, onNavigateUp)
+        }, bottomBar = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                DetailFooter(
+                    modifier = Modifier.offset(y = -FloatingToolbarDefaults.ScreenOffset),
+                    showDeleteButton = showDeleteButton,
+                    onSaveClickedEvent = { onEvent(ConversationDetailViewModel.UiEvent.SaveClicked) },
+                    onCancelClickedEvent = { onEvent(ConversationDetailViewModel.UiEvent.CancelClicked) },
+                    onDeleteClicked = { onEvent(ConversationDetailViewModel.UiEvent.DeleteClicked) },
+                    onFabClickedEvent = { onEvent(ConversationDetailViewModel.UiEvent.AddClicked) },
+                )
+            }
+        }
+    )
 }
 
 @Composable
