@@ -90,8 +90,8 @@
     <string name="current_location">Current location</string>
     <string name="no_visits_to_show_on_the_map">No visits to show on the map</string>
     <string name="error_loading_visits_map">Error loading visits map.</string>
-    <string name="preferred_day">Preferred day</string>
-    <string name="preferred_time">Preferred time</string>
+    <string name="preferred_day">Day</string>
+    <string name="preferred_time">Time</string>
     <string name="preferred_day_any">Any day</string>
     <string name="preferred_day_sunday">Sunday</string>
     <string name="preferred_day_monday">Monday</string>

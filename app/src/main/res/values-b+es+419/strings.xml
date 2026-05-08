@@ -89,8 +89,8 @@
     <string name="current_location">Ubicación actual</string>
     <string name="no_visits_to_show_on_the_map">No hay visitas para mostrar en el mapa</string>
     <string name="error_loading_visits_map">Error al cargar el mapa de visitas.</string>
-    <string name="preferred_day">Día preferido</string>
-    <string name="preferred_time">Horario preferido</string>
+    <string name="preferred_day">Día</string>
+    <string name="preferred_time">Horario</string>
     <string name="preferred_day_any">Cualquier día</string>
     <string name="preferred_day_sunday">Domingo</string>
     <string name="preferred_day_monday">Lunes</string>
