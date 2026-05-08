@@ -4,13 +4,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.rounded.ArrowBackIosNew
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.DoneOutline
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
@@ -34,12 +33,10 @@ fun DetailFooter(
     onDeleteClicked: () -> Unit,
     onFabClickedEvent: () -> Unit
 ) {
-    Box(modifier = modifier.fillMaxSize()) {
+    Row(modifier = modifier) {
         if (showDeleteButton) {
             FloatingBar(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(start = borderPadding),
+                modifier = Modifier.padding(horizontal = borderPadding),
                 floatingActionButton = {},
                 content = {
                     IconButton(onClick = onDeleteClicked) {
@@ -53,13 +50,8 @@ fun DetailFooter(
         }
 
         FloatingBar(
-            modifier = Modifier.align(Alignment.BottomCenter),
             floatingActionButton = {
-                FloatingToolbarDefaults.VibrantFloatingActionButton(
-                    onClick = onFabClickedEvent
-                ) {
-                    Icon(Icons.Filled.Add, contentDescription = null)
-                }
+                FloatingAddButton(onFabClickedEvent = onFabClickedEvent)
             },
             content = {
                 Row {
@@ -103,14 +95,12 @@ private fun DetailFooterPreview() {
 @PreviewFoldable
 private fun DetailFooterWithDeletePreview() {
     VisitasTheme {
-        Surface {
-            DetailFooter(
-                showDeleteButton = true,
-                onSaveClickedEvent = {},
-                onCancelClickedEvent = {},
-                onDeleteClicked = {},
-                onFabClickedEvent = {}
-            )
-        }
+        DetailFooter(
+            showDeleteButton = true,
+            onSaveClickedEvent = {},
+            onCancelClickedEvent = {},
+            onDeleteClicked = {},
+            onFabClickedEvent = {}
+        )
     }
 }
