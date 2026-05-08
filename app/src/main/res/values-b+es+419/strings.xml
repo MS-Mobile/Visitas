@@ -91,7 +91,7 @@
     <string name="error_loading_visits_map">Error al cargar el mapa de visitas.</string>
     <string name="preferred_day">Día</string>
     <string name="preferred_time">Horario</string>
-    <string name="preferred_day_any">Cualquier día</string>
+    <string name="preferred_day_any">Cualquier</string>
     <string name="preferred_day_sunday">Domingo</string>
     <string name="preferred_day_monday">Lunes</string>
     <string name="preferred_day_tuesday">Martes</string>
@@ -99,9 +99,9 @@
     <string name="preferred_day_thursday">Jueves</string>
     <string name="preferred_day_friday">Viernes</string>
     <string name="preferred_day_saturday">Sábado</string>
-    <string name="preferred_day_weekdays">Días de semana</string>
-    <string name="preferred_day_weekends">Fines de semana</string>
-    <string name="preferred_time_any">Cualquier horario</string>
+    <string name="preferred_day_weekdays">Lun–Vie</string>
+    <string name="preferred_day_weekends">Fines de sem.</string>
+    <string name="preferred_time_any">Cualquier</string>
     <string name="preferred_time_morning">Mañana</string>
     <string name="preferred_time_afternoon">Tarde</string>
     <string name="preferred_time_evening">Noche</string>

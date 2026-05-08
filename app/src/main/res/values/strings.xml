@@ -92,7 +92,7 @@
     <string name="error_loading_visits_map">Error loading visits map.</string>
     <string name="preferred_day">Day</string>
     <string name="preferred_time">Time</string>
-    <string name="preferred_day_any">Any day</string>
+    <string name="preferred_day_any">Any</string>
     <string name="preferred_day_sunday">Sunday</string>
     <string name="preferred_day_monday">Monday</string>
     <string name="preferred_day_tuesday">Tuesday</string>
@@ -100,9 +100,9 @@
     <string name="preferred_day_thursday">Thursday</string>
     <string name="preferred_day_friday">Friday</string>
     <string name="preferred_day_saturday">Saturday</string>
-    <string name="preferred_day_weekdays">Weekdays</string>
-    <string name="preferred_day_weekends">Weekends</string>
-    <string name="preferred_time_any">Any time</string>
+    <string name="preferred_day_weekdays">Mon–Fri</string>
+    <string name="preferred_day_weekends">Sat–Sun</string>
+    <string name="preferred_time_any">Any</string>
     <string name="preferred_time_morning">Morning</string>
     <string name="preferred_time_afternoon">Afternoon</string>
     <string name="preferred_time_evening">Evening</string>
