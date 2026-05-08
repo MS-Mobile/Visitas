@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
@@ -38,6 +39,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -150,64 +152,75 @@ private fun VisitDetailScreenContent(
     OnBackPressed {
         onEvent(VisitDetailViewModel.UiEvent.CancelClicked)
     }
-    Scaffold { paddingValues ->
-        val bottomPadding by remember { mutableStateOf(paddingValues.calculateBottomPadding()) }
-        VisitDetail(
-            bottomPadding = bottomPadding,
-            uiState = uiState,
-            onEvent = onEvent
-        )
-        if (uiState.showLocationPermissionDialog) {
-            RequestLocationPermission {
-                onEvent(VisitDetailViewModel.UiEvent.LocationPermissionDialogShown)
-                onEvent(VisitDetailViewModel.UiEvent.LocationPermissionGranted)
+    Scaffold(
+        content = { paddingValues ->
+            val bottomPadding by remember { mutableStateOf(paddingValues.calculateBottomPadding()) }
+            VisitDetail(
+                bottomPadding = bottomPadding,
+                uiState = uiState,
+                onEvent = onEvent
+            )
+            if (uiState.showLocationPermissionDialog) {
+                RequestLocationPermission {
+                    onEvent(VisitDetailViewModel.UiEvent.LocationPermissionDialogShown)
+                    onEvent(VisitDetailViewModel.UiEvent.LocationPermissionGranted)
+                }
+            }
+            if (uiState.showCalendarPermissionDialog) {
+                RequestCalendarPermission {
+                    onEvent(VisitDetailViewModel.UiEvent.CalendarPermissionDialogShown)
+                    onEvent(VisitDetailViewModel.UiEvent.CalendarPermissionGranted)
+                }
+            }
+            PermissionRationaleSheet(
+                isVisible = uiState.showLocationRationale,
+                message = stringResource(R.string.location_permission_message),
+                icon = Icons.Rounded.LocationOn,
+                onDismiss = {
+                    onEvent(VisitDetailViewModel.UiEvent.LocationRationaleDismissed)
+                },
+                onConfirm = {
+                    onEvent(VisitDetailViewModel.UiEvent.LocationRationaleAccepted)
+                }
+            )
+            PermissionRationaleSheet(
+                isVisible = uiState.showCalendarRationale,
+                message = stringResource(R.string.calendar_permission_message),
+                icon = Icons.Rounded.DateRange,
+                onDismiss = {
+                    onEvent(VisitDetailViewModel.UiEvent.CalendarRationaleDismissed)
+                },
+                onConfirm = {
+                    onEvent(VisitDetailViewModel.UiEvent.CalendarRationaleAccepted)
+                }
+            )
+            StateHandler(uiState = uiState, navigator = navigator, onEvent = onEvent)
+
+        },
+        bottomBar = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                DetailFooter(
+                    modifier = Modifier.offset(y = -FloatingToolbarDefaults.ScreenOffset),
+                    showDeleteButton = showDeleteButton,
+                    onSaveClickedEvent = {
+                        onEvent(VisitDetailViewModel.UiEvent.SaveClicked)
+                    },
+                    onCancelClickedEvent = {
+                        onEvent(VisitDetailViewModel.UiEvent.CancelClicked)
+                    },
+                    onDeleteClicked = {
+                        onEvent(VisitDetailViewModel.UiEvent.DeleteClicked)
+                    },
+                    onFabClickedEvent = {
+                        onEvent(VisitDetailViewModel.UiEvent.AddVisitClicked)
+                    }
+                )
             }
         }
-        if (uiState.showCalendarPermissionDialog) {
-            RequestCalendarPermission {
-                onEvent(VisitDetailViewModel.UiEvent.CalendarPermissionDialogShown)
-                onEvent(VisitDetailViewModel.UiEvent.CalendarPermissionGranted)
-            }
-        }
-        PermissionRationaleSheet(
-            isVisible = uiState.showLocationRationale,
-            message = stringResource(R.string.location_permission_message),
-            icon = Icons.Rounded.LocationOn,
-            onDismiss = {
-                onEvent(VisitDetailViewModel.UiEvent.LocationRationaleDismissed)
-            },
-            onConfirm = {
-                onEvent(VisitDetailViewModel.UiEvent.LocationRationaleAccepted)
-            }
-        )
-        PermissionRationaleSheet(
-            isVisible = uiState.showCalendarRationale,
-            message = stringResource(R.string.calendar_permission_message),
-            icon = Icons.Rounded.DateRange,
-            onDismiss = {
-                onEvent(VisitDetailViewModel.UiEvent.CalendarRationaleDismissed)
-            },
-            onConfirm = {
-                onEvent(VisitDetailViewModel.UiEvent.CalendarRationaleAccepted)
-            }
-        )
-        StateHandler(uiState = uiState, navigator = navigator, onEvent = onEvent)
-        DetailFooter(
-            showDeleteButton = showDeleteButton,
-            onSaveClickedEvent = {
-                onEvent(VisitDetailViewModel.UiEvent.SaveClicked)
-            },
-            onCancelClickedEvent = {
-                onEvent(VisitDetailViewModel.UiEvent.CancelClicked)
-            },
-            onDeleteClicked = {
-                onEvent(VisitDetailViewModel.UiEvent.DeleteClicked)
-            },
-            onFabClickedEvent = {
-                onEvent(VisitDetailViewModel.UiEvent.AddVisitClicked)
-            }
-        )
-    }
+    )
 }
 
 @Composable
