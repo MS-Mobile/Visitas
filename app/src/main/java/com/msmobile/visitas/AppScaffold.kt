@@ -19,11 +19,7 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import com.msmobile.visitas.ui.theme.PreviewFoldable
 import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
-import com.msmobile.visitas.ui.views.BottomNavigationTabs
-import com.msmobile.visitas.ui.views.FloatingAddButton
-import com.msmobile.visitas.ui.views.FloatingBar
-import com.msmobile.visitas.util.borderPadding
-import com.msmobile.visitas.util.verticalFieldPadding
+import com.msmobile.visitas.ui.views.BottomNavigation
 import com.ramcosta.composedestinations.spec.DestinationSpec
 import com.ramcosta.composedestinations.spec.Direction
 import com.ramcosta.composedestinations.spec.DirectionDestinationSpec
@@ -57,33 +53,22 @@ fun AppScaffold(
         bottomBar = {
             if (showBottomBar) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .offset(y = -FloatingToolbarDefaults.ScreenOffset),
                     horizontalArrangement = Arrangement.Center
                 ) {
-                    FloatingBar(
-                        modifier = Modifier.offset(y = -FloatingToolbarDefaults.ScreenOffset),
-                        floatingActionButton = {
-                            if (uiState.scaffoldState.showFAB) {
-                                FloatingAddButton(
-                                    modifier = Modifier
-                                        .offset(y = -FloatingToolbarDefaults.ScreenOffset)
-                                        .padding(end = borderPadding),
-                                    onFabClickedEvent = {
-                                        onEvent(
-                                            MainActivityViewModel.UiEvent.FabClicked(
-                                                currentDestination = currentDestination
-                                            )
-                                        )
-                                    }
+                    BottomNavigation(
+                        showFAB = uiState.scaffoldState.showFAB,
+                        onFabClickedEvent = {
+                            onEvent(
+                                MainActivityViewModel.UiEvent.FabClicked(
+                                    currentDestination = currentDestination
                                 )
-                            }
-                        },
-                        content = {
-                            BottomNavigationTabs(
-                                currentDestination,
-                                onNavigateToTab
                             )
-                        }
+                        },
+                        currentDestination = currentDestination,
+                        onNavigateToTab = onNavigateToTab
                     )
                 }
             }
