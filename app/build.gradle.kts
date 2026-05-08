@@ -16,12 +16,12 @@ plugins {
 
 android {
     namespace = "com.msmobile.visitas"
-    compileSdk = libs.versions.android.sdk.get().toInt()
+    compileSdk = libs.versions.android.compile.sdk.get().toInt()
 
     defaultConfig {
         applicationId = "com.msmobile.visitas"
         minSdk = libs.versions.android.min.sdk.get().toInt()
-        targetSdk = libs.versions.android.sdk.get().toInt()
+        targetSdk = libs.versions.android.target.sdk.get().toInt()
         versionCode = requireEnvVariable(EnvKeys.VERSION_CODE).toInt()
         versionName = requireVersionName()
 
