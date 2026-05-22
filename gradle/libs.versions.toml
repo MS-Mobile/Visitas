@@ -34,7 +34,7 @@ room = "2.8.4"
 screenshot-validation-api = "0.0.1-alpha14"
 security-crypto = "1.1.0"
 sentry = "8.42.0"
-sentry-gradle-plugin = "6.7.1"
+sentry-gradle-plugin = "6.8.1"
 
 [libraries]
 activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activity-compose" }
