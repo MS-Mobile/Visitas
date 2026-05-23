@@ -68,6 +68,7 @@ internal data class VisitListPreviewConfig(
 
 private val previewMainActivityUiState = MainActivityViewModel.UiState(
     scaffoldState = MainActivityViewModel.ScaffoldState(
+        showTopBar = true,
         showBottomBar = true,
         showFAB = true,
         title = "Visits"
