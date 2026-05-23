@@ -49,10 +49,11 @@ fun AppScaffold(
     onNavigate: (Direction) -> Unit,
     content: @Composable (PaddingValues) -> Unit
 ) {
+    val showTopBar = uiState.scaffoldState.showTopBar
     val showBottomBar = uiState.scaffoldState.showBottomBar
     Scaffold(
         topBar = {
-            if (showBottomBar) {
+            if (showTopBar) {
                 var menuExpanded by remember { mutableStateOf(false) }
                 TopAppBar(
                     title = { Text(text = uiState.scaffoldState.title) },
