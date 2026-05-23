@@ -150,6 +150,7 @@ fun VisitListScreen(
     LaunchedEffect(key1 = isKeyboardOpen) {
         scaffoldConfigurationChanged(
             MainActivityViewModel.ScaffoldState(
+                showTopBar = true,
                 showBottomBar = !isKeyboardOpen,
                 showFAB = true,
                 title = visitsTitle
