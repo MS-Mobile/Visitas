@@ -13,7 +13,7 @@ internal class AppScaffoldPreviewConfigProvider : PreviewParameterProvider<AppSc
         AppScaffoldPreviewConfig(
             configName = "With Bottom Bar and FAB",
             uiState = MainActivityViewModel.UiState(
-                scaffoldState = MainActivityViewModel.ScaffoldState(
+                scaffoldState = ScaffoldState(
                     showBottomBar = true,
                     showFAB = true
                 ),
@@ -25,7 +25,7 @@ internal class AppScaffoldPreviewConfigProvider : PreviewParameterProvider<AppSc
         AppScaffoldPreviewConfig(
             configName = "Without Bottom Bar and FAB",
             uiState = MainActivityViewModel.UiState(
-                scaffoldState = MainActivityViewModel.ScaffoldState(
+                scaffoldState = ScaffoldState(
                     showBottomBar = false,
                     showFAB = false
                 ),

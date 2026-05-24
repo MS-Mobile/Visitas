@@ -1,8 +1,11 @@
 package com.msmobile.visitas
 
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.navigation.compose.rememberNavController
 import com.msmobile.visitas.di.navigationDependencies
 import com.msmobile.visitas.extension.currentDestinationWithLifecycle
@@ -22,9 +25,6 @@ fun Main(
     val destinationsNavigator = navController.rememberDestinationsNavigator()
     val currentDestination by navController.currentDestinationWithLifecycle()
     val intentState = uiState.intentState
-    val scaffoldConfigurationChanged = { scaffoldState: MainActivityViewModel.ScaffoldState ->
-        onEvent(MainActivityViewModel.UiEvent.ScaffoldConfigurationChanged(scaffoldState))
-    }
     val intentStateHandled = {
         onEvent(MainActivityViewModel.UiEvent.IntentStateHandled)
     }
@@ -54,7 +54,6 @@ fun Main(
                     dependenciesContainerBuilder = navigationDependencies(
                         intentState = intentState,
                         intentStateHandled = intentStateHandled,
-                        scaffoldConfigurationChanged = scaffoldConfigurationChanged,
                         paddingValues = paddingValues
                     )
                 )

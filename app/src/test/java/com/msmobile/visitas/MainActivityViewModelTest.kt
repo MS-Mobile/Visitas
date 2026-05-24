@@ -35,7 +35,7 @@ class MainActivityViewModelTest {
     fun `onEvent with ScaffoldConfigurationChanged updates scaffoldState`() {
         // Arrange
         val viewModel = createViewModel()
-        val newScaffoldState = MainActivityViewModel.ScaffoldState(
+        val newScaffoldState = ScaffoldState(
             showBottomBar = true,
             showFAB = true
         )

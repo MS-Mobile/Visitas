@@ -179,7 +179,7 @@ internal data class VisitDetailPreviewConfig(
 )
 
 private val previewMainActivityUiState = MainActivityViewModel.UiState(
-    scaffoldState = MainActivityViewModel.ScaffoldState(
+    scaffoldState = ScaffoldState(
         showBottomBar = false,
         showFAB = false
     ),

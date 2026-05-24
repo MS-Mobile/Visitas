@@ -28,12 +28,12 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.ArrowDropDown
-import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DateRange
+import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.LocationOn
+import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.TravelExplore
 import androidx.compose.material3.AlertDialog
@@ -57,6 +57,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -80,16 +81,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.msmobile.visitas.AppScaffold
-import com.msmobile.visitas.MainActivityViewModel
-import com.msmobile.visitas.OnScaffoldConfigurationChanged
 import com.msmobile.visitas.R
 import com.msmobile.visitas.extension.EditableTextFieldColors
 import com.msmobile.visitas.extension.OnBackPressed
 import com.msmobile.visitas.extension.ReadOnlyTextFieldColors
 import com.msmobile.visitas.extension.RequestCalendarPermission
 import com.msmobile.visitas.extension.RequestLocationPermission
-import com.msmobile.visitas.extension.isKeyboardOpen
 import com.msmobile.visitas.extension.removeBottomCorner
 import com.msmobile.visitas.extension.removeTopCorner
 import com.msmobile.visitas.extension.sharp
@@ -107,13 +104,13 @@ import com.msmobile.visitas.ui.views.PermissionRationaleSheet
 import com.msmobile.visitas.ui.views.TextFieldClearButton
 import com.msmobile.visitas.ui.views.TextFieldExpandButton
 import com.msmobile.visitas.util.DetailScreenStyle
+import com.msmobile.visitas.util.LocalTopBarActions
 import com.msmobile.visitas.util.borderPadding
 import com.msmobile.visitas.util.floatingBarBottomPadding
 import com.msmobile.visitas.util.horizontalFieldPadding
 import com.msmobile.visitas.util.verticalFieldPadding
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.generated.destinations.VisitDetailScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.navigation.EmptyDestinationsNavigator
 import java.util.UUID
@@ -123,19 +120,10 @@ import java.util.UUID
 fun VisitDetailScreen(
     navigator: DestinationsNavigator,
     viewModel: VisitDetailViewModel,
-    householderId: UUID? = null,
-    scaffoldConfigurationChanged: OnScaffoldConfigurationChanged
+    householderId: UUID? = null
 ) {
     val uiState: VisitDetailViewModel.UiState by viewModel.uiState.collectAsStateWithLifecycle()
     val onEvent = viewModel::onEvent
-    LaunchedEffect(key1 = null) {
-        scaffoldConfigurationChanged(
-            MainActivityViewModel.ScaffoldState(
-                showBottomBar = false,
-                showFAB = false
-            )
-        )
-    }
     VisitDetailScreenContent(navigator, householderId, uiState, onEvent)
 }
 
@@ -148,10 +136,14 @@ private fun VisitDetailScreenContent(
     onEvent: (VisitDetailViewModel.UiEvent) -> Unit
 ) {
     val visitsTitle = stringResource(R.string.visits)
-    LaunchedEffect(key1 = null) {
+    val topBarActions = LocalTopBarActions.current
+    DisposableEffect(Unit) {
+        topBarActions.value = {
+            // No custom top bar actions
+        }
         onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId))
+        onDispose { topBarActions.value = {} }
     }
-
     OnBackPressed {
         onEvent(VisitDetailViewModel.UiEvent.CancelClicked)
     }

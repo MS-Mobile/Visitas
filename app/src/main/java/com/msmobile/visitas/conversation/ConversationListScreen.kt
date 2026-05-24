@@ -5,22 +5,19 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,8 +28,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.AppScaffold
-import com.msmobile.visitas.MainActivityViewModel
-import com.msmobile.visitas.OnScaffoldConfigurationChanged
 import com.msmobile.visitas.R
 import com.msmobile.visitas.extension.OnBackPressed
 import com.msmobile.visitas.ui.theme.PreviewFoldable
@@ -41,6 +36,7 @@ import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.ui.views.LazyColumnWithScrollbar
 import com.msmobile.visitas.ui.views.SimpleSearchBar
 import com.msmobile.visitas.util.ListScreenStyle
+import com.msmobile.visitas.util.LocalTopBarActions
 import com.msmobile.visitas.util.borderPadding
 import com.msmobile.visitas.util.cardInnerPadding
 import com.msmobile.visitas.util.floatingBarBottomPadding
@@ -58,8 +54,7 @@ import com.ramcosta.composedestinations.spec.Direction
 fun ConversationListScreen(
     navigator: DestinationsNavigator,
     paddingValues: PaddingValues,
-    viewModel: ConversationListViewModel,
-    scaffoldConfigurationChanged: OnScaffoldConfigurationChanged
+    viewModel: ConversationListViewModel
 ) {
     val uiState: ConversationListViewModel.UiState by viewModel.uiState.collectAsStateWithLifecycle()
     val onEvent = viewModel::onEvent
@@ -67,22 +62,12 @@ fun ConversationListScreen(
     val onNavigate = { direction: Direction ->
         navigator.navigate(direction)
     }
-
-    LaunchedEffect(key1 = null) {
-        scaffoldConfigurationChanged(
-            MainActivityViewModel.ScaffoldState(
-                showBottomBar = true,
-                showFAB = true,
-                title = conversationsTitle
-            )
-        )
-        onEvent(ConversationListViewModel.UiEvent.ViewCreated)
-    }
     OnBackPressed { }
     ConversationListScreenContent(
         paddingValues = paddingValues,
         uiState = uiState,
         onConversationListEvent = onEvent,
+        onEvent = onEvent,
         onNavigate = onNavigate
     )
 }
@@ -92,9 +77,18 @@ private fun ConversationListScreenContent(
     paddingValues: PaddingValues,
     uiState: ConversationListViewModel.UiState,
     onConversationListEvent: (ConversationListViewModel.UiEvent) -> Unit,
+    onEvent: (ConversationListViewModel.UiEvent) -> Unit,
     onNavigate: (Direction) -> Unit
 ) {
     val topPadding = paddingValues.calculateTopPadding()
+    val topBarActions = LocalTopBarActions.current
+    DisposableEffect(Unit) {
+        topBarActions.value = {
+            // No custom top bar actions
+        }
+        onEvent(ConversationListViewModel.UiEvent.ViewCreated)
+        onDispose { topBarActions.value = {} }
+    }
     Column(
         modifier = Modifier.padding(top = topPadding),
         verticalArrangement = Arrangement.spacedBy(verticalFieldPadding)
@@ -163,22 +157,7 @@ private fun ConversationList(
     val conversationList = uiState.conversations.filter { !it.hide }
     val listBottomPadding = paddingValues.calculateListBottomPadding()
     Column(modifier = modifier) {
-        ConversationListHeader()
         ConversationListItems(conversationList, listBottomPadding, onNavigate)
-    }
-}
-
-@Composable
-private fun ConversationListHeader() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = verticalFieldPadding),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        // To match the Visits list height
-        Spacer(modifier = Modifier.height(ButtonDefaults.MinHeight))
     }
 }
 
@@ -248,6 +227,7 @@ internal fun ConversationListScreenPreview(
                 paddingValues = paddingValues,
                 uiState = config.conversationUiState,
                 onConversationListEvent = {},
+                onEvent = {},
                 onNavigate = {}
             )
         }

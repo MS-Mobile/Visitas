@@ -52,6 +52,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -70,9 +71,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.AppScaffold
-import com.msmobile.visitas.MainActivityViewModel
 import com.msmobile.visitas.OnIntentStateHandled
-import com.msmobile.visitas.OnScaffoldConfigurationChanged
 import com.msmobile.visitas.R
 import com.msmobile.visitas.backup.BackupSheet
 import com.msmobile.visitas.backup.BackupViewModel
@@ -96,6 +95,7 @@ import com.msmobile.visitas.ui.views.SimpleSearchBar
 import com.msmobile.visitas.util.AddressProvider
 import com.msmobile.visitas.util.IntentState
 import com.msmobile.visitas.util.ListScreenStyle
+import com.msmobile.visitas.util.LocalTopBarActions
 import com.msmobile.visitas.util.borderPadding
 import com.msmobile.visitas.util.cardInnerPadding
 import com.msmobile.visitas.util.floatingBarBottomPadding
@@ -124,7 +124,6 @@ fun VisitListScreen(
     visitListViewModel: VisitListViewModel,
     backupViewModel: BackupViewModel,
     intentState: IntentState,
-    scaffoldConfigurationChanged: OnScaffoldConfigurationChanged,
     onIntentStateHandled: OnIntentStateHandled,
 ) {
     val summaryUiState by summaryViewModel.uiState.collectAsStateWithLifecycle()
@@ -146,16 +145,13 @@ fun VisitListScreen(
             )
         )
     }
-
-    LaunchedEffect(key1 = isKeyboardOpen) {
-        scaffoldConfigurationChanged(
-            MainActivityViewModel.ScaffoldState(
-                showTopBar = true,
-                showBottomBar = !isKeyboardOpen,
-                showFAB = true,
-                title = visitsTitle
-            )
-        )
+    val topBarActions = LocalTopBarActions.current
+    DisposableEffect(Unit) {
+        topBarActions.value = {
+            VisitMapButton(onVisitListEvent)
+            VisitListFilterMenu(uiState = visitListUiState, onEvent = onVisitListEvent)
+        }
+        onDispose { topBarActions.value = {} }
     }
     OnBackPressed { }
     VisitListScreenContent(
@@ -480,25 +476,6 @@ private fun VisitsList(
         onVisitListEvent(VisitListViewModel.UiEvent.ViewCreated)
     }
     Column(modifier = modifier) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = verticalFieldPadding),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.End
-        ) {
-            IconButton(
-                onClick = {
-                    onVisitListEvent(VisitListViewModel.UiEvent.VisitMapSheetClicked)
-                }) {
-                Icon(
-                    imageVector = Icons.Rounded.Map,
-                    contentDescription = stringResource(R.string.show_visits_map_content_description),
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-            }
-            VisitListFilterMenu(uiState = visitListUiState, onEvent = onVisitListEvent)
-        }
         val listState = rememberLazyListState()
         LazyColumnWithScrollbar(listState = listState) {
             LazyColumn(
@@ -583,6 +560,20 @@ fun VisitCardSkeleton() {
         onEvent = {},
         onNavigate = {}
     )
+}
+
+@Composable
+private fun VisitMapButton(onVisitListEvent: (VisitListViewModel.UiEvent) -> Unit) {
+    IconButton(
+        onClick = {
+            onVisitListEvent(VisitListViewModel.UiEvent.VisitMapSheetClicked)
+        }) {
+        Icon(
+            imageVector = Icons.Rounded.Map,
+            contentDescription = stringResource(R.string.show_visits_map_content_description),
+            tint = MaterialTheme.colorScheme.primary,
+        )
+    }
 }
 
 @Composable

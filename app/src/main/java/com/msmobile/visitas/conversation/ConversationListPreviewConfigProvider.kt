@@ -43,7 +43,7 @@ internal data class PreviewConfig(
 )
 
 private val previewMainActivityUiState = MainActivityViewModel.UiState(
-    scaffoldState = MainActivityViewModel.ScaffoldState(
+    scaffoldState = ScaffoldState(
         showTopBar = true,
         showBottomBar = true,
         showFAB = true,

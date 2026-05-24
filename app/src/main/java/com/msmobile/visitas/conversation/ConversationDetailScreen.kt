@@ -35,7 +35,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,9 +48,6 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.msmobile.visitas.AppScaffold
-import com.msmobile.visitas.MainActivityViewModel
-import com.msmobile.visitas.OnScaffoldConfigurationChanged
 import com.msmobile.visitas.R
 import com.msmobile.visitas.conversation.ConversationDetailViewModel.ConversationState
 import com.msmobile.visitas.extension.EditableTextFieldColors
@@ -66,13 +63,12 @@ import com.msmobile.visitas.ui.views.DetailFooter
 import com.msmobile.visitas.ui.views.LazyColumnWithScrollbar
 import com.msmobile.visitas.ui.views.TextFieldClearButton
 import com.msmobile.visitas.util.DetailScreenStyle
+import com.msmobile.visitas.util.LocalTopBarActions
 import com.msmobile.visitas.util.borderPadding
 import com.msmobile.visitas.util.floatingBarBottomPadding
 import com.msmobile.visitas.util.verticalFieldPadding
-import com.msmobile.visitas.visit.VisitDetailViewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.generated.destinations.VisitDetailScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import java.util.UUID
 
@@ -81,8 +77,7 @@ import java.util.UUID
 fun ConversationDetailScreen(
     navigator: DestinationsNavigator,
     viewModel: ConversationDetailViewModel,
-    firstConversationId: UUID? = null,
-    scaffoldConfigurationChanged: OnScaffoldConfigurationChanged
+    firstConversationId: UUID? = null
 ) {
     val uiState: ConversationDetailViewModel.UiState by viewModel.uiState.collectAsStateWithLifecycle()
     val onEvent = viewModel::onEvent
@@ -90,20 +85,11 @@ fun ConversationDetailScreen(
         navigator.navigateUp()
         Unit
     }
-
-    LaunchedEffect(key1 = null) {
-        scaffoldConfigurationChanged(
-            MainActivityViewModel.ScaffoldState(
-                showBottomBar = false,
-                showFAB = false
-            )
-        )
-        onEvent(ConversationDetailViewModel.UiEvent.ViewCreated(firstConversationId))
-    }
     OnBackPressed {
         onEvent(ConversationDetailViewModel.UiEvent.CancelClicked)
     }
     ConversationDetailScreenContent(
+        firstConversationId = firstConversationId,
         uiState = uiState,
         onEvent = onEvent,
         onNavigateUp = onNavigateUp
@@ -113,11 +99,20 @@ fun ConversationDetailScreen(
 @OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun ConversationDetailScreenContent(
+    firstConversationId: UUID?,
     uiState: ConversationDetailViewModel.UiState,
     onEvent: (ConversationDetailViewModel.UiEvent) -> Unit,
     onNavigateUp: () -> Unit = {}
 ) {
     val conversationsTitle = stringResource(R.string.conversations)
+    val topBarActions = LocalTopBarActions.current
+    DisposableEffect(Unit) {
+        topBarActions.value = {
+            // No custom top bar actions
+        }
+        onEvent(ConversationDetailViewModel.UiEvent.ViewCreated(firstConversationId))
+        onDispose { topBarActions.value = {} }
+    }
     Scaffold(
         topBar = {
             var menuExpanded by remember { mutableStateOf(false) }
@@ -395,6 +390,7 @@ internal fun ConversationDetailScreenPreview(
 ) {
     VisitasTheme {
         ConversationDetailScreenContent(
+            firstConversationId = null,
             uiState = config.uiState,
             onEvent = {},
             onNavigateUp = {}

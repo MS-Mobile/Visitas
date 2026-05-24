@@ -49,7 +49,7 @@ fun SettingsScreen(
 
     LaunchedEffect(key1 = null) {
         scaffoldConfigurationChanged(
-            MainActivityViewModel.ScaffoldState(
+            ScaffoldState(
                 showBottomBar = false,
                 showFAB = false
             )
