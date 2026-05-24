@@ -21,7 +21,6 @@ class MainActivityViewModel
     private val _uiState = MutableStateFlow(
         UiState(
             intentState = IntentState.None,
-            scaffoldState = ScaffoldState(),
             eventState = UiEventState.Idle
         )
     )
@@ -68,12 +67,6 @@ class MainActivityViewModel
         }
     }
 
-    private fun scaffoldConfigurationChanged(scaffoldState: ScaffoldState) {
-        newState {
-            copy(scaffoldState = scaffoldState)
-        }
-    }
-
     private fun newState(value: UiState.() -> UiState) {
         _uiState.update(value)
     }
@@ -105,7 +98,6 @@ class MainActivityViewModel
 
     data class UiState(
         val intentState: IntentState,
-        val scaffoldState: ScaffoldState,
         val eventState: UiEventState
     )
 }

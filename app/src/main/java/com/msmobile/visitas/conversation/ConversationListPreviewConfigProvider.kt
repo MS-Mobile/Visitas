@@ -43,12 +43,6 @@ internal data class PreviewConfig(
 )
 
 private val previewMainActivityUiState = MainActivityViewModel.UiState(
-    scaffoldState = ScaffoldState(
-        showTopBar = true,
-        showBottomBar = true,
-        showFAB = true,
-        title = "Conversations"
-    ),
     eventState = MainActivityViewModel.UiEventState.Idle,
     intentState = IntentState.None
 )

@@ -53,14 +53,13 @@ fun AppScaffold(
     content: @Composable (PaddingValues) -> Unit
 ) {
     val topBarActionsState = remember { mutableStateOf<@Composable RowScope.() -> Unit>({}) }
-    val showTopBar = uiState.scaffoldState.showTopBar
-    val showBottomBar = uiState.scaffoldState.showBottomBar
+    val scaffoldState = remember { mutableStateOf(ScaffoldState()) }
     CompositionLocalProvider(LocalTopBarActions provides topBarActionsState) {
         Scaffold(
             topBar = {
-                if (showTopBar) {
+                if (scaffoldState.value.showTopBar) {
                     TopAppBar(
-                        title = { Text(text = uiState.scaffoldState.title) },
+                        title = { Text(text = scaffoldState.value.title) },
                         actions = {
                             topBarActionsState.value(this)
                         }
@@ -77,7 +76,7 @@ fun AppScaffold(
                 }
             },
             bottomBar = {
-                if (showBottomBar) {
+                if (scaffoldState.value.showBottomBar) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -85,7 +84,7 @@ fun AppScaffold(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         BottomNavigation(
-                            showFAB = uiState.scaffoldState.showFAB,
+                            showFAB = scaffoldState.value.showFAB,
                             onFabClickedEvent = {
                                 onEvent(
                                     MainActivityViewModel.UiEvent.FabClicked(

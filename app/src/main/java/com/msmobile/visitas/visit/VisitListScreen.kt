@@ -145,14 +145,6 @@ fun VisitListScreen(
             )
         )
     }
-    val topBarActions = LocalTopBarActions.current
-    DisposableEffect(Unit) {
-        topBarActions.value = {
-            VisitMapButton(onVisitListEvent)
-            VisitListFilterMenu(uiState = visitListUiState, onEvent = onVisitListEvent)
-        }
-        onDispose { topBarActions.value = {} }
-    }
     OnBackPressed { }
     VisitListScreenContent(
         paddingValues = paddingValues,
@@ -186,6 +178,14 @@ private fun VisitListScreenContent(
     onVisitMapEvent: (VisitsMapEvent) -> Unit
 ) {
     val topPadding = paddingValues.calculateTopPadding()
+    val topBarActions = LocalTopBarActions.current
+    DisposableEffect(Unit) {
+        topBarActions.value = {
+            VisitMapButton(onVisitListEvent)
+            VisitListFilterMenu(uiState = visitListUiState, onEvent = onVisitListEvent)
+        }
+        onDispose { topBarActions.value = {} }
+    }
     Column(
         modifier = Modifier.padding(top = topPadding),
         verticalArrangement = Arrangement.spacedBy(verticalFieldPadding)
