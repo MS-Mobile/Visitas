@@ -96,6 +96,7 @@ import com.msmobile.visitas.util.AddressProvider
 import com.msmobile.visitas.util.IntentState
 import com.msmobile.visitas.util.ListScreenStyle
 import com.msmobile.visitas.ScaffoldState
+import com.msmobile.visitas.ui.views.MainMenu
 import com.msmobile.visitas.util.LocalAppScaffoldState
 import com.msmobile.visitas.util.LocalTopBarActions
 import com.msmobile.visitas.util.borderPadding
@@ -188,6 +189,7 @@ private fun VisitListScreenContent(
         topBarActions.value = {
             VisitMapButton(onVisitListEvent)
             VisitListFilterMenu(uiState = visitListUiState, onEvent = onVisitListEvent)
+            MainMenu(onNavigate = onNavigate)
         }
         onDispose {
             appScaffoldState.value = ScaffoldState()
@@ -998,6 +1000,7 @@ internal fun VisitListScreenPreview(
             initialTopBarActions = {
                 VisitMapButton(onVisitListEvent = {})
                 VisitListFilterMenu(uiState = config.visitListUiState, onEvent = {})
+                MainMenu(onNavigate = {})
             }
         ) { paddingValues ->
             VisitListScreenContent(
