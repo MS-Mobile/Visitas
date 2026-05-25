@@ -29,14 +29,15 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.AppScaffold
 import com.msmobile.visitas.R
+import com.msmobile.visitas.ScaffoldState
 import com.msmobile.visitas.extension.OnBackPressed
 import com.msmobile.visitas.ui.theme.PreviewFoldable
 import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.ui.views.LazyColumnWithScrollbar
+import com.msmobile.visitas.ui.views.MainMenu
 import com.msmobile.visitas.ui.views.SimpleSearchBar
 import com.msmobile.visitas.util.ListScreenStyle
-import com.msmobile.visitas.ScaffoldState
 import com.msmobile.visitas.util.LocalAppScaffoldState
 import com.msmobile.visitas.util.LocalTopBarActions
 import com.msmobile.visitas.util.borderPadding
@@ -89,7 +90,7 @@ private fun ConversationListScreenContent(
     DisposableEffect(Unit) {
         appScaffoldState.value = ScaffoldState(showTopBar = true, showBottomBar = true, showFAB = true, title = conversationsTitle)
         topBarActions.value = {
-            // No custom top bar actions
+            MainMenu(onNavigate = onNavigate)
         }
         onEvent(ConversationListViewModel.UiEvent.ViewCreated)
         onDispose {
@@ -230,7 +231,8 @@ internal fun ConversationListScreenPreview(
             onEvent = {},
             onNavigateToTab = {},
             onNavigate = {},
-            initialScaffoldState = ScaffoldState(showTopBar = true, showBottomBar = true, showFAB = true, title = stringResource(R.string.conversations))
+            initialScaffoldState = ScaffoldState(showTopBar = true, showBottomBar = true, showFAB = true, title = stringResource(R.string.conversations)),
+            initialTopBarActions = { MainMenu(onNavigate = {}) }
         ) { paddingValues ->
             ConversationListScreenContent(
                 paddingValues = paddingValues,
