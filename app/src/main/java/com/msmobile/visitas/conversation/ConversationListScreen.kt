@@ -229,7 +229,8 @@ internal fun ConversationListScreenPreview(
             currentDestination = ConversationListScreenDestination,
             onEvent = {},
             onNavigateToTab = {},
-            onNavigate = {}
+            onNavigate = {},
+            initialScaffoldState = ScaffoldState(showTopBar = true, showBottomBar = true, showFAB = true, title = stringResource(R.string.conversations))
         ) { paddingValues ->
             ConversationListScreenContent(
                 paddingValues = paddingValues,

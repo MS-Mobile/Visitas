@@ -51,10 +51,11 @@ fun AppScaffold(
     onEvent: (MainActivityViewModel.UiEvent) -> Unit,
     onNavigateToTab: (DirectionDestinationSpec) -> Unit,
     onNavigate: (Direction) -> Unit,
+    initialScaffoldState: ScaffoldState = ScaffoldState(),
     content: @Composable (PaddingValues) -> Unit
 ) {
     val topBarActionsState = remember { mutableStateOf<@Composable RowScope.() -> Unit>({}) }
-    val scaffoldState = remember { mutableStateOf(ScaffoldState()) }
+    val scaffoldState = remember { mutableStateOf(initialScaffoldState) }
     CompositionLocalProvider(
         LocalTopBarActions provides topBarActionsState,
         LocalAppScaffoldState provides scaffoldState
@@ -134,7 +135,8 @@ internal fun AppScaffoldPreview(
             currentDestination = config.currentDestination,
             onEvent = {},
             onNavigateToTab = {},
-            onNavigate = {}
+            onNavigate = {},
+            initialScaffoldState = config.scaffoldState
         ) {}
     }
 }

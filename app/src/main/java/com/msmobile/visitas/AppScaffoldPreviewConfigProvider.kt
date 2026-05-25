@@ -16,7 +16,8 @@ internal class AppScaffoldPreviewConfigProvider : PreviewParameterProvider<AppSc
                 eventState = MainActivityViewModel.UiEventState.Idle,
                 intentState = IntentState.None
             ),
-            currentDestination = VisitListScreenDestination
+            currentDestination = VisitListScreenDestination,
+            scaffoldState = ScaffoldState(showTopBar = true, showBottomBar = true, showFAB = true, title = "Visits")
         ),
         AppScaffoldPreviewConfig(
             configName = "Without Bottom Bar and FAB",
@@ -24,7 +25,8 @@ internal class AppScaffoldPreviewConfigProvider : PreviewParameterProvider<AppSc
                 eventState = MainActivityViewModel.UiEventState.Idle,
                 intentState = IntentState.None
             ),
-            currentDestination = VisitListScreenDestination
+            currentDestination = VisitListScreenDestination,
+            scaffoldState = ScaffoldState()
         )
     )
 
@@ -37,6 +39,7 @@ internal class AppScaffoldPreviewConfigProvider : PreviewParameterProvider<AppSc
 internal data class AppScaffoldPreviewConfig(
     val configName: String,
     val uiState: MainActivityViewModel.UiState,
-    val currentDestination: DestinationSpec
+    val currentDestination: DestinationSpec,
+    val scaffoldState: ScaffoldState = ScaffoldState()
 )
 

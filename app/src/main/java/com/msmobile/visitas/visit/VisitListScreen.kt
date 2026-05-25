@@ -993,7 +993,8 @@ internal fun VisitListScreenPreview(
             currentDestination = VisitListScreenDestination,
             onEvent = {},
             onNavigateToTab = {},
-            onNavigate = {}
+            onNavigate = {},
+            initialScaffoldState = ScaffoldState(showTopBar = true, showBottomBar = true, showFAB = true, title = stringResource(R.string.visits))
         ) { paddingValues ->
             VisitListScreenContent(
                 paddingValues = paddingValues,
