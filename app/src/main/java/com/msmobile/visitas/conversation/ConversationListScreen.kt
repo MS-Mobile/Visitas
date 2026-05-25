@@ -36,6 +36,8 @@ import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.ui.views.LazyColumnWithScrollbar
 import com.msmobile.visitas.ui.views.SimpleSearchBar
 import com.msmobile.visitas.util.ListScreenStyle
+import com.msmobile.visitas.ScaffoldState
+import com.msmobile.visitas.util.LocalAppScaffoldState
 import com.msmobile.visitas.util.LocalTopBarActions
 import com.msmobile.visitas.util.borderPadding
 import com.msmobile.visitas.util.cardInnerPadding
@@ -82,12 +84,18 @@ private fun ConversationListScreenContent(
 ) {
     val topPadding = paddingValues.calculateTopPadding()
     val topBarActions = LocalTopBarActions.current
+    val appScaffoldState = LocalAppScaffoldState.current
+    val conversationsTitle = stringResource(R.string.conversations)
     DisposableEffect(Unit) {
+        appScaffoldState.value = ScaffoldState(showTopBar = true, showBottomBar = true, showFAB = true, title = conversationsTitle)
         topBarActions.value = {
             // No custom top bar actions
         }
         onEvent(ConversationListViewModel.UiEvent.ViewCreated)
-        onDispose { topBarActions.value = {} }
+        onDispose {
+            appScaffoldState.value = ScaffoldState()
+            topBarActions.value = {}
+        }
     }
     Column(
         modifier = Modifier.padding(top = topPadding),

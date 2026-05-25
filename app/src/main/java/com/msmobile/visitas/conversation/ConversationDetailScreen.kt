@@ -63,6 +63,8 @@ import com.msmobile.visitas.ui.views.DetailFooter
 import com.msmobile.visitas.ui.views.LazyColumnWithScrollbar
 import com.msmobile.visitas.ui.views.TextFieldClearButton
 import com.msmobile.visitas.util.DetailScreenStyle
+import com.msmobile.visitas.ScaffoldState
+import com.msmobile.visitas.util.LocalAppScaffoldState
 import com.msmobile.visitas.util.LocalTopBarActions
 import com.msmobile.visitas.util.borderPadding
 import com.msmobile.visitas.util.floatingBarBottomPadding
@@ -106,12 +108,17 @@ private fun ConversationDetailScreenContent(
 ) {
     val conversationsTitle = stringResource(R.string.conversations)
     val topBarActions = LocalTopBarActions.current
+    val appScaffoldState = LocalAppScaffoldState.current
     DisposableEffect(Unit) {
+        appScaffoldState.value = ScaffoldState()
         topBarActions.value = {
             // No custom top bar actions
         }
         onEvent(ConversationDetailViewModel.UiEvent.ViewCreated(firstConversationId))
-        onDispose { topBarActions.value = {} }
+        onDispose {
+            appScaffoldState.value = ScaffoldState()
+            topBarActions.value = {}
+        }
     }
     Scaffold(
         topBar = {

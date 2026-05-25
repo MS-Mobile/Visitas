@@ -104,6 +104,8 @@ import com.msmobile.visitas.ui.views.PermissionRationaleSheet
 import com.msmobile.visitas.ui.views.TextFieldClearButton
 import com.msmobile.visitas.ui.views.TextFieldExpandButton
 import com.msmobile.visitas.util.DetailScreenStyle
+import com.msmobile.visitas.ScaffoldState
+import com.msmobile.visitas.util.LocalAppScaffoldState
 import com.msmobile.visitas.util.LocalTopBarActions
 import com.msmobile.visitas.util.borderPadding
 import com.msmobile.visitas.util.floatingBarBottomPadding
@@ -137,12 +139,17 @@ private fun VisitDetailScreenContent(
 ) {
     val visitsTitle = stringResource(R.string.visits)
     val topBarActions = LocalTopBarActions.current
+    val appScaffoldState = LocalAppScaffoldState.current
     DisposableEffect(Unit) {
+        appScaffoldState.value = ScaffoldState()
         topBarActions.value = {
             // No custom top bar actions
         }
         onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId))
-        onDispose { topBarActions.value = {} }
+        onDispose {
+            appScaffoldState.value = ScaffoldState()
+            topBarActions.value = {}
+        }
     }
     OnBackPressed {
         onEvent(VisitDetailViewModel.UiEvent.CancelClicked)

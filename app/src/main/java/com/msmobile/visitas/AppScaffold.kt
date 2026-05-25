@@ -36,6 +36,7 @@ import com.msmobile.visitas.ui.theme.PreviewFoldable
 import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.ui.views.BottomNavigation
+import com.msmobile.visitas.util.LocalAppScaffoldState
 import com.msmobile.visitas.util.LocalTopBarActions
 import com.ramcosta.composedestinations.generated.destinations.SettingsScreenDestination
 import com.ramcosta.composedestinations.spec.DestinationSpec
@@ -54,7 +55,10 @@ fun AppScaffold(
 ) {
     val topBarActionsState = remember { mutableStateOf<@Composable RowScope.() -> Unit>({}) }
     val scaffoldState = remember { mutableStateOf(ScaffoldState()) }
-    CompositionLocalProvider(LocalTopBarActions provides topBarActionsState) {
+    CompositionLocalProvider(
+        LocalTopBarActions provides topBarActionsState,
+        LocalAppScaffoldState provides scaffoldState
+    ) {
         Scaffold(
             topBar = {
                 if (scaffoldState.value.showTopBar) {

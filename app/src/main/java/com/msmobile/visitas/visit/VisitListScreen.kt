@@ -95,6 +95,8 @@ import com.msmobile.visitas.ui.views.SimpleSearchBar
 import com.msmobile.visitas.util.AddressProvider
 import com.msmobile.visitas.util.IntentState
 import com.msmobile.visitas.util.ListScreenStyle
+import com.msmobile.visitas.ScaffoldState
+import com.msmobile.visitas.util.LocalAppScaffoldState
 import com.msmobile.visitas.util.LocalTopBarActions
 import com.msmobile.visitas.util.borderPadding
 import com.msmobile.visitas.util.cardInnerPadding
@@ -179,12 +181,18 @@ private fun VisitListScreenContent(
 ) {
     val topPadding = paddingValues.calculateTopPadding()
     val topBarActions = LocalTopBarActions.current
+    val appScaffoldState = LocalAppScaffoldState.current
+    val visitsTitle = stringResource(R.string.visits)
     DisposableEffect(Unit) {
+        appScaffoldState.value = ScaffoldState(showTopBar = true, showBottomBar = true, showFAB = true, title = visitsTitle)
         topBarActions.value = {
             VisitMapButton(onVisitListEvent)
             VisitListFilterMenu(uiState = visitListUiState, onEvent = onVisitListEvent)
         }
-        onDispose { topBarActions.value = {} }
+        onDispose {
+            appScaffoldState.value = ScaffoldState()
+            topBarActions.value = {}
+        }
     }
     Column(
         modifier = Modifier.padding(top = topPadding),
