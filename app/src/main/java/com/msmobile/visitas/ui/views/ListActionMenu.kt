@@ -19,7 +19,7 @@ import com.ramcosta.composedestinations.generated.destinations.SettingsScreenDes
 import com.ramcosta.composedestinations.spec.DirectionDestinationSpec
 
 @Composable
-fun MainMenu(onNavigate: (DirectionDestinationSpec) -> Unit) {
+fun ListActionMenu(onNavigate: (DirectionDestinationSpec) -> Unit) {
     var menuExpanded by remember { mutableStateOf(false) }
     IconButton(onClick = { menuExpanded = true }) {
         Icon(

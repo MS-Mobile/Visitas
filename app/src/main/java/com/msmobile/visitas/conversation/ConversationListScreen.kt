@@ -35,7 +35,7 @@ import com.msmobile.visitas.ui.theme.PreviewFoldable
 import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.ui.views.LazyColumnWithScrollbar
-import com.msmobile.visitas.ui.views.MainMenu
+import com.msmobile.visitas.ui.views.ListActionMenu
 import com.msmobile.visitas.ui.views.SimpleSearchBar
 import com.msmobile.visitas.util.ListScreenStyle
 import com.msmobile.visitas.util.LocalAppScaffoldState
@@ -90,7 +90,7 @@ private fun ConversationListScreenContent(
     DisposableEffect(Unit) {
         appScaffoldState.value = ScaffoldState(showTopBar = true, showBottomBar = true, showFAB = true, title = conversationsTitle)
         topBarActions.value = {
-            MainMenu(onNavigate = onNavigate)
+            ListActionMenu(onNavigate = onNavigate)
         }
         onEvent(ConversationListViewModel.UiEvent.ViewCreated)
         onDispose {
@@ -232,7 +232,7 @@ internal fun ConversationListScreenPreview(
             onNavigateToTab = {},
             onNavigate = {},
             initialScaffoldState = ScaffoldState(showTopBar = true, showBottomBar = true, showFAB = true, title = stringResource(R.string.conversations)),
-            initialTopBarActions = { MainMenu(onNavigate = {}) }
+            initialTopBarActions = { ListActionMenu(onNavigate = {}) }
         ) { paddingValues ->
             ConversationListScreenContent(
                 paddingValues = paddingValues,
