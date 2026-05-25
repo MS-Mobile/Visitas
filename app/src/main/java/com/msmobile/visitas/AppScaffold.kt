@@ -52,9 +52,10 @@ fun AppScaffold(
     onNavigateToTab: (DirectionDestinationSpec) -> Unit,
     onNavigate: (Direction) -> Unit,
     initialScaffoldState: ScaffoldState = ScaffoldState(),
+    initialTopBarActions: @Composable RowScope.() -> Unit = {},
     content: @Composable (PaddingValues) -> Unit
 ) {
-    val topBarActionsState = remember { mutableStateOf<@Composable RowScope.() -> Unit>({}) }
+    val topBarActionsState = remember { mutableStateOf<@Composable RowScope.() -> Unit>(initialTopBarActions) }
     val scaffoldState = remember { mutableStateOf(initialScaffoldState) }
     CompositionLocalProvider(
         LocalTopBarActions provides topBarActionsState,

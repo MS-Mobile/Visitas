@@ -994,7 +994,11 @@ internal fun VisitListScreenPreview(
             onEvent = {},
             onNavigateToTab = {},
             onNavigate = {},
-            initialScaffoldState = ScaffoldState(showTopBar = true, showBottomBar = true, showFAB = true, title = stringResource(R.string.visits))
+            initialScaffoldState = ScaffoldState(showTopBar = true, showBottomBar = true, showFAB = true, title = stringResource(R.string.visits)),
+            initialTopBarActions = {
+                VisitMapButton(onVisitListEvent = {})
+                VisitListFilterMenu(uiState = config.visitListUiState, onEvent = {})
+            }
         ) { paddingValues ->
             VisitListScreenContent(
                 paddingValues = paddingValues,
