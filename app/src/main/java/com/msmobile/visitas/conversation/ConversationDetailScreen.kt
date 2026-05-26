@@ -50,7 +50,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.AppScaffold
 import com.msmobile.visitas.MainActivityViewModel
-import com.msmobile.visitas.OnScaffoldConfigurationChanged
 import com.msmobile.visitas.R
 import com.msmobile.visitas.conversation.ConversationDetailViewModel.ConversationState
 import com.msmobile.visitas.extension.EditableTextFieldColors
@@ -81,8 +80,7 @@ import java.util.UUID
 fun ConversationDetailScreen(
     navigator: DestinationsNavigator,
     viewModel: ConversationDetailViewModel,
-    firstConversationId: UUID? = null,
-    scaffoldConfigurationChanged: OnScaffoldConfigurationChanged
+    firstConversationId: UUID? = null
 ) {
     val uiState: ConversationDetailViewModel.UiState by viewModel.uiState.collectAsStateWithLifecycle()
     val onEvent = viewModel::onEvent
@@ -92,12 +90,6 @@ fun ConversationDetailScreen(
     }
 
     LaunchedEffect(key1 = null) {
-        scaffoldConfigurationChanged(
-            MainActivityViewModel.ScaffoldState(
-                showBottomBar = false,
-                showFAB = false
-            )
-        )
         onEvent(ConversationDetailViewModel.UiEvent.ViewCreated(firstConversationId))
     }
     OnBackPressed {

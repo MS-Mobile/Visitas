@@ -34,7 +34,11 @@ import com.msmobile.visitas.ui.theme.PreviewFoldable
 import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.ui.views.BottomNavigation
+import com.ramcosta.composedestinations.generated.destinations.ConversationDetailScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.ConversationListScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.SettingsScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.VisitDetailScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.VisitListScreenDestination
 import com.ramcosta.composedestinations.spec.DestinationSpec
 import com.ramcosta.composedestinations.spec.Direction
 import com.ramcosta.composedestinations.spec.DirectionDestinationSpec
@@ -49,13 +53,17 @@ fun AppScaffold(
     onNavigate: (Direction) -> Unit,
     content: @Composable (PaddingValues) -> Unit
 ) {
-    val showBottomBar = uiState.scaffoldState.showBottomBar
+    val showBottomBar = currentDestination in listOf(
+        VisitListScreenDestination,
+        ConversationListScreenDestination
+    )
+    val showFAB = showBottomBar
     Scaffold(
         topBar = {
             if (showBottomBar) {
                 var menuExpanded by remember { mutableStateOf(false) }
                 TopAppBar(
-                    title = { Text(text = uiState.scaffoldState.title) },
+                    title = { Text(text = "") },
                     actions = {
                         IconButton(onClick = { menuExpanded = true }) {
                             Icon(
@@ -103,7 +111,7 @@ fun AppScaffold(
                     horizontalArrangement = Arrangement.Center
                 ) {
                     BottomNavigation(
-                        showFAB = uiState.scaffoldState.showFAB,
+                        showFAB = showFAB,
                         onFabClickedEvent = {
                             onEvent(
                                 MainActivityViewModel.UiEvent.FabClicked(

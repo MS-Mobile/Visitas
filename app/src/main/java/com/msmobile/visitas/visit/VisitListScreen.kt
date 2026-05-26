@@ -72,7 +72,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.AppScaffold
 import com.msmobile.visitas.MainActivityViewModel
 import com.msmobile.visitas.OnIntentStateHandled
-import com.msmobile.visitas.OnScaffoldConfigurationChanged
 import com.msmobile.visitas.R
 import com.msmobile.visitas.backup.BackupSheet
 import com.msmobile.visitas.backup.BackupViewModel
@@ -124,7 +123,6 @@ fun VisitListScreen(
     visitListViewModel: VisitListViewModel,
     backupViewModel: BackupViewModel,
     intentState: IntentState,
-    scaffoldConfigurationChanged: OnScaffoldConfigurationChanged,
     onIntentStateHandled: OnIntentStateHandled,
 ) {
     val summaryUiState by summaryViewModel.uiState.collectAsStateWithLifecycle()
@@ -138,7 +136,6 @@ fun VisitListScreen(
         navigator.navigate(direction)
     }
     val isKeyboardOpen by isKeyboardOpen()
-    val visitsTitle = stringResource(R.string.visits)
     val onVisitMapEvent = { visitMapEvent: VisitsMapEvent ->
         visitListViewModel.onEvent(
             VisitListViewModel.UiEvent.VisitMapEventTriggered(
@@ -147,15 +144,6 @@ fun VisitListScreen(
         )
     }
 
-    LaunchedEffect(key1 = isKeyboardOpen) {
-        scaffoldConfigurationChanged(
-            MainActivityViewModel.ScaffoldState(
-                showBottomBar = !isKeyboardOpen,
-                showFAB = true,
-                title = visitsTitle
-            )
-        )
-    }
     OnBackPressed { }
     VisitListScreenContent(
         paddingValues = paddingValues,

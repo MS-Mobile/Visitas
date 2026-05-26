@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 
-typealias OnScaffoldConfigurationChanged = (MainActivityViewModel.ScaffoldState) -> Unit
 typealias OnIntentStateHandled = () -> Unit
 
 @HiltViewModel
@@ -22,7 +21,6 @@ class MainActivityViewModel
     private val _uiState = MutableStateFlow(
         UiState(
             intentState = IntentState.None,
-            scaffoldState = ScaffoldState(),
             eventState = UiEventState.Idle
         )
     )
@@ -31,7 +29,6 @@ class MainActivityViewModel
     fun onEvent(uiEvent: UiEvent) {
         when (uiEvent) {
             is UiEvent.FabClicked -> fabClicked(uiEvent.currentDestination)
-            is UiEvent.ScaffoldConfigurationChanged -> scaffoldConfigurationChanged(uiEvent.scaffoldState)
             is UiEvent.FabClickHandled -> fabClickHandled()
             is UiEvent.NetworkStatusChangeAcknowledged -> networkStatusChangeAcknowledged()
             is UiEvent.IntentStateChanged -> intentStateChanged(uiEvent.intentState)
@@ -70,12 +67,6 @@ class MainActivityViewModel
         }
     }
 
-    private fun scaffoldConfigurationChanged(scaffoldState: ScaffoldState) {
-        newState {
-            copy(scaffoldState = scaffoldState)
-        }
-    }
-
     private fun newState(value: UiState.() -> UiState) {
         _uiState.update(value)
     }
@@ -91,18 +82,11 @@ class MainActivityViewModel
 
     sealed class UiEvent {
         data class FabClicked(val currentDestination: DestinationSpec) : UiEvent()
-        data class ScaffoldConfigurationChanged(val scaffoldState: ScaffoldState) : UiEvent()
         data object FabClickHandled : UiEvent()
         data object NetworkStatusChangeAcknowledged : UiEvent()
         data class IntentStateChanged(val intentState: IntentState) : UiEvent()
         data object IntentStateHandled : UiEvent()
     }
-
-    data class ScaffoldState(
-        val showBottomBar: Boolean = false,
-        val showFAB: Boolean = false,
-        val title: String = ""
-    )
 
     sealed class UiEventState {
         data object Idle : UiEventState()
@@ -114,7 +98,6 @@ class MainActivityViewModel
 
     data class UiState(
         val intentState: IntentState,
-        val scaffoldState: ScaffoldState,
         val eventState: UiEventState
     )
 }

@@ -82,7 +82,6 @@ import androidx.compose.ui.window.PopupProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.AppScaffold
 import com.msmobile.visitas.MainActivityViewModel
-import com.msmobile.visitas.OnScaffoldConfigurationChanged
 import com.msmobile.visitas.R
 import com.msmobile.visitas.extension.EditableTextFieldColors
 import com.msmobile.visitas.extension.OnBackPressed
@@ -123,19 +122,10 @@ import java.util.UUID
 fun VisitDetailScreen(
     navigator: DestinationsNavigator,
     viewModel: VisitDetailViewModel,
-    householderId: UUID? = null,
-    scaffoldConfigurationChanged: OnScaffoldConfigurationChanged
+    householderId: UUID? = null
 ) {
     val uiState: VisitDetailViewModel.UiState by viewModel.uiState.collectAsStateWithLifecycle()
     val onEvent = viewModel::onEvent
-    LaunchedEffect(key1 = null) {
-        scaffoldConfigurationChanged(
-            MainActivityViewModel.ScaffoldState(
-                showBottomBar = false,
-                showFAB = false
-            )
-        )
-    }
     VisitDetailScreenContent(navigator, householderId, uiState, onEvent)
 }
 

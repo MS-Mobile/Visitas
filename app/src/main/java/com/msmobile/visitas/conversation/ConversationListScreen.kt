@@ -32,7 +32,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.AppScaffold
 import com.msmobile.visitas.MainActivityViewModel
-import com.msmobile.visitas.OnScaffoldConfigurationChanged
 import com.msmobile.visitas.R
 import com.msmobile.visitas.extension.OnBackPressed
 import com.msmobile.visitas.ui.theme.PreviewFoldable
@@ -58,24 +57,15 @@ import com.ramcosta.composedestinations.spec.Direction
 fun ConversationListScreen(
     navigator: DestinationsNavigator,
     paddingValues: PaddingValues,
-    viewModel: ConversationListViewModel,
-    scaffoldConfigurationChanged: OnScaffoldConfigurationChanged
+    viewModel: ConversationListViewModel
 ) {
     val uiState: ConversationListViewModel.UiState by viewModel.uiState.collectAsStateWithLifecycle()
     val onEvent = viewModel::onEvent
-    val conversationsTitle = stringResource(R.string.conversations)
     val onNavigate = { direction: Direction ->
         navigator.navigate(direction)
     }
 
     LaunchedEffect(key1 = null) {
-        scaffoldConfigurationChanged(
-            MainActivityViewModel.ScaffoldState(
-                showBottomBar = true,
-                showFAB = true,
-                title = conversationsTitle
-            )
-        )
         onEvent(ConversationListViewModel.UiEvent.ViewCreated)
     }
     OnBackPressed { }

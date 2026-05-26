@@ -70,10 +70,6 @@ internal data class ConversationDetailPreviewConfig(
 )
 
 private val previewMainActivityUiState = MainActivityViewModel.UiState(
-    scaffoldState = MainActivityViewModel.ScaffoldState(
-        showBottomBar = false,
-        showFAB = false
-    ),
     eventState = MainActivityViewModel.UiEventState.Idle,
     intentState = IntentState.None
 )

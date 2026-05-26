@@ -22,9 +22,6 @@ fun Main(
     val destinationsNavigator = navController.rememberDestinationsNavigator()
     val currentDestination by navController.currentDestinationWithLifecycle()
     val intentState = uiState.intentState
-    val scaffoldConfigurationChanged = { scaffoldState: MainActivityViewModel.ScaffoldState ->
-        onEvent(MainActivityViewModel.UiEvent.ScaffoldConfigurationChanged(scaffoldState))
-    }
     val intentStateHandled = {
         onEvent(MainActivityViewModel.UiEvent.IntentStateHandled)
     }
@@ -54,7 +51,6 @@ fun Main(
                     dependenciesContainerBuilder = navigationDependencies(
                         intentState = intentState,
                         intentStateHandled = intentStateHandled,
-                        scaffoldConfigurationChanged = scaffoldConfigurationChanged,
                         paddingValues = paddingValues
                     )
                 )
