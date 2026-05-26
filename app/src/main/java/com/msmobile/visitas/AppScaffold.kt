@@ -53,8 +53,16 @@ fun AppScaffold(
     onNavigate: (Direction) -> Unit,
     content: @Composable (PaddingValues) -> Unit
 ) {
-    val showBottomBar = true
-    val showFAB = true
+    val showFAB = currentDestination in listOf(
+        VisitListScreenDestination,
+        ConversationListScreenDestination
+    )
+    val showBottomBar = currentDestination in listOf(
+        VisitListScreenDestination,
+        ConversationListScreenDestination,
+        VisitDetailScreenDestination,
+        ConversationDetailScreenDestination
+    )
     Scaffold(
         topBar = {
             if (showBottomBar) {
