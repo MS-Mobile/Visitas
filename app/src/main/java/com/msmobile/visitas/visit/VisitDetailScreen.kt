@@ -157,28 +157,24 @@ private fun VisitDetailScreenContent(
     val deleteDescription = stringResource(id = R.string.delete)
     val chromeOwner = remember { Any() }
     DisposableEffect(Unit) {
-        appScaffoldViewModel.setTopBarActions(
+        appScaffoldViewModel.setUiState(
             owner = chromeOwner,
-            actions = listOf(
-                TopBarAction(
-                    contentDescription = deleteDescription,
-                    icon = Icons.Rounded.Delete,
-                    onClick = { onEvent(VisitDetailViewModel.UiEvent.DeleteClicked) }
+            uiState = AppScaffoldViewModel.UiState(
+                topBarActions = listOf(
+                    TopBarAction(
+                        contentDescription = deleteDescription,
+                        icon = Icons.Rounded.Delete,
+                        onClick = { onEvent(VisitDetailViewModel.UiEvent.DeleteClicked) }
+                    )
+                ),
+                detailFooterActions = DetailFooterActions(
+                    onBack = { onEvent(VisitDetailViewModel.UiEvent.CancelClicked) },
+                    onSave = { onEvent(VisitDetailViewModel.UiEvent.SaveClicked) },
+                    onAdd = { onEvent(VisitDetailViewModel.UiEvent.AddVisitClicked) }
                 )
             )
         )
-        appScaffoldViewModel.setDetailFooterActions(
-            owner = chromeOwner,
-            actions = DetailFooterActions(
-                onBack = { onEvent(VisitDetailViewModel.UiEvent.CancelClicked) },
-                onSave = { onEvent(VisitDetailViewModel.UiEvent.SaveClicked) },
-                onAdd = { onEvent(VisitDetailViewModel.UiEvent.AddVisitClicked) }
-            )
-        )
-        onDispose {
-            appScaffoldViewModel.clearTopBarActions(chromeOwner)
-            appScaffoldViewModel.clearDetailFooterActions(chromeOwner)
-        }
+        onDispose { appScaffoldViewModel.clearUiState(chromeOwner) }
     }
 
     val topPadding = paddingValues.calculateTopPadding()

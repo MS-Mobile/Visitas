@@ -9,40 +9,29 @@ import javax.inject.Inject
 @HiltViewModel
 class AppScaffoldViewModel
 @Inject constructor() : ViewModel() {
-    private val _topBarActions = MutableStateFlow<List<TopBarAction>>(emptyList())
-    val topBarActions: StateFlow<List<TopBarAction>> = _topBarActions
+    private val _uiState = MutableStateFlow(UiState())
+    val uiState: StateFlow<UiState> = _uiState
 
-    private val _detailFooterActions = MutableStateFlow<DetailFooterActions?>(null)
-    val detailFooterActions: StateFlow<DetailFooterActions?> = _detailFooterActions
+    // The token identifies the screen that currently owns the chrome, so a screen
+    // leaving composition only clears chrome it still owns. Without this, the exiting
+    // screen's onDispose (which runs after the entering screen has already published)
+    // would wipe the new screen's chrome.
+    private var currentOwner: Any? = null
 
-    // Tokens identify the screen that currently owns each slot, so a screen leaving
-    // composition only clears chrome it still owns. Without this, the exiting screen's
-    // onDispose (which runs after the entering screen has already published) would wipe
-    // the new screen's chrome.
-    private var topBarActionsOwner: Any? = null
-    private var detailFooterActionsOwner: Any? = null
-
-    fun setTopBarActions(owner: Any, actions: List<TopBarAction>) {
-        topBarActionsOwner = owner
-        _topBarActions.value = actions
+    fun setUiState(owner: Any, uiState: UiState) {
+        currentOwner = owner
+        _uiState.value = uiState
     }
 
-    fun clearTopBarActions(owner: Any) {
-        if (topBarActionsOwner === owner) {
-            topBarActionsOwner = null
-            _topBarActions.value = emptyList()
+    fun clearUiState(owner: Any) {
+        if (currentOwner === owner) {
+            currentOwner = null
+            _uiState.value = UiState()
         }
     }
 
-    fun setDetailFooterActions(owner: Any, actions: DetailFooterActions) {
-        detailFooterActionsOwner = owner
-        _detailFooterActions.value = actions
-    }
-
-    fun clearDetailFooterActions(owner: Any) {
-        if (detailFooterActionsOwner === owner) {
-            detailFooterActionsOwner = null
-            _detailFooterActions.value = null
-        }
-    }
+    data class UiState(
+        val topBarActions: List<TopBarAction> = emptyList(),
+        val detailFooterActions: DetailFooterActions? = null,
+    )
 }

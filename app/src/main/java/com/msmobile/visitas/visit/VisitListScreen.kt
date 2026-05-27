@@ -150,33 +150,37 @@ fun VisitListScreen(
 
     val mapActionDescription = stringResource(R.string.show_visits_map_content_description)
     val filterActionDescription = stringResource(R.string.filter_visits_content_description)
+    val chromeOwner = remember { Any() }
     DisposableEffect(Unit) {
-        appScaffoldViewModel.setTopBarActions(
-            listOf(
-                TopBarAction(
-                    contentDescription = mapActionDescription,
-                    icon = Icons.Rounded.Map,
-                    onClick = {
-                        visitListViewModel.onEvent(VisitListViewModel.UiEvent.VisitMapSheetClicked)
-                    }
-                ),
-                TopBarAction(
-                    contentDescription = filterActionDescription,
-                    icon = Icons.Rounded.FilterList,
-                    onClick = {
-                        visitListViewModel.onEvent(VisitListViewModel.UiEvent.VisitsFilterButtonClicked)
-                    },
-                    menu = {
-                        val filterUiState by visitListViewModel.uiState.collectAsStateWithLifecycle()
-                        VisitListFilterDropdown(
-                            uiState = filterUiState,
-                            onEvent = visitListViewModel::onEvent
-                        )
-                    }
+        appScaffoldViewModel.setUiState(
+            owner = chromeOwner,
+            uiState = AppScaffoldViewModel.UiState(
+                topBarActions = listOf(
+                    TopBarAction(
+                        contentDescription = mapActionDescription,
+                        icon = Icons.Rounded.Map,
+                        onClick = {
+                            visitListViewModel.onEvent(VisitListViewModel.UiEvent.VisitMapSheetClicked)
+                        }
+                    ),
+                    TopBarAction(
+                        contentDescription = filterActionDescription,
+                        icon = Icons.Rounded.FilterList,
+                        onClick = {
+                            visitListViewModel.onEvent(VisitListViewModel.UiEvent.VisitsFilterButtonClicked)
+                        },
+                        menu = {
+                            val filterUiState by visitListViewModel.uiState.collectAsStateWithLifecycle()
+                            VisitListFilterDropdown(
+                                uiState = filterUiState,
+                                onEvent = visitListViewModel::onEvent
+                            )
+                        }
+                    )
                 )
             )
         )
-        onDispose { appScaffoldViewModel.clearTopBarActions() }
+        onDispose { appScaffoldViewModel.clearUiState(chromeOwner) }
     }
 
     OnBackPressed { }
