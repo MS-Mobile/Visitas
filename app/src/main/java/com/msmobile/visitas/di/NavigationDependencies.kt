@@ -41,11 +41,14 @@ fun navigationDependencies(
         }
         destination(ConversationListScreenDestination) {
             dependency(hiltViewModel<ConversationListViewModel>())
+            dependency(appScaffoldState)
         }
         destination(ConversationDetailScreenDestination) {
             dependency(hiltViewModel<ConversationDetailViewModel>())
+            dependency(appScaffoldState)
         }
         destination(SettingsScreenDestination) {
             dependency(hiltViewModel<SettingsDetailViewModel>())
+            dependency(appScaffoldState)
         }
     }
