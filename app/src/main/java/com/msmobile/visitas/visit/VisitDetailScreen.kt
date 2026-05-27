@@ -126,11 +126,15 @@ fun VisitDetailScreen(
 ) {
     val uiState: VisitDetailViewModel.UiState by viewModel.uiState.collectAsStateWithLifecycle()
     val onEvent = viewModel::onEvent
+    val onNavigateUp = {
+        navigator.navigateUp()
+        Unit
+    }
     VisitDetailScreenContent(
-        navigator = navigator,
         householderId = householderId,
         uiState = uiState,
         onEvent = onEvent,
+        onNavigateUp = onNavigateUp,
         paddingValues = paddingValues,
         appScaffoldState = appScaffoldState
     )
@@ -139,9 +143,9 @@ fun VisitDetailScreen(
 @OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun VisitDetailScreenContent(
-    navigator: DestinationsNavigator,
     householderId: UUID?,
     uiState: VisitDetailViewModel.UiState,
+    onNavigateUp: () -> Unit,
     onEvent: (VisitDetailViewModel.UiEvent) -> Unit,
     paddingValues: PaddingValues,
     appScaffoldState: AppScaffoldState
@@ -219,7 +223,7 @@ private fun VisitDetailScreenContent(
             onEvent(VisitDetailViewModel.UiEvent.CalendarRationaleAccepted)
         }
     )
-    StateHandler(uiState = uiState, navigator = navigator, onEvent = onEvent)
+    StateHandler(uiState = uiState, onNavigateUp = onNavigateUp, onEvent = onEvent)
 }
 
 @Composable
@@ -877,15 +881,13 @@ private fun LazyItemScope.VisitTypeDropdownList(
 @Composable
 private fun StateHandler(
     uiState: VisitDetailViewModel.UiState,
-    navigator: DestinationsNavigator,
+    onNavigateUp: () -> Unit,
     onEvent: (VisitDetailViewModel.UiEvent) -> Unit
 ) {
     when (val eventState = uiState.eventState) {
         is VisitDetailViewModel.UiEventState.Canceled,
         is VisitDetailViewModel.UiEventState.SaveSucceeded,
-        is VisitDetailViewModel.UiEventState.Deleted -> {
-            navigator.navigateUp()
-        }
+        is VisitDetailViewModel.UiEventState.Deleted -> onNavigateUp()
 
         is VisitDetailViewModel.UiEventState.Idle,
         is VisitDetailViewModel.UiEventState.Saving,
@@ -1107,10 +1109,10 @@ internal fun VisitDetailScreenPreview(
             )
         ) { paddingValues ->
             VisitDetailScreenContent(
-                navigator = EmptyDestinationsNavigator,
                 householderId = config.householderId,
                 uiState = config.uiState,
                 onEvent = {},
+                onNavigateUp = {},
                 paddingValues = paddingValues,
                 appScaffoldState = remember { AppScaffoldState() }
             )
