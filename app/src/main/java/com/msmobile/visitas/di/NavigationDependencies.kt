@@ -3,6 +3,7 @@ package com.msmobile.visitas.di
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.msmobile.visitas.AppScaffoldViewModel
 import com.msmobile.visitas.OnIntentStateHandled
 import com.msmobile.visitas.backup.BackupViewModel
 import com.msmobile.visitas.conversation.ConversationDetailViewModel
@@ -24,7 +25,8 @@ import com.ramcosta.composedestinations.navigation.destination
 fun navigationDependencies(
     intentState: IntentState,
     intentStateHandled: OnIntentStateHandled,
-    paddingValues: PaddingValues
+    paddingValues: PaddingValues,
+    appScaffoldViewModel: AppScaffoldViewModel
 ): @Composable (DependenciesContainerBuilder<*>.() -> Unit) =
     {
         destination(VisitListScreenDestination) {
@@ -34,6 +36,7 @@ fun navigationDependencies(
             dependency(intentState)
             dependency(intentStateHandled)
             dependency(paddingValues)
+            dependency(appScaffoldViewModel)
         }
         destination(VisitDetailScreenDestination) {
             dependency(hiltViewModel<VisitDetailViewModel>())

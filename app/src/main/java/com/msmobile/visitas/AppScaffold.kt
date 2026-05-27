@@ -2,6 +2,7 @@ package com.msmobile.visitas
 
 import androidx.annotation.VisibleForTesting
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -51,6 +52,7 @@ fun AppScaffold(
     onEvent: (MainActivityViewModel.UiEvent) -> Unit,
     onNavigateToTab: (DirectionDestinationSpec) -> Unit,
     onNavigate: (Direction) -> Unit,
+    topBarActions: List<TopBarAction> = emptyList(),
     content: @Composable (PaddingValues) -> Unit
 ) {
     val showFAB = currentDestination in listOf(
@@ -70,6 +72,17 @@ fun AppScaffold(
                 TopAppBar(
                     title = { Text(text = "") },
                     actions = {
+                        topBarActions.forEach { action ->
+                            Box {
+                                IconButton(onClick = action.onClick) {
+                                    Icon(
+                                        imageVector = action.icon,
+                                        contentDescription = action.contentDescription
+                                    )
+                                }
+                                action.menu?.invoke()
+                            }
+                        }
                         IconButton(onClick = { menuExpanded = true }) {
                             Icon(
                                 imageVector = Icons.Rounded.MoreVert,
