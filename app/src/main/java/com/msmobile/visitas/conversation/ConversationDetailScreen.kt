@@ -141,8 +141,6 @@ private fun ConversationDetailScreenContent(
         onDispose { appScaffoldState.clearUiState(chromeOwner) }
     }
     ConversationItems(
-        topPadding = topPadding,
-        bottomPadding = bottomPadding,
         uiState = uiState,
         onEvent = onEvent
     )
@@ -151,8 +149,6 @@ private fun ConversationDetailScreenContent(
 
 @Composable
 private fun ConversationItems(
-    topPadding: Dp,
-    bottomPadding: Dp,
     uiState: ConversationDetailViewModel.UiState,
     onEvent: (ConversationDetailViewModel.UiEvent) -> Unit,
 ) {
@@ -162,7 +158,6 @@ private fun ConversationItems(
         LazyColumn(
             state = listState,
             modifier = Modifier
-                .padding(top = topPadding)
                 .padding(horizontal = borderPadding),
             verticalArrangement = Arrangement.spacedBy(verticalFieldPadding)
         ) {
@@ -181,7 +176,7 @@ private fun ConversationItems(
                 Spacer(
                     modifier = Modifier
                         .imePadding()
-                        .padding(bottom = bottomPadding + floatingBarBottomPadding)
+                        .padding(bottom = verticalFieldPadding + floatingBarBottomPadding)
                 )
             }
         }
