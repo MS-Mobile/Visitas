@@ -25,6 +25,7 @@ fun Main(
     val currentDestination by navController.currentDestinationWithLifecycle()
     val appScaffoldViewModel = hiltViewModel<AppScaffoldViewModel>()
     val topBarActions by appScaffoldViewModel.topBarActions.collectAsStateWithLifecycle()
+    val detailFooterActions by appScaffoldViewModel.detailFooterActions.collectAsStateWithLifecycle()
     val intentState = uiState.intentState
     val intentStateHandled = {
         onEvent(MainActivityViewModel.UiEvent.IntentStateHandled)
@@ -49,6 +50,7 @@ fun Main(
             onNavigateToTab = onNavigateToTab,
             onNavigate = onNavigate,
             topBarActions = topBarActions,
+            detailFooterActions = detailFooterActions,
             content = { paddingValues: PaddingValues ->
                 DestinationsNavHost(
                     navGraph = NavGraphs.root,

@@ -35,6 +35,7 @@ import com.msmobile.visitas.ui.theme.PreviewFoldable
 import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.ui.views.BottomNavigation
+import com.msmobile.visitas.ui.views.DetailFooter
 import com.ramcosta.composedestinations.generated.destinations.ConversationDetailScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.ConversationListScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.SettingsScreenDestination
@@ -53,24 +54,36 @@ fun AppScaffold(
     onNavigateToTab: (DirectionDestinationSpec) -> Unit,
     onNavigate: (Direction) -> Unit,
     topBarActions: List<TopBarAction> = emptyList(),
+    detailFooterActions: DetailFooterActions? = null,
     content: @Composable (PaddingValues) -> Unit
 ) {
     val showFAB = currentDestination in listOf(
         VisitListScreenDestination,
         ConversationListScreenDestination
     )
-    val showBottomBar = currentDestination in listOf(
+    val showTopBar = currentDestination in listOf(
         VisitListScreenDestination,
         ConversationListScreenDestination,
         VisitDetailScreenDestination,
         ConversationDetailScreenDestination
     )
+    val showBottomNavigation = currentDestination in listOf(
+        VisitListScreenDestination,
+        ConversationListScreenDestination,
+        ConversationDetailScreenDestination
+    )
+    val showSettingsMenu = currentDestination != VisitDetailScreenDestination
+    val title = if (currentDestination == VisitDetailScreenDestination) {
+        stringResource(id = R.string.visits)
+    } else {
+        ""
+    }
     Scaffold(
         topBar = {
-            if (showBottomBar) {
+            if (showTopBar) {
                 var menuExpanded by remember { mutableStateOf(false) }
                 TopAppBar(
-                    title = { Text(text = "") },
+                    title = { Text(text = title) },
                     actions = {
                         topBarActions.forEach { action ->
                             Box {
@@ -83,29 +96,31 @@ fun AppScaffold(
                                 action.menu?.invoke()
                             }
                         }
-                        IconButton(onClick = { menuExpanded = true }) {
-                            Icon(
-                                imageVector = Icons.Rounded.MoreVert,
-                                contentDescription = stringResource(id = R.string.more_options)
-                            )
-                        }
-                        DropdownMenu(
-                            expanded = menuExpanded,
-                            onDismissRequest = { menuExpanded = false }
-                        ) {
-                            DropdownMenuItem(
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = Icons.Rounded.Settings,
-                                        contentDescription = null
-                                    )
-                                },
-                                text = { Text(stringResource(id = R.string.settings)) },
-                                onClick = {
-                                    menuExpanded = false
-                                    onNavigate(SettingsScreenDestination)
-                                }
-                            )
+                        if (showSettingsMenu) {
+                            IconButton(onClick = { menuExpanded = true }) {
+                                Icon(
+                                    imageVector = Icons.Rounded.MoreVert,
+                                    contentDescription = stringResource(id = R.string.more_options)
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = menuExpanded,
+                                onDismissRequest = { menuExpanded = false }
+                            ) {
+                                DropdownMenuItem(
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Settings,
+                                            contentDescription = null
+                                        )
+                                    },
+                                    text = { Text(stringResource(id = R.string.settings)) },
+                                    onClick = {
+                                        menuExpanded = false
+                                        onNavigate(SettingsScreenDestination)
+                                    }
+                                )
+                            }
                         }
                     }
                 )
@@ -121,25 +136,41 @@ fun AppScaffold(
             }
         },
         bottomBar = {
-            if (showBottomBar) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .offset(y = -FloatingToolbarDefaults.ScreenOffset),
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    BottomNavigation(
-                        showFAB = showFAB,
-                        onFabClickedEvent = {
-                            onEvent(
-                                MainActivityViewModel.UiEvent.FabClicked(
-                                    currentDestination = currentDestination
+            when {
+                detailFooterActions != null -> {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        DetailFooter(
+                            modifier = Modifier.offset(y = -FloatingToolbarDefaults.ScreenOffset),
+                            onBackClicked = detailFooterActions.onBack,
+                            onSaveClickedEvent = detailFooterActions.onSave,
+                            onFabClickedEvent = detailFooterActions.onAdd
+                        )
+                    }
+                }
+
+                showBottomNavigation -> {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .offset(y = -FloatingToolbarDefaults.ScreenOffset),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        BottomNavigation(
+                            showFAB = showFAB,
+                            onFabClickedEvent = {
+                                onEvent(
+                                    MainActivityViewModel.UiEvent.FabClicked(
+                                        currentDestination = currentDestination
+                                    )
                                 )
-                            )
-                        },
-                        currentDestination = currentDestination,
-                        onNavigateToTab = onNavigateToTab
-                    )
+                            },
+                            currentDestination = currentDestination,
+                            onNavigateToTab = onNavigateToTab
+                        )
+                    }
                 }
             }
         }

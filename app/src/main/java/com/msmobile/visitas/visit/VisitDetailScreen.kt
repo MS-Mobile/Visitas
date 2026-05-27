@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
@@ -30,7 +29,6 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.ArrowDropDown
-import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.material.icons.rounded.LocationOn
@@ -42,21 +40,19 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -81,8 +77,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.AppScaffold
+import com.msmobile.visitas.AppScaffoldViewModel
+import com.msmobile.visitas.DetailFooterActions
 import com.msmobile.visitas.MainActivityViewModel
 import com.msmobile.visitas.R
+import com.msmobile.visitas.TopBarAction
 import com.msmobile.visitas.extension.EditableTextFieldColors
 import com.msmobile.visitas.extension.OnBackPressed
 import com.msmobile.visitas.extension.ReadOnlyTextFieldColors
@@ -100,7 +99,6 @@ import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.ui.views.CopyDataButton
 import com.msmobile.visitas.ui.views.DateTimePicker
-import com.msmobile.visitas.ui.views.DetailFooter
 import com.msmobile.visitas.ui.views.LazyColumnWithScrollbar
 import com.msmobile.visitas.ui.views.PermissionRationaleSheet
 import com.msmobile.visitas.ui.views.TextFieldClearButton
@@ -122,11 +120,20 @@ import java.util.UUID
 fun VisitDetailScreen(
     navigator: DestinationsNavigator,
     viewModel: VisitDetailViewModel,
+    appScaffoldViewModel: AppScaffoldViewModel,
+    paddingValues: PaddingValues,
     householderId: UUID? = null
 ) {
     val uiState: VisitDetailViewModel.UiState by viewModel.uiState.collectAsStateWithLifecycle()
     val onEvent = viewModel::onEvent
-    VisitDetailScreenContent(navigator, householderId, uiState, onEvent)
+    VisitDetailScreenContent(
+        navigator = navigator,
+        householderId = householderId,
+        uiState = uiState,
+        onEvent = onEvent,
+        paddingValues = paddingValues,
+        appScaffoldViewModel = appScaffoldViewModel
+    )
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
@@ -135,9 +142,10 @@ private fun VisitDetailScreenContent(
     navigator: DestinationsNavigator,
     householderId: UUID?,
     uiState: VisitDetailViewModel.UiState,
-    onEvent: (VisitDetailViewModel.UiEvent) -> Unit
+    onEvent: (VisitDetailViewModel.UiEvent) -> Unit,
+    paddingValues: PaddingValues,
+    appScaffoldViewModel: AppScaffoldViewModel
 ) {
-    val visitsTitle = stringResource(R.string.visits)
     LaunchedEffect(key1 = null) {
         onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId))
     }
@@ -145,105 +153,77 @@ private fun VisitDetailScreenContent(
     OnBackPressed {
         onEvent(VisitDetailViewModel.UiEvent.CancelClicked)
     }
-    Scaffold(
-        topBar = {
-            var menuExpanded by remember { mutableStateOf(false) }
-            TopAppBar(
-                title = { Text(text = visitsTitle) },
-                actions = {
-                    IconButton(onClick = { menuExpanded = true }) {
-                        Icon(
-                            imageVector = Icons.Rounded.MoreVert,
-                            contentDescription = stringResource(id = R.string.more_options)
-                        )
-                    }
-                    DropdownMenu(
-                        expanded = menuExpanded,
-                        onDismissRequest = { menuExpanded = false }
-                    ) {
-                        DropdownMenuItem(
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Rounded.Delete,
-                                    contentDescription = null
-                                )
-                            },
-                            text = { Text(stringResource(id = R.string.delete)) },
-                            onClick = {
-                                menuExpanded = false
-                                onEvent(VisitDetailViewModel.UiEvent.DeleteClicked)
-                            }
-                        )
-                    }
-                }
-            )
-        },
-        content = { paddingValues ->
-            val topPadding = paddingValues.calculateTopPadding()
-            val bottomPadding = paddingValues.calculateBottomPadding()
-            VisitDetail(
-                topPadding = topPadding,
-                bottomPadding = bottomPadding,
-                uiState = uiState,
-                onEvent = onEvent
-            )
-            if (uiState.showLocationPermissionDialog) {
-                RequestLocationPermission {
-                    onEvent(VisitDetailViewModel.UiEvent.LocationPermissionDialogShown)
-                    onEvent(VisitDetailViewModel.UiEvent.LocationPermissionGranted)
-                }
-            }
-            if (uiState.showCalendarPermissionDialog) {
-                RequestCalendarPermission {
-                    onEvent(VisitDetailViewModel.UiEvent.CalendarPermissionDialogShown)
-                    onEvent(VisitDetailViewModel.UiEvent.CalendarPermissionGranted)
-                }
-            }
-            PermissionRationaleSheet(
-                isVisible = uiState.showLocationRationale,
-                message = stringResource(R.string.location_permission_message),
-                icon = Icons.Rounded.LocationOn,
-                onDismiss = {
-                    onEvent(VisitDetailViewModel.UiEvent.LocationRationaleDismissed)
-                },
-                onConfirm = {
-                    onEvent(VisitDetailViewModel.UiEvent.LocationRationaleAccepted)
-                }
-            )
-            PermissionRationaleSheet(
-                isVisible = uiState.showCalendarRationale,
-                message = stringResource(R.string.calendar_permission_message),
-                icon = Icons.Rounded.DateRange,
-                onDismiss = {
-                    onEvent(VisitDetailViewModel.UiEvent.CalendarRationaleDismissed)
-                },
-                onConfirm = {
-                    onEvent(VisitDetailViewModel.UiEvent.CalendarRationaleAccepted)
-                }
-            )
-            StateHandler(uiState = uiState, navigator = navigator, onEvent = onEvent)
 
-        },
-        bottomBar = {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center
-            ) {
-                DetailFooter(
-                    modifier = Modifier.offset(y = -FloatingToolbarDefaults.ScreenOffset),
-                    onBackClicked = {
-                        onEvent(VisitDetailViewModel.UiEvent.CancelClicked)
-                    },
-                    onSaveClickedEvent = {
-                        onEvent(VisitDetailViewModel.UiEvent.SaveClicked)
-                    },
-                    onFabClickedEvent = {
-                        onEvent(VisitDetailViewModel.UiEvent.AddVisitClicked)
-                    }
+    val deleteDescription = stringResource(id = R.string.delete)
+    val chromeOwner = remember { Any() }
+    DisposableEffect(Unit) {
+        appScaffoldViewModel.setTopBarActions(
+            owner = chromeOwner,
+            actions = listOf(
+                TopBarAction(
+                    contentDescription = deleteDescription,
+                    icon = Icons.Rounded.Delete,
+                    onClick = { onEvent(VisitDetailViewModel.UiEvent.DeleteClicked) }
                 )
-            }
+            )
+        )
+        appScaffoldViewModel.setDetailFooterActions(
+            owner = chromeOwner,
+            actions = DetailFooterActions(
+                onBack = { onEvent(VisitDetailViewModel.UiEvent.CancelClicked) },
+                onSave = { onEvent(VisitDetailViewModel.UiEvent.SaveClicked) },
+                onAdd = { onEvent(VisitDetailViewModel.UiEvent.AddVisitClicked) }
+            )
+        )
+        onDispose {
+            appScaffoldViewModel.clearTopBarActions(chromeOwner)
+            appScaffoldViewModel.clearDetailFooterActions(chromeOwner)
+        }
+    }
+
+    val topPadding = paddingValues.calculateTopPadding()
+    val bottomPadding = paddingValues.calculateBottomPadding()
+    VisitDetail(
+        topPadding = topPadding,
+        bottomPadding = bottomPadding,
+        uiState = uiState,
+        onEvent = onEvent
+    )
+    if (uiState.showLocationPermissionDialog) {
+        RequestLocationPermission {
+            onEvent(VisitDetailViewModel.UiEvent.LocationPermissionDialogShown)
+            onEvent(VisitDetailViewModel.UiEvent.LocationPermissionGranted)
+        }
+    }
+    if (uiState.showCalendarPermissionDialog) {
+        RequestCalendarPermission {
+            onEvent(VisitDetailViewModel.UiEvent.CalendarPermissionDialogShown)
+            onEvent(VisitDetailViewModel.UiEvent.CalendarPermissionGranted)
+        }
+    }
+    PermissionRationaleSheet(
+        isVisible = uiState.showLocationRationale,
+        message = stringResource(R.string.location_permission_message),
+        icon = Icons.Rounded.LocationOn,
+        onDismiss = {
+            onEvent(VisitDetailViewModel.UiEvent.LocationRationaleDismissed)
+        },
+        onConfirm = {
+            onEvent(VisitDetailViewModel.UiEvent.LocationRationaleAccepted)
         }
     )
+    PermissionRationaleSheet(
+        isVisible = uiState.showCalendarRationale,
+        message = stringResource(R.string.calendar_permission_message),
+        icon = Icons.Rounded.DateRange,
+        onDismiss = {
+            onEvent(VisitDetailViewModel.UiEvent.CalendarRationaleDismissed)
+        },
+        onConfirm = {
+            onEvent(VisitDetailViewModel.UiEvent.CalendarRationaleAccepted)
+        }
+    )
+    StateHandler(uiState = uiState, navigator = navigator, onEvent = onEvent)
 }
 
 @Composable
@@ -1111,11 +1091,33 @@ internal fun VisitDetailScreenPreview(
     @PreviewParameter(VisitDetailPreviewConfigProvider::class) config: VisitDetailPreviewConfig
 ) {
     VisitasTheme {
-        VisitDetailScreenContent(
-            navigator = EmptyDestinationsNavigator,
-            householderId = config.householderId,
-            uiState = config.uiState,
-            onEvent = {}
-        )
+        AppScaffold(
+            uiState = config.mainActivityUiState,
+            currentDestination = VisitDetailScreenDestination,
+            onEvent = {},
+            onNavigateToTab = {},
+            onNavigate = {},
+            topBarActions = listOf(
+                TopBarAction(
+                    contentDescription = stringResource(id = R.string.delete),
+                    icon = Icons.Rounded.Delete,
+                    onClick = {}
+                )
+            ),
+            detailFooterActions = DetailFooterActions(
+                onBack = {},
+                onSave = {},
+                onAdd = {}
+            )
+        ) { paddingValues ->
+            VisitDetailScreenContent(
+                navigator = EmptyDestinationsNavigator,
+                householderId = config.householderId,
+                uiState = config.uiState,
+                onEvent = {},
+                paddingValues = paddingValues,
+                appScaffoldViewModel = remember { AppScaffoldViewModel() }
+            )
+        }
     }
 }

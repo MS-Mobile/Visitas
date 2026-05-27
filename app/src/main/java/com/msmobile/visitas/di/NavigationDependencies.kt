@@ -40,6 +40,8 @@ fun navigationDependencies(
         }
         destination(VisitDetailScreenDestination) {
             dependency(hiltViewModel<VisitDetailViewModel>())
+            dependency(paddingValues)
+            dependency(appScaffoldViewModel)
         }
         destination(ConversationListScreenDestination) {
             dependency(hiltViewModel<ConversationListViewModel>())

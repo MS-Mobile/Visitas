@@ -12,11 +12,37 @@ class AppScaffoldViewModel
     private val _topBarActions = MutableStateFlow<List<TopBarAction>>(emptyList())
     val topBarActions: StateFlow<List<TopBarAction>> = _topBarActions
 
-    fun setTopBarActions(actions: List<TopBarAction>) {
+    private val _detailFooterActions = MutableStateFlow<DetailFooterActions?>(null)
+    val detailFooterActions: StateFlow<DetailFooterActions?> = _detailFooterActions
+
+    // Tokens identify the screen that currently owns each slot, so a screen leaving
+    // composition only clears chrome it still owns. Without this, the exiting screen's
+    // onDispose (which runs after the entering screen has already published) would wipe
+    // the new screen's chrome.
+    private var topBarActionsOwner: Any? = null
+    private var detailFooterActionsOwner: Any? = null
+
+    fun setTopBarActions(owner: Any, actions: List<TopBarAction>) {
+        topBarActionsOwner = owner
         _topBarActions.value = actions
     }
 
-    fun clearTopBarActions() {
-        _topBarActions.value = emptyList()
+    fun clearTopBarActions(owner: Any) {
+        if (topBarActionsOwner === owner) {
+            topBarActionsOwner = null
+            _topBarActions.value = emptyList()
+        }
+    }
+
+    fun setDetailFooterActions(owner: Any, actions: DetailFooterActions) {
+        detailFooterActionsOwner = owner
+        _detailFooterActions.value = actions
+    }
+
+    fun clearDetailFooterActions(owner: Any) {
+        if (detailFooterActionsOwner === owner) {
+            detailFooterActionsOwner = null
+            _detailFooterActions.value = null
+        }
     }
 }
