@@ -74,10 +74,14 @@ fun AppScaffold(
         ConversationDetailScreenDestination
     )
     val showSettingsMenu = currentDestination != VisitDetailScreenDestination
-    val title = if (currentDestination == VisitDetailScreenDestination) {
-        stringResource(id = R.string.visits)
-    } else {
-        ""
+    val title = when (currentDestination) {
+        VisitListScreenDestination,
+        VisitDetailScreenDestination -> stringResource(id = R.string.visits)
+
+        ConversationListScreenDestination,
+        ConversationDetailScreenDestination -> stringResource(id = R.string.conversations)
+
+        else -> stringResource(id = R.string.app_name)
     }
     Scaffold(
         topBar = {
