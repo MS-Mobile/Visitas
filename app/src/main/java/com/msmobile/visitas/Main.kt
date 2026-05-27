@@ -3,8 +3,7 @@ package com.msmobile.visitas
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.remember
 import androidx.navigation.compose.rememberNavController
 import com.msmobile.visitas.di.navigationDependencies
 import com.msmobile.visitas.extension.currentDestinationWithLifecycle
@@ -23,8 +22,7 @@ fun Main(
     val navController = rememberNavController()
     val destinationsNavigator = navController.rememberDestinationsNavigator()
     val currentDestination by navController.currentDestinationWithLifecycle()
-    val appScaffoldViewModel = hiltViewModel<AppScaffoldViewModel>()
-    val scaffoldUiState by appScaffoldViewModel.uiState.collectAsStateWithLifecycle()
+    val appScaffoldState = remember { AppScaffoldState() }
     val intentState = uiState.intentState
     val intentStateHandled = {
         onEvent(MainActivityViewModel.UiEvent.IntentStateHandled)
@@ -48,8 +46,8 @@ fun Main(
             onEvent = onEvent,
             onNavigateToTab = onNavigateToTab,
             onNavigate = onNavigate,
-            topBarActions = scaffoldUiState.topBarActions,
-            detailFooterActions = scaffoldUiState.detailFooterActions,
+            topBarActions = appScaffoldState.uiState.topBarActions,
+            detailFooterActions = appScaffoldState.uiState.detailFooterActions,
             content = { paddingValues: PaddingValues ->
                 DestinationsNavHost(
                     navGraph = NavGraphs.root,
@@ -58,7 +56,7 @@ fun Main(
                         intentState = intentState,
                         intentStateHandled = intentStateHandled,
                         paddingValues = paddingValues,
-                        appScaffoldViewModel = appScaffoldViewModel
+                        appScaffoldState = appScaffoldState
                     )
                 )
             }

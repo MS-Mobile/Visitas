@@ -71,7 +71,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.AppScaffold
-import com.msmobile.visitas.AppScaffoldViewModel
+import com.msmobile.visitas.AppScaffoldState
 import com.msmobile.visitas.MainActivityViewModel
 import com.msmobile.visitas.OnIntentStateHandled
 import com.msmobile.visitas.R
@@ -125,7 +125,7 @@ fun VisitListScreen(
     summaryViewModel: SummaryViewModel,
     visitListViewModel: VisitListViewModel,
     backupViewModel: BackupViewModel,
-    appScaffoldViewModel: AppScaffoldViewModel,
+    appScaffoldState: AppScaffoldState,
     intentState: IntentState,
     onIntentStateHandled: OnIntentStateHandled,
 ) {
@@ -152,9 +152,9 @@ fun VisitListScreen(
     val filterActionDescription = stringResource(R.string.filter_visits_content_description)
     val chromeOwner = remember { Any() }
     DisposableEffect(Unit) {
-        appScaffoldViewModel.setUiState(
+        appScaffoldState.setUiState(
             owner = chromeOwner,
-            uiState = AppScaffoldViewModel.UiState(
+            uiState = AppScaffoldState.UiState(
                 topBarActions = listOf(
                     TopBarAction(
                         contentDescription = mapActionDescription,
@@ -180,7 +180,7 @@ fun VisitListScreen(
                 )
             )
         )
-        onDispose { appScaffoldViewModel.clearUiState(chromeOwner) }
+        onDispose { appScaffoldState.clearUiState(chromeOwner) }
     }
 
     OnBackPressed { }

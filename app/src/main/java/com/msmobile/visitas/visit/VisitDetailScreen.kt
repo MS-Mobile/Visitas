@@ -77,7 +77,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.AppScaffold
-import com.msmobile.visitas.AppScaffoldViewModel
+import com.msmobile.visitas.AppScaffoldState
 import com.msmobile.visitas.DetailFooterActions
 import com.msmobile.visitas.MainActivityViewModel
 import com.msmobile.visitas.R
@@ -120,7 +120,7 @@ import java.util.UUID
 fun VisitDetailScreen(
     navigator: DestinationsNavigator,
     viewModel: VisitDetailViewModel,
-    appScaffoldViewModel: AppScaffoldViewModel,
+    appScaffoldState: AppScaffoldState,
     paddingValues: PaddingValues,
     householderId: UUID? = null
 ) {
@@ -132,7 +132,7 @@ fun VisitDetailScreen(
         uiState = uiState,
         onEvent = onEvent,
         paddingValues = paddingValues,
-        appScaffoldViewModel = appScaffoldViewModel
+        appScaffoldState = appScaffoldState
     )
 }
 
@@ -144,7 +144,7 @@ private fun VisitDetailScreenContent(
     uiState: VisitDetailViewModel.UiState,
     onEvent: (VisitDetailViewModel.UiEvent) -> Unit,
     paddingValues: PaddingValues,
-    appScaffoldViewModel: AppScaffoldViewModel
+    appScaffoldState: AppScaffoldState
 ) {
     LaunchedEffect(key1 = null) {
         onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId))
@@ -157,9 +157,9 @@ private fun VisitDetailScreenContent(
     val deleteDescription = stringResource(id = R.string.delete)
     val chromeOwner = remember { Any() }
     DisposableEffect(Unit) {
-        appScaffoldViewModel.setUiState(
+        appScaffoldState.setUiState(
             owner = chromeOwner,
-            uiState = AppScaffoldViewModel.UiState(
+            uiState = AppScaffoldState.UiState(
                 topBarActions = listOf(
                     TopBarAction(
                         contentDescription = deleteDescription,
@@ -174,7 +174,7 @@ private fun VisitDetailScreenContent(
                 )
             )
         )
-        onDispose { appScaffoldViewModel.clearUiState(chromeOwner) }
+        onDispose { appScaffoldState.clearUiState(chromeOwner) }
     }
 
     val topPadding = paddingValues.calculateTopPadding()
@@ -1112,7 +1112,7 @@ internal fun VisitDetailScreenPreview(
                 uiState = config.uiState,
                 onEvent = {},
                 paddingValues = paddingValues,
-                appScaffoldViewModel = remember { AppScaffoldViewModel() }
+                appScaffoldState = remember { AppScaffoldState() }
             )
         }
     }
