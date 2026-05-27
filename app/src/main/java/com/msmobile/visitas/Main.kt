@@ -1,8 +1,8 @@
 package com.msmobile.visitas
 
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.navigation.compose.rememberNavController
 import com.msmobile.visitas.di.navigationDependencies
 import com.msmobile.visitas.extension.currentDestinationWithLifecycle
@@ -21,10 +21,8 @@ fun Main(
     val navController = rememberNavController()
     val destinationsNavigator = navController.rememberDestinationsNavigator()
     val currentDestination by navController.currentDestinationWithLifecycle()
+    val appScaffoldState = remember { AppScaffoldState() }
     val intentState = uiState.intentState
-    val scaffoldConfigurationChanged = { scaffoldState: MainActivityViewModel.ScaffoldState ->
-        onEvent(MainActivityViewModel.UiEvent.ScaffoldConfigurationChanged(scaffoldState))
-    }
     val intentStateHandled = {
         onEvent(MainActivityViewModel.UiEvent.IntentStateHandled)
     }
@@ -47,15 +45,16 @@ fun Main(
             onEvent = onEvent,
             onNavigateToTab = onNavigateToTab,
             onNavigate = onNavigate,
-            content = { paddingValues: PaddingValues ->
+            topBarActions = appScaffoldState.uiState.topBarActions,
+            detailFooterActions = appScaffoldState.uiState.detailFooterActions,
+            content = {
                 DestinationsNavHost(
                     navGraph = NavGraphs.root,
                     navController = navController,
                     dependenciesContainerBuilder = navigationDependencies(
                         intentState = intentState,
                         intentStateHandled = intentStateHandled,
-                        scaffoldConfigurationChanged = scaffoldConfigurationChanged,
-                        paddingValues = paddingValues
+                        appScaffoldState = appScaffoldState
                     )
                 )
             }

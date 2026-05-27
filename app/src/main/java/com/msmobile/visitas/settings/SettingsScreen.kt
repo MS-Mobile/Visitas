@@ -28,7 +28,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.MainActivityViewModel
-import com.msmobile.visitas.OnScaffoldConfigurationChanged
 import com.msmobile.visitas.R
 import com.msmobile.visitas.extension.showShareIntent
 import com.msmobile.visitas.util.DetailScreenStyle
@@ -41,20 +40,10 @@ private const val BACKUP_MIME_TYPE = "application/octet-stream"
 @Destination<RootGraph>(style = DetailScreenStyle::class)
 @Composable
 fun SettingsScreen(
-    viewModel: SettingsDetailViewModel,
-    scaffoldConfigurationChanged: OnScaffoldConfigurationChanged
+    viewModel: SettingsDetailViewModel
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val onEvent = viewModel::onEvent
-
-    LaunchedEffect(key1 = null) {
-        scaffoldConfigurationChanged(
-            MainActivityViewModel.ScaffoldState(
-                showBottomBar = false,
-                showFAB = false
-            )
-        )
-    }
 
     SettingsScreenContent(
         uiState = uiState,

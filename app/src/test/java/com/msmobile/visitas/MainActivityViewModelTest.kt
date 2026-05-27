@@ -8,7 +8,6 @@ import com.ramcosta.composedestinations.generated.destinations.ConversationListS
 import com.ramcosta.composedestinations.generated.destinations.VisitDetailScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.VisitListScreenDestination
 import junit.framework.TestCase.assertEquals
-import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -26,27 +25,7 @@ class MainActivityViewModelTest {
         // Assert
         val state = viewModel.uiState.value
         assertEquals(IntentState.None, state.intentState)
-        assertFalse(state.scaffoldState.showBottomBar)
-        assertFalse(state.scaffoldState.showFAB)
         assertEquals(MainActivityViewModel.UiEventState.Idle, state.eventState)
-    }
-
-    @Test
-    fun `onEvent with ScaffoldConfigurationChanged updates scaffoldState`() {
-        // Arrange
-        val viewModel = createViewModel()
-        val newScaffoldState = MainActivityViewModel.ScaffoldState(
-            showBottomBar = true,
-            showFAB = true
-        )
-
-        // Act
-        viewModel.onEvent(MainActivityViewModel.UiEvent.ScaffoldConfigurationChanged(newScaffoldState))
-
-        // Assert
-        val state = viewModel.uiState.value
-        assertTrue(state.scaffoldState.showBottomBar)
-        assertTrue(state.scaffoldState.showFAB)
     }
 
     @Test

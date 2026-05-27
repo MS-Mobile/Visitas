@@ -35,6 +35,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,9 +50,11 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.AppScaffold
+import com.msmobile.visitas.AppScaffoldState
+import com.msmobile.visitas.DetailFooterActions
 import com.msmobile.visitas.MainActivityViewModel
-import com.msmobile.visitas.OnScaffoldConfigurationChanged
 import com.msmobile.visitas.R
+import com.msmobile.visitas.TopBarAction
 import com.msmobile.visitas.conversation.ConversationDetailViewModel.ConversationState
 import com.msmobile.visitas.extension.EditableTextFieldColors
 import com.msmobile.visitas.extension.OnBackPressed
@@ -72,6 +75,7 @@ import com.msmobile.visitas.util.verticalFieldPadding
 import com.msmobile.visitas.visit.VisitDetailViewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.ConversationDetailScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.VisitDetailScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import java.util.UUID
@@ -81,8 +85,8 @@ import java.util.UUID
 fun ConversationDetailScreen(
     navigator: DestinationsNavigator,
     viewModel: ConversationDetailViewModel,
-    firstConversationId: UUID? = null,
-    scaffoldConfigurationChanged: OnScaffoldConfigurationChanged
+    appScaffoldState: AppScaffoldState,
+    firstConversationId: UUID? = null
 ) {
     val uiState: ConversationDetailViewModel.UiState by viewModel.uiState.collectAsStateWithLifecycle()
     val onEvent = viewModel::onEvent
@@ -90,21 +94,10 @@ fun ConversationDetailScreen(
         navigator.navigateUp()
         Unit
     }
-
-    LaunchedEffect(key1 = null) {
-        scaffoldConfigurationChanged(
-            MainActivityViewModel.ScaffoldState(
-                showBottomBar = false,
-                showFAB = false
-            )
-        )
-        onEvent(ConversationDetailViewModel.UiEvent.ViewCreated(firstConversationId))
-    }
-    OnBackPressed {
-        onEvent(ConversationDetailViewModel.UiEvent.CancelClicked)
-    }
     ConversationDetailScreenContent(
+        firstConversationId = firstConversationId,
         uiState = uiState,
+        appScaffoldState =  appScaffoldState,
         onEvent = onEvent,
         onNavigateUp = onNavigateUp
     )
@@ -113,74 +106,50 @@ fun ConversationDetailScreen(
 @OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun ConversationDetailScreenContent(
+    firstConversationId: UUID?,
     uiState: ConversationDetailViewModel.UiState,
+    appScaffoldState: AppScaffoldState,
     onEvent: (ConversationDetailViewModel.UiEvent) -> Unit,
     onNavigateUp: () -> Unit = {}
 ) {
     val conversationsTitle = stringResource(R.string.conversations)
-    Scaffold(
-        topBar = {
-            var menuExpanded by remember { mutableStateOf(false) }
-            TopAppBar(
-                title = { Text(text = conversationsTitle) },
-                actions = {
-                    IconButton(onClick = { menuExpanded = true }) {
-                        Icon(
-                            imageVector = Icons.Rounded.MoreVert,
-                            contentDescription = stringResource(id = R.string.more_options)
-                        )
-                    }
-                    DropdownMenu(
-                        expanded = menuExpanded,
-                        onDismissRequest = { menuExpanded = false }
-                    ) {
-                        DropdownMenuItem(
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Rounded.Delete,
-                                    contentDescription = null
-                                )
-                            },
-                            text = { Text(stringResource(id = R.string.delete)) },
-                            onClick = {
-                                menuExpanded = false
-                                onEvent(ConversationDetailViewModel.UiEvent.DeleteClicked)
-                            }
-                        )
-                    }
-                }
-            )
-        },
-        content = { paddingValues ->
-            val topPadding = paddingValues.calculateTopPadding()
-            val bottomPadding = paddingValues.calculateBottomPadding()
-            ConversationItems(
-                topPadding = topPadding,
-                bottomPadding = bottomPadding,
-                uiState = uiState,
-                onEvent = onEvent
-            )
-            StateHandler(uiState, onEvent, onNavigateUp)
-        }, bottomBar = {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center
-            ) {
-                DetailFooter(
-                    modifier = Modifier.offset(y = -FloatingToolbarDefaults.ScreenOffset),
-                    onBackClicked = { onEvent(ConversationDetailViewModel.UiEvent.CancelClicked) },
-                    onSaveClickedEvent = { onEvent(ConversationDetailViewModel.UiEvent.SaveClicked) },
-                    onFabClickedEvent = { onEvent(ConversationDetailViewModel.UiEvent.AddClicked) },
+    LaunchedEffect(key1 = null) {
+        onEvent(ConversationDetailViewModel.UiEvent.ViewCreated(firstConversationId))
+    }
+    OnBackPressed {
+        onEvent(ConversationDetailViewModel.UiEvent.CancelClicked)
+    }
+    val deleteDescription = stringResource(id = R.string.delete)
+    val chromeOwner = remember { Any() }
+    DisposableEffect(Unit) {
+        appScaffoldState.setUiState(
+            owner = chromeOwner,
+            uiState = AppScaffoldState.UiState(
+                topBarActions = listOf(
+                    TopBarAction(
+                        contentDescription = deleteDescription,
+                        icon = Icons.Rounded.Delete,
+                        onClick = { onEvent(ConversationDetailViewModel.UiEvent.DeleteClicked) }
+                    )
+                ),
+                detailFooterActions = DetailFooterActions(
+                    onBack = { onEvent(ConversationDetailViewModel.UiEvent.CancelClicked) },
+                    onSave = { onEvent(ConversationDetailViewModel.UiEvent.SaveClicked) },
+                    onAdd = { onEvent(ConversationDetailViewModel.UiEvent.AddClicked) }
                 )
-            }
-        }
+            )
+        )
+        onDispose { appScaffoldState.clearUiState(chromeOwner) }
+    }
+    ConversationItems(
+        uiState = uiState,
+        onEvent = onEvent
     )
+    StateHandler(uiState, onEvent, onNavigateUp)
 }
 
 @Composable
 private fun ConversationItems(
-    topPadding: Dp,
-    bottomPadding: Dp,
     uiState: ConversationDetailViewModel.UiState,
     onEvent: (ConversationDetailViewModel.UiEvent) -> Unit,
 ) {
@@ -190,7 +159,6 @@ private fun ConversationItems(
         LazyColumn(
             state = listState,
             modifier = Modifier
-                .padding(top = topPadding)
                 .padding(horizontal = borderPadding),
             verticalArrangement = Arrangement.spacedBy(verticalFieldPadding)
         ) {
@@ -209,7 +177,7 @@ private fun ConversationItems(
                 Spacer(
                     modifier = Modifier
                         .imePadding()
-                        .padding(bottom = bottomPadding + floatingBarBottomPadding)
+                        .padding(bottom = verticalFieldPadding + floatingBarBottomPadding)
                 )
             }
         }
@@ -394,10 +362,20 @@ internal fun ConversationDetailScreenPreview(
     @PreviewParameter(ConversationDetailPreviewConfigProvider::class) config: ConversationDetailPreviewConfig
 ) {
     VisitasTheme {
-        ConversationDetailScreenContent(
-            uiState = config.uiState,
+        AppScaffold(
+            uiState = config.mainActivityUiState,
+            currentDestination = ConversationDetailScreenDestination,
             onEvent = {},
-            onNavigateUp = {}
-        )
+            onNavigateToTab = {},
+            onNavigate = {}
+        ) {
+            ConversationDetailScreenContent(
+                firstConversationId = null,
+                uiState = config.uiState,
+                appScaffoldState = remember { AppScaffoldState() }, // TODO: config.appScaffoldState
+                onEvent = {},
+                onNavigateUp = {}
+            )
+        }
     }
 }

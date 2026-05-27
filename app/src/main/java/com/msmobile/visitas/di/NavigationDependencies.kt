@@ -1,10 +1,9 @@
 package com.msmobile.visitas.di
 
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.msmobile.visitas.AppScaffoldState
 import com.msmobile.visitas.OnIntentStateHandled
-import com.msmobile.visitas.OnScaffoldConfigurationChanged
 import com.msmobile.visitas.backup.BackupViewModel
 import com.msmobile.visitas.conversation.ConversationDetailViewModel
 import com.msmobile.visitas.conversation.ConversationListViewModel
@@ -24,35 +23,32 @@ import com.ramcosta.composedestinations.navigation.destination
 
 fun navigationDependencies(
     intentState: IntentState,
-    scaffoldConfigurationChanged: OnScaffoldConfigurationChanged,
     intentStateHandled: OnIntentStateHandled,
-    paddingValues: PaddingValues
+    appScaffoldState: AppScaffoldState
 ): @Composable (DependenciesContainerBuilder<*>.() -> Unit) =
     {
         destination(VisitListScreenDestination) {
             dependency(hiltViewModel<SummaryViewModel>())
             dependency(hiltViewModel<VisitListViewModel>())
             dependency(hiltViewModel<BackupViewModel>())
-            dependency(scaffoldConfigurationChanged)
             dependency(intentState)
             dependency(intentStateHandled)
-            dependency(paddingValues)
+            dependency(appScaffoldState)
         }
         destination(VisitDetailScreenDestination) {
             dependency(hiltViewModel<VisitDetailViewModel>())
-            dependency(scaffoldConfigurationChanged)
+            dependency(appScaffoldState)
         }
         destination(ConversationListScreenDestination) {
             dependency(hiltViewModel<ConversationListViewModel>())
-            dependency(scaffoldConfigurationChanged)
-            dependency(paddingValues)
+            dependency(appScaffoldState)
         }
         destination(ConversationDetailScreenDestination) {
             dependency(hiltViewModel<ConversationDetailViewModel>())
-            dependency(scaffoldConfigurationChanged)
+            dependency(appScaffoldState)
         }
         destination(SettingsScreenDestination) {
             dependency(hiltViewModel<SettingsDetailViewModel>())
-            dependency(scaffoldConfigurationChanged)
+            dependency(appScaffoldState)
         }
     }

@@ -52,6 +52,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -70,10 +71,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.AppScaffold
+import com.msmobile.visitas.AppScaffoldState
 import com.msmobile.visitas.MainActivityViewModel
 import com.msmobile.visitas.OnIntentStateHandled
-import com.msmobile.visitas.OnScaffoldConfigurationChanged
 import com.msmobile.visitas.R
+import com.msmobile.visitas.TopBarAction
 import com.msmobile.visitas.backup.BackupSheet
 import com.msmobile.visitas.backup.BackupViewModel
 import com.msmobile.visitas.extension.OnBackPressed
@@ -119,12 +121,11 @@ private const val VISIT_MAP_ANIMATION_DURATION = 300
 @Composable
 fun VisitListScreen(
     navigator: DestinationsNavigator,
-    paddingValues: PaddingValues,
     summaryViewModel: SummaryViewModel,
     visitListViewModel: VisitListViewModel,
     backupViewModel: BackupViewModel,
+    appScaffoldState: AppScaffoldState,
     intentState: IntentState,
-    scaffoldConfigurationChanged: OnScaffoldConfigurationChanged,
     onIntentStateHandled: OnIntentStateHandled,
 ) {
     val summaryUiState by summaryViewModel.uiState.collectAsStateWithLifecycle()
@@ -138,7 +139,6 @@ fun VisitListScreen(
         navigator.navigate(direction)
     }
     val isKeyboardOpen by isKeyboardOpen()
-    val visitsTitle = stringResource(R.string.visits)
     val onVisitMapEvent = { visitMapEvent: VisitsMapEvent ->
         visitListViewModel.onEvent(
             VisitListViewModel.UiEvent.VisitMapEventTriggered(
@@ -147,18 +147,43 @@ fun VisitListScreen(
         )
     }
 
-    LaunchedEffect(key1 = isKeyboardOpen) {
-        scaffoldConfigurationChanged(
-            MainActivityViewModel.ScaffoldState(
-                showBottomBar = !isKeyboardOpen,
-                showFAB = true,
-                title = visitsTitle
+    val mapActionDescription = stringResource(R.string.show_visits_map_content_description)
+    val filterActionDescription = stringResource(R.string.filter_visits_content_description)
+    val chromeOwner = remember { Any() }
+    DisposableEffect(Unit) {
+        appScaffoldState.setUiState(
+            owner = chromeOwner,
+            uiState = AppScaffoldState.UiState(
+                topBarActions = listOf(
+                    TopBarAction(
+                        contentDescription = mapActionDescription,
+                        icon = Icons.Rounded.Map,
+                        onClick = {
+                            visitListViewModel.onEvent(VisitListViewModel.UiEvent.VisitMapSheetClicked)
+                        }
+                    ),
+                    TopBarAction(
+                        contentDescription = filterActionDescription,
+                        icon = Icons.Rounded.FilterList,
+                        onClick = {
+                            visitListViewModel.onEvent(VisitListViewModel.UiEvent.VisitsFilterButtonClicked)
+                        },
+                        menu = {
+                            val filterUiState by visitListViewModel.uiState.collectAsStateWithLifecycle()
+                            VisitListFilterDropdown(
+                                uiState = filterUiState,
+                                onEvent = visitListViewModel::onEvent
+                            )
+                        }
+                    )
+                )
             )
         )
+        onDispose { appScaffoldState.clearUiState(chromeOwner) }
     }
+
     OnBackPressed { }
     VisitListScreenContent(
-        paddingValues = paddingValues,
         summaryUiState = summaryUiState,
         visitListUiState = visitListUiState,
         backupUiState = backupUiState,
@@ -175,7 +200,6 @@ fun VisitListScreen(
 
 @Composable
 private fun VisitListScreenContent(
-    paddingValues: PaddingValues,
     summaryUiState: SummaryViewModel.UiState,
     visitListUiState: VisitListViewModel.UiState,
     backupUiState: BackupViewModel.UiState,
@@ -188,9 +212,7 @@ private fun VisitListScreenContent(
     onIntentStateHandled: OnIntentStateHandled,
     onVisitMapEvent: (VisitsMapEvent) -> Unit
 ) {
-    val topPadding = paddingValues.calculateTopPadding()
     Column(
-        modifier = Modifier.padding(top = topPadding),
         verticalArrangement = Arrangement.spacedBy(verticalFieldPadding)
     ) {
         SummaryCard(
@@ -205,7 +227,6 @@ private fun VisitListScreenContent(
                 start = borderPadding,
                 end = borderPadding
             ),
-            paddingValues = paddingValues,
             visitListUiState = visitListUiState,
             onVisitListEvent = onVisitListEvent,
             onNavigate = onNavigate
@@ -463,7 +484,6 @@ fun ColumnScope.SummaryCardDetails(
 @Composable
 private fun VisitsList(
     modifier: Modifier,
-    paddingValues: PaddingValues,
     visitListUiState: VisitListViewModel.UiState,
     onVisitListEvent: (VisitListViewModel.UiEvent) -> Unit,
     onNavigate: (Direction) -> Unit,
@@ -471,33 +491,11 @@ private fun VisitsList(
     val visitList = visitListUiState.visitList.filter { !it.hide }
     val isLoadingVisits = visitListUiState.isLoadingVisits
     val showNearbyVisits = visitListUiState.showNearbyVisits
-    val listBottomPadding = paddingValues.calculateBottomPadding().let { dp ->
-        if (dp > 0.dp) dp - verticalFieldPadding else verticalFieldPadding
-    }.coerceAtLeast(0.dp) + floatingBarBottomPadding
 
     LaunchedEffect(key1 = null) {
         onVisitListEvent(VisitListViewModel.UiEvent.ViewCreated)
     }
     Column(modifier = modifier) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = verticalFieldPadding),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.End
-        ) {
-            IconButton(
-                onClick = {
-                    onVisitListEvent(VisitListViewModel.UiEvent.VisitMapSheetClicked)
-                }) {
-                Icon(
-                    imageVector = Icons.Rounded.Map,
-                    contentDescription = stringResource(R.string.show_visits_map_content_description),
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-            }
-            VisitListFilterMenu(uiState = visitListUiState, onEvent = onVisitListEvent)
-        }
         val listState = rememberLazyListState()
         LazyColumnWithScrollbar(listState = listState) {
             LazyColumn(
@@ -505,7 +503,7 @@ private fun VisitsList(
                 verticalArrangement = Arrangement.spacedBy(verticalFieldPadding),
                 contentPadding = PaddingValues(
                     top = verticalFieldPadding,
-                    bottom = listBottomPadding
+                    bottom = verticalFieldPadding + floatingBarBottomPadding
                 )
             ) {
                 if (isLoadingVisits && visitList.isEmpty()) {
@@ -585,69 +583,61 @@ fun VisitCardSkeleton() {
 }
 
 @Composable
-private fun VisitListFilterMenu(
+private fun VisitListFilterDropdown(
     uiState: VisitListViewModel.UiState,
     onEvent: (VisitListViewModel.UiEvent) -> Unit
 ) {
-    IconButton(onClick = {
-        onEvent(VisitListViewModel.UiEvent.VisitsFilterButtonClicked)
-    }) {
-        Icon(
-            imageVector = Icons.Rounded.FilterList,
-            contentDescription = stringResource(R.string.filter_visits_content_description)
+    DropdownMenu(
+        expanded = uiState.isVisitsFilterMenuExpanded,
+        onDismissRequest = {
+            onEvent(VisitListViewModel.UiEvent.VisitsFilterMenuDismissed)
+        }) {
+
+        // Date filter
+        Text(
+            modifier = Modifier.padding(borderPadding),
+            text = stringResource(id = R.string.filter_visits)
         )
-        DropdownMenu(
-            expanded = uiState.isVisitsFilterMenuExpanded,
-            onDismissRequest = {
-                onEvent(VisitListViewModel.UiEvent.VisitsFilterMenuDismissed)
-            }) {
+        HorizontalDivider()
+        uiState.visitsFilterOptions.map { option ->
+            val visitFilterOption = stringResource(id = option.description.textResId)
+            DropdownMenuItem(text = {
+                Text(text = visitFilterOption)
+            }, trailingIcon = {
+                if (uiState.selectedVisitFilterOption == option) {
+                    Icon(
+                        imageVector = Icons.Rounded.Check,
+                        contentDescription = visitFilterOption
+                    )
+                }
+            }, onClick = {
+                onEvent(VisitListViewModel.UiEvent.VisitsFilterOptionSelected(option = option))
+            })
+        }
 
-            // Date filter
+        // Distance filter
+        HorizontalDivider()
+        Text(
+            modifier = Modifier.padding(borderPadding),
+            text = stringResource(id = R.string.visit_distance)
+        )
+        HorizontalDivider()
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable {
+                    onEvent(VisitListViewModel.UiEvent.ShowNearbyVisitsToggled(!uiState.showNearbyVisits))
+                },
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
             Text(
                 modifier = Modifier.padding(borderPadding),
-                text = stringResource(id = R.string.filter_visits)
+                text = stringResource(id = R.string.nearby_visits)
             )
-            HorizontalDivider()
-            uiState.visitsFilterOptions.map { option ->
-                val visitFilterOption = stringResource(id = option.description.textResId)
-                DropdownMenuItem(text = {
-                    Text(text = visitFilterOption)
-                }, trailingIcon = {
-                    if (uiState.selectedVisitFilterOption == option) {
-                        Icon(
-                            imageVector = Icons.Rounded.Check,
-                            contentDescription = visitFilterOption
-                        )
-                    }
-                }, onClick = {
-                    onEvent(VisitListViewModel.UiEvent.VisitsFilterOptionSelected(option = option))
-                })
-            }
-
-            // Distance filter
-            HorizontalDivider()
-            Text(
-                modifier = Modifier.padding(borderPadding),
-                text = stringResource(id = R.string.visit_distance)
-            )
-            HorizontalDivider()
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable {
-                        onEvent(VisitListViewModel.UiEvent.ShowNearbyVisitsToggled(!uiState.showNearbyVisits))
-                    },
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    modifier = Modifier.padding(borderPadding),
-                    text = stringResource(id = R.string.nearby_visits)
-                )
-                Checkbox(checked = uiState.showNearbyVisits, onCheckedChange = {
-                    onEvent(VisitListViewModel.UiEvent.ShowNearbyVisitsToggled(it))
-                })
-            }
+            Checkbox(checked = uiState.showNearbyVisits, onCheckedChange = {
+                onEvent(VisitListViewModel.UiEvent.ShowNearbyVisitsToggled(it))
+            })
         }
     }
 }
@@ -993,10 +983,21 @@ internal fun VisitListScreenPreview(
             currentDestination = VisitListScreenDestination,
             onEvent = {},
             onNavigateToTab = {},
-            onNavigate = {}
-        ) { paddingValues ->
+            onNavigate = {},
+            topBarActions = listOf(
+                TopBarAction(
+                    contentDescription = stringResource(R.string.show_visits_map_content_description),
+                    icon = Icons.Rounded.Map,
+                    onClick = {}
+                ),
+                TopBarAction(
+                    contentDescription = stringResource(R.string.filter_visits_content_description),
+                    icon = Icons.Rounded.FilterList,
+                    onClick = {}
+                )
+            )
+        ) {
             VisitListScreenContent(
-                paddingValues = paddingValues,
                 summaryUiState = config.summaryUiState,
                 visitListUiState = config.visitListUiState,
                 backupUiState = BackupViewModel.UiState(),
