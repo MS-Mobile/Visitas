@@ -73,7 +73,10 @@ fun AppScaffold(
         ConversationListScreenDestination,
         ConversationDetailScreenDestination
     )
-    val showSettingsMenu = currentDestination != VisitDetailScreenDestination
+    val showSettingsMenu = currentDestination in listOf(
+        VisitListScreenDestination,
+        ConversationListScreenDestination
+    )
     val title = when (currentDestination) {
         VisitListScreenDestination,
         VisitDetailScreenDestination -> stringResource(id = R.string.visits)
