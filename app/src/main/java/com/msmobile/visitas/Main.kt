@@ -48,7 +48,7 @@ fun Main(
             onNavigate = onNavigate,
             topBarActions = appScaffoldState.uiState.topBarActions,
             detailFooterActions = appScaffoldState.uiState.detailFooterActions,
-            content = { paddingValues: PaddingValues ->
+            content = {
                 DestinationsNavHost(
                     navGraph = NavGraphs.root,
                     navController = navController,

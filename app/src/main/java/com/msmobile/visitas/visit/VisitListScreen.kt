@@ -996,7 +996,7 @@ internal fun VisitListScreenPreview(
                     onClick = {}
                 )
             )
-        ) { paddingValues ->
+        ) {
             VisitListScreenContent(
                 summaryUiState = config.summaryUiState,
                 visitListUiState = config.visitListUiState,

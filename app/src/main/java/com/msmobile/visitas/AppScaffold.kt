@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Settings
@@ -55,7 +56,7 @@ fun AppScaffold(
     onNavigate: (Direction) -> Unit,
     topBarActions: List<TopBarAction> = emptyList(),
     detailFooterActions: DetailFooterActions? = null,
-    content: @Composable (PaddingValues) -> Unit
+    content: @Composable () -> Unit
 ) {
     val showFAB = currentDestination in listOf(
         VisitListScreenDestination,
@@ -128,10 +129,12 @@ fun AppScaffold(
         },
         content = { paddingValues ->
             Surface(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
                 color = MaterialTheme.colorScheme.background
             ) {
-                content(paddingValues)
+                content()
                 StateHandler(uiState, onEvent, onNavigate)
             }
         },
