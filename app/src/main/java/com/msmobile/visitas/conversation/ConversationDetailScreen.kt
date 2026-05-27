@@ -88,14 +88,8 @@ fun ConversationDetailScreen(
         navigator.navigateUp()
         Unit
     }
-
-    LaunchedEffect(key1 = null) {
-        onEvent(ConversationDetailViewModel.UiEvent.ViewCreated(firstConversationId))
-    }
-    OnBackPressed {
-        onEvent(ConversationDetailViewModel.UiEvent.CancelClicked)
-    }
     ConversationDetailScreenContent(
+        firstConversationId = firstConversationId,
         uiState = uiState,
         onEvent = onEvent,
         onNavigateUp = onNavigateUp
@@ -105,11 +99,18 @@ fun ConversationDetailScreen(
 @OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun ConversationDetailScreenContent(
+    firstConversationId: UUID?,
     uiState: ConversationDetailViewModel.UiState,
     onEvent: (ConversationDetailViewModel.UiEvent) -> Unit,
     onNavigateUp: () -> Unit = {}
 ) {
     val conversationsTitle = stringResource(R.string.conversations)
+    LaunchedEffect(key1 = null) {
+        onEvent(ConversationDetailViewModel.UiEvent.ViewCreated(firstConversationId))
+    }
+    OnBackPressed {
+        onEvent(ConversationDetailViewModel.UiEvent.CancelClicked)
+    }
     Scaffold(
         topBar = {
             var menuExpanded by remember { mutableStateOf(false) }
@@ -387,6 +388,7 @@ internal fun ConversationDetailScreenPreview(
 ) {
     VisitasTheme {
         ConversationDetailScreenContent(
+            firstConversationId = null,
             uiState = config.uiState,
             onEvent = {},
             onNavigateUp = {}
