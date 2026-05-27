@@ -121,7 +121,6 @@ fun VisitDetailScreen(
     navigator: DestinationsNavigator,
     viewModel: VisitDetailViewModel,
     appScaffoldState: AppScaffoldState,
-    paddingValues: PaddingValues, // TODO: Stop passing paddingValues to this screen
     householderId: UUID? = null
 ) {
     val uiState: VisitDetailViewModel.UiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -136,7 +135,6 @@ fun VisitDetailScreen(
         appScaffoldState = appScaffoldState,
         onEvent = onEvent,
         onNavigateUp = onNavigateUp,
-        paddingValues = paddingValues,
     )
 }
 
@@ -148,7 +146,6 @@ private fun VisitDetailScreenContent(
     appScaffoldState: AppScaffoldState,
     onNavigateUp: () -> Unit,
     onEvent: (VisitDetailViewModel.UiEvent) -> Unit,
-    paddingValues: PaddingValues
 ) {
     LaunchedEffect(key1 = null) {
         onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId))
@@ -180,12 +177,7 @@ private fun VisitDetailScreenContent(
         )
         onDispose { appScaffoldState.clearUiState(chromeOwner) }
     }
-
-    val topPadding = paddingValues.calculateTopPadding()
-    val bottomPadding = paddingValues.calculateBottomPadding()
     VisitDetail(
-        topPadding = topPadding,
-        bottomPadding = bottomPadding,
         uiState = uiState,
         onEvent = onEvent
     )
@@ -228,8 +220,6 @@ private fun VisitDetailScreenContent(
 
 @Composable
 private fun VisitDetail(
-    topPadding: Dp,
-    bottomPadding: Dp,
     uiState: VisitDetailViewModel.UiState,
     onEvent: (VisitDetailViewModel.UiEvent) -> Unit
 ) {
@@ -239,7 +229,6 @@ private fun VisitDetail(
         LazyColumn(
             state = listState,
             modifier = Modifier
-                .padding(top = topPadding)
                 .padding(horizontal = borderPadding),
             verticalArrangement = Arrangement.spacedBy(verticalFieldPadding)
         ) {
@@ -266,7 +255,7 @@ private fun VisitDetail(
                 Spacer(
                     modifier = Modifier
                         .imePadding()
-                        .padding(bottom = bottomPadding + floatingBarBottomPadding)
+                        .padding(bottom = verticalFieldPadding + floatingBarBottomPadding)
                 )
             }
         }
@@ -1107,14 +1096,13 @@ internal fun VisitDetailScreenPreview(
                 onSave = {},
                 onAdd = {}
             )
-        ) { paddingValues ->
+        ) {
             VisitDetailScreenContent(
                 householderId = config.householderId,
                 uiState = config.uiState,
                 appScaffoldState = remember { AppScaffoldState() }, // TODO: config.appScaffoldState
                 onEvent = {},
                 onNavigateUp = {},
-                paddingValues = paddingValues,
             )
         }
     }

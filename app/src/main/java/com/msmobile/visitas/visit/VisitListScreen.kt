@@ -121,7 +121,6 @@ private const val VISIT_MAP_ANIMATION_DURATION = 300
 @Composable
 fun VisitListScreen(
     navigator: DestinationsNavigator,
-    paddingValues: PaddingValues,
     summaryViewModel: SummaryViewModel,
     visitListViewModel: VisitListViewModel,
     backupViewModel: BackupViewModel,
@@ -185,7 +184,6 @@ fun VisitListScreen(
 
     OnBackPressed { }
     VisitListScreenContent(
-        paddingValues = paddingValues,
         summaryUiState = summaryUiState,
         visitListUiState = visitListUiState,
         backupUiState = backupUiState,
@@ -202,7 +200,6 @@ fun VisitListScreen(
 
 @Composable
 private fun VisitListScreenContent(
-    paddingValues: PaddingValues,
     summaryUiState: SummaryViewModel.UiState,
     visitListUiState: VisitListViewModel.UiState,
     backupUiState: BackupViewModel.UiState,
@@ -215,9 +212,7 @@ private fun VisitListScreenContent(
     onIntentStateHandled: OnIntentStateHandled,
     onVisitMapEvent: (VisitsMapEvent) -> Unit
 ) {
-    val topPadding = paddingValues.calculateTopPadding()
     Column(
-        modifier = Modifier.padding(top = topPadding),
         verticalArrangement = Arrangement.spacedBy(verticalFieldPadding)
     ) {
         SummaryCard(
@@ -232,7 +227,6 @@ private fun VisitListScreenContent(
                 start = borderPadding,
                 end = borderPadding
             ),
-            paddingValues = paddingValues,
             visitListUiState = visitListUiState,
             onVisitListEvent = onVisitListEvent,
             onNavigate = onNavigate
@@ -490,7 +484,6 @@ fun ColumnScope.SummaryCardDetails(
 @Composable
 private fun VisitsList(
     modifier: Modifier,
-    paddingValues: PaddingValues,
     visitListUiState: VisitListViewModel.UiState,
     onVisitListEvent: (VisitListViewModel.UiEvent) -> Unit,
     onNavigate: (Direction) -> Unit,
@@ -498,9 +491,6 @@ private fun VisitsList(
     val visitList = visitListUiState.visitList.filter { !it.hide }
     val isLoadingVisits = visitListUiState.isLoadingVisits
     val showNearbyVisits = visitListUiState.showNearbyVisits
-    val listBottomPadding = paddingValues.calculateBottomPadding().let { dp ->
-        if (dp > 0.dp) dp - verticalFieldPadding else verticalFieldPadding
-    }.coerceAtLeast(0.dp) + floatingBarBottomPadding
 
     LaunchedEffect(key1 = null) {
         onVisitListEvent(VisitListViewModel.UiEvent.ViewCreated)
@@ -513,7 +503,7 @@ private fun VisitsList(
                 verticalArrangement = Arrangement.spacedBy(verticalFieldPadding),
                 contentPadding = PaddingValues(
                     top = verticalFieldPadding,
-                    bottom = listBottomPadding
+                    bottom = verticalFieldPadding + floatingBarBottomPadding
                 )
             ) {
                 if (isLoadingVisits && visitList.isEmpty()) {
@@ -1008,7 +998,6 @@ internal fun VisitListScreenPreview(
             )
         ) { paddingValues ->
             VisitListScreenContent(
-                paddingValues = paddingValues,
                 summaryUiState = config.summaryUiState,
                 visitListUiState = config.visitListUiState,
                 backupUiState = BackupViewModel.UiState(),

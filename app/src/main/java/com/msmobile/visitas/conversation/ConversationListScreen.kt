@@ -53,7 +53,6 @@ import com.ramcosta.composedestinations.spec.Direction
 @Composable
 fun ConversationListScreen(
     navigator: DestinationsNavigator,
-    paddingValues: PaddingValues,
     viewModel: ConversationListViewModel
 ) {
     val uiState: ConversationListViewModel.UiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -67,7 +66,6 @@ fun ConversationListScreen(
     }
     OnBackPressed { }
     ConversationListScreenContent(
-        paddingValues = paddingValues,
         uiState = uiState,
         onConversationListEvent = onEvent,
         onNavigate = onNavigate
@@ -76,14 +74,11 @@ fun ConversationListScreen(
 
 @Composable
 private fun ConversationListScreenContent(
-    paddingValues: PaddingValues,
     uiState: ConversationListViewModel.UiState,
     onConversationListEvent: (ConversationListViewModel.UiEvent) -> Unit,
     onNavigate: (Direction) -> Unit
 ) {
-    val topPadding = paddingValues.calculateTopPadding()
     Column(
-        modifier = Modifier.padding(top = topPadding),
         verticalArrangement = Arrangement.spacedBy(verticalFieldPadding)
     ) {
         SummaryCard(
@@ -95,7 +90,6 @@ private fun ConversationListScreenContent(
                 start = borderPadding,
                 end = borderPadding
             ),
-            paddingValues = paddingValues,
             uiState = uiState,
             onNavigate = onNavigate
         )
@@ -143,21 +137,18 @@ private fun SummaryCard(
 @Composable
 private fun ConversationList(
     modifier: Modifier = Modifier,
-    paddingValues: PaddingValues,
     uiState: ConversationListViewModel.UiState,
     onNavigate: (Direction) -> Unit
 ) {
     val conversationList = uiState.conversations.filter { !it.hide }
-    val listBottomPadding = paddingValues.calculateListBottomPadding()
     Column(modifier = modifier) {
-        ConversationListItems(conversationList, listBottomPadding, onNavigate)
+        ConversationListItems(conversationList, onNavigate)
     }
 }
 
 @Composable
 private fun ConversationListItems(
     conversationList: List<ConversationListViewModel.ConversationState>,
-    listBottomPadding: Dp,
     onNavigate: (Direction) -> Unit
 ) {
     val listState = rememberLazyListState()
@@ -167,7 +158,7 @@ private fun ConversationListItems(
             verticalArrangement = Arrangement.spacedBy(verticalFieldPadding),
             contentPadding = PaddingValues(
                 top = verticalFieldPadding,
-                bottom = listBottomPadding
+                bottom = verticalFieldPadding + floatingBarBottomPadding
             )
         ) {
             items(
@@ -215,9 +206,8 @@ internal fun ConversationListScreenPreview(
             onEvent = {},
             onNavigateToTab = {},
             onNavigate = {}
-        ) { paddingValues ->
+        ) {
             ConversationListScreenContent(
-                paddingValues = paddingValues,
                 uiState = config.conversationUiState,
                 onConversationListEvent = {},
                 onNavigate = {}
@@ -225,15 +215,3 @@ internal fun ConversationListScreenPreview(
         }
     }
 }
-
-
-private fun PaddingValues.calculateListBottomPadding(): Dp {
-    val bottomPadding = calculateBottomPadding()
-    val calculatedBottomPadding = if (bottomPadding > 0.dp) {
-        bottomPadding - verticalFieldPadding
-    } else {
-        verticalFieldPadding
-    }
-    return calculatedBottomPadding.coerceAtLeast(0.dp) + floatingBarBottomPadding
-}
-

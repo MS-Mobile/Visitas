@@ -55,7 +55,6 @@ fun Main(
                     dependenciesContainerBuilder = navigationDependencies(
                         intentState = intentState,
                         intentStateHandled = intentStateHandled,
-                        paddingValues = paddingValues,
                         appScaffoldState = appScaffoldState
                     )
                 )
