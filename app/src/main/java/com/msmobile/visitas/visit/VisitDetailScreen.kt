@@ -133,10 +133,10 @@ fun VisitDetailScreen(
     VisitDetailScreenContent(
         householderId = householderId,
         uiState = uiState,
+        appScaffoldState = appScaffoldState,
         onEvent = onEvent,
         onNavigateUp = onNavigateUp,
         paddingValues = paddingValues,
-        appScaffoldState = appScaffoldState
     )
 }
 
@@ -145,10 +145,10 @@ fun VisitDetailScreen(
 private fun VisitDetailScreenContent(
     householderId: UUID?,
     uiState: VisitDetailViewModel.UiState,
+    appScaffoldState: AppScaffoldState,
     onNavigateUp: () -> Unit,
     onEvent: (VisitDetailViewModel.UiEvent) -> Unit,
-    paddingValues: PaddingValues,
-    appScaffoldState: AppScaffoldState
+    paddingValues: PaddingValues
 ) {
     LaunchedEffect(key1 = null) {
         onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId))
@@ -1111,10 +1111,10 @@ internal fun VisitDetailScreenPreview(
             VisitDetailScreenContent(
                 householderId = config.householderId,
                 uiState = config.uiState,
+                appScaffoldState = remember { AppScaffoldState() }, // TODO: config.appScaffoldState
                 onEvent = {},
                 onNavigateUp = {},
                 paddingValues = paddingValues,
-                appScaffoldState = remember { AppScaffoldState() }
             )
         }
     }
