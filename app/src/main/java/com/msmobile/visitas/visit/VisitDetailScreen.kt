@@ -72,14 +72,12 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.AppScaffold
 import com.msmobile.visitas.AppScaffoldState
 import com.msmobile.visitas.DetailFooterActions
-import com.msmobile.visitas.MainActivityViewModel
 import com.msmobile.visitas.R
 import com.msmobile.visitas.TopBarAction
 import com.msmobile.visitas.extension.EditableTextFieldColors
@@ -87,7 +85,6 @@ import com.msmobile.visitas.extension.OnBackPressed
 import com.msmobile.visitas.extension.ReadOnlyTextFieldColors
 import com.msmobile.visitas.extension.RequestCalendarPermission
 import com.msmobile.visitas.extension.RequestLocationPermission
-import com.msmobile.visitas.extension.isKeyboardOpen
 import com.msmobile.visitas.extension.removeBottomCorner
 import com.msmobile.visitas.extension.removeTopCorner
 import com.msmobile.visitas.extension.sharp
@@ -112,7 +109,6 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.VisitDetailScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
-import com.ramcosta.composedestinations.navigation.EmptyDestinationsNavigator
 import java.util.UUID
 
 @Destination<RootGraph>(style = DetailScreenStyle::class)

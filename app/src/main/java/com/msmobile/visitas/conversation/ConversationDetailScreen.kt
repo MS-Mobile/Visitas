@@ -75,6 +75,7 @@ import com.msmobile.visitas.util.verticalFieldPadding
 import com.msmobile.visitas.visit.VisitDetailViewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.ConversationDetailScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.VisitDetailScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import java.util.UUID
@@ -361,12 +362,20 @@ internal fun ConversationDetailScreenPreview(
     @PreviewParameter(ConversationDetailPreviewConfigProvider::class) config: ConversationDetailPreviewConfig
 ) {
     VisitasTheme {
-        ConversationDetailScreenContent(
-            firstConversationId = null,
-            uiState = config.uiState,
-            appScaffoldState = remember { AppScaffoldState() }, // TODO: config.appScaffoldState
+        AppScaffold(
+            uiState = config.mainActivityUiState,
+            currentDestination = ConversationDetailScreenDestination,
             onEvent = {},
-            onNavigateUp = {}
-        )
+            onNavigateToTab = {},
+            onNavigate = {}
+        ) {
+            ConversationDetailScreenContent(
+                firstConversationId = null,
+                uiState = config.uiState,
+                appScaffoldState = remember { AppScaffoldState() }, // TODO: config.appScaffoldState
+                onEvent = {},
+                onNavigateUp = {}
+            )
+        }
     }
 }
