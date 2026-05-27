@@ -3,10 +3,10 @@ package com.msmobile.visitas
 import androidx.annotation.VisibleForTesting
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -142,7 +142,9 @@ fun AppScaffold(
             when {
                 detailFooterActions != null -> {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .navigationBarsPadding(),
                         horizontalArrangement = Arrangement.Center
                     ) {
                         DetailFooter(
@@ -158,6 +160,7 @@ fun AppScaffold(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .navigationBarsPadding()
                             .offset(y = -FloatingToolbarDefaults.ScreenOffset),
                         horizontalArrangement = Arrangement.Center
                     ) {
