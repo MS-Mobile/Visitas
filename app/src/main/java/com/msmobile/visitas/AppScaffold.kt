@@ -70,8 +70,7 @@ fun AppScaffold(
     )
     val showBottomNavigation = currentDestination in listOf(
         VisitListScreenDestination,
-        ConversationListScreenDestination,
-        ConversationDetailScreenDestination
+        ConversationListScreenDestination
     )
     val showSettingsMenu = currentDestination in listOf(
         VisitListScreenDestination,
