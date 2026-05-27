@@ -121,7 +121,7 @@ fun VisitDetailScreen(
     navigator: DestinationsNavigator,
     viewModel: VisitDetailViewModel,
     appScaffoldState: AppScaffoldState,
-    paddingValues: PaddingValues,
+    paddingValues: PaddingValues, // TODO: Stop passing paddingValues to this screen
     householderId: UUID? = null
 ) {
     val uiState: VisitDetailViewModel.UiState by viewModel.uiState.collectAsStateWithLifecycle()
