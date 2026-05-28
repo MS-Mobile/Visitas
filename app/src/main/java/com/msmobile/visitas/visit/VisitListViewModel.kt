@@ -363,6 +363,7 @@ constructor(
         rescheduleVisit(visit, date)
     }
 
+    // TODO: Remove backup sheet code
     private fun handleBackupButtonClicked() {
         newState {
             copy(
@@ -371,6 +372,7 @@ constructor(
         }
     }
 
+    // TODO: Remove backup sheet code
     private fun handleBackupSheetDismissed() {
         newState {
             copy(
@@ -865,6 +867,7 @@ constructor(
         val showLocationPermissionDialog: Boolean,
         val isLoadingVisits: Boolean,
         val showNearbyVisits: Boolean,
+        // TODO: Remove backup sheet code
         val showBackupSheet: Boolean,
         val showVisitMapSheet: Boolean,
         val currentCoordinates: Pair<Double, Double>,

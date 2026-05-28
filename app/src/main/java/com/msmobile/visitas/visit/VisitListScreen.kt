@@ -251,6 +251,7 @@ private fun VisitListScreenContent(
                 onVisitListEvent(VisitListViewModel.UiEvent.LocationRationaleAccepted)
             }
         )
+        // TODO: Remove backup sheet code
         BackupSheet(
             isVisible = visitListUiState.showBackupSheet,
             uiState = backupUiState,
