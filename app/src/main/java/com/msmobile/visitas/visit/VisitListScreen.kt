@@ -34,6 +34,7 @@ import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.Map
+import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Update
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Card
@@ -150,6 +151,7 @@ fun VisitListScreen(
     val mapActionDescription = stringResource(R.string.show_visits_map_content_description)
     val filterActionDescription = stringResource(R.string.filter_visits_content_description)
     val chromeOwner = remember { Any() }
+
     DisposableEffect(Unit) {
         appScaffoldState.setUiState(
             owner = chromeOwner,
@@ -164,9 +166,13 @@ fun VisitListScreen(
                     ),
                     TopBarAction(
                         contentDescription = filterActionDescription,
-                        icon = Icons.Rounded.FilterList,
+                        icon = Icons.Rounded.CalendarMonth,
                         onClick = {
-                            visitListViewModel.onEvent(VisitListViewModel.UiEvent.VisitsFilterButtonClicked)
+                            onSummaryEvent(
+                                SummaryViewModel.UiEvent.SummaryMenuSelected(
+                                    option = SummaryViewModel.SummaryMenuOption.ShowDetails
+                                )
+                            )
                         },
                         menu = {
                             val filterUiState by visitListViewModel.uiState.collectAsStateWithLifecycle()
@@ -367,12 +373,6 @@ private fun SummaryCardContent(
     LaunchedEffect(key1 = null) {
         onSummaryEvent(SummaryViewModel.UiEvent.ViewCreated)
     }
-    val showDetailsButtonIcon = if (shouldShowSummaryDetails) {
-        Icons.Rounded.KeyboardArrowUp
-    } else {
-        Icons.Rounded.KeyboardArrowDown
-    }
-
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -399,16 +399,13 @@ private fun SummaryCardContent(
                     onVisitListEvent(VisitListViewModel.UiEvent.FilterCleared)
                 }
             )
+
             IconButton(onClick = {
-                onSummaryEvent(
-                    SummaryViewModel.UiEvent.SummaryMenuSelected(
-                        option = SummaryViewModel.SummaryMenuOption.ShowDetails
-                    )
-                )
+                onVisitListEvent(VisitListViewModel.UiEvent.VisitsFilterButtonClicked)
             }) {
                 Icon(
-                    imageVector = showDetailsButtonIcon,
-                    contentDescription = stringResource(R.string.show_summary_details_content_description)
+                    imageVector = Icons.Rounded.FilterList,
+                    contentDescription = stringResource(R.string.filter_visits_content_description)
                 )
             }
         }
@@ -993,7 +990,7 @@ internal fun VisitListScreenPreview(
                 ),
                 TopBarAction(
                     contentDescription = stringResource(R.string.filter_visits_content_description),
-                    icon = Icons.Rounded.FilterList,
+                    icon = Icons.Rounded.CalendarMonth,
                     onClick = {}
                 )
             )
