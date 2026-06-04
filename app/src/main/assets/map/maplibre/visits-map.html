@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <title>MapLibre Map</title>
+    <link rel="stylesheet" href="maplibre-gl.css"/>
+    <style>
+        #map { height: 100vh; width: 100%; }
+        body { margin: 0; padding: 0; }
+        .maplibregl-popup-content { padding: 8px 12px; }
+    </style>
+</head>
+<body>
+<div id="map"></div>
+<script src="maplibre-gl.js"></script>
+<script>
+    let map;
+    let markers = [];
+    let routeAdded = false;
+    let pendingSetMarkers = null;
+    let labels = { currentLocation: undefined };
+    let didFitBounds = false;
+
+    function log(message) {
+        console.log(message);
+        if (window.Visits && window.Visits.log) window.Visits.log(message);
+    }
+
+    function logError(message) {
+        console.error(message);
+        if (window.Visits && window.Visits.error) window.Visits.error(message);
+    }
+
+    log('Script loaded successfully');
+
+    async function initializeMap(currentLocationText) {
+        try {
+            log('Initializing map');
+
+            if (typeof maplibregl === 'undefined') {
+                throw new Error('MapLibre GL library not loaded');
+            }
+
+            labels.currentLocation = currentLocationText;
+
+            map = new maplibregl.Map({
+                container: 'map',
+                style: 'https://demotiles.maplibre.org/style.json',
+                center: [0, 0],
+                zoom: 2
+            });
+
+            map.on('load', () => {
+                map.addSource('route', {
+                    type: 'geojson',
+                    data: { type: 'FeatureCollection', features: [] }
+                });
+                map.addLayer({
+                    id: 'route',
+                    type: 'line',
+                    source: 'route',
+                    paint: {
+                        'line-color': '#2E86AB',
+                        'line-width': 4,
+                        'line-opacity': 0.8
+                    },
+                    layout: {
+                        'line-join': 'round',
+                        'line-cap': 'round'
+                    }
+                });
+                routeAdded = true;
+                log('Map initialized successfully');
+                if (window.Visits && window.Visits.onMapReady) window.Visits.onMapReady();
+
+                if (pendingSetMarkers) {
+                    const { latitude, longitude, visits } = pendingSetMarkers;
+                    pendingSetMarkers = null;
+                    setMarkers(latitude, longitude, visits);
+                }
+            });
+
+            map.on('error', (e) => {
+                logError('MapLibre error: ' + e.error.message);
+            });
+
+        } catch (error) {
+            logError('Map initialization error: ' + error.message);
+            if (window.Visits && window.Visits.onMapInitializationError) {
+                window.Visits.onMapInitializationError(error.message || error.toString());
+            }
+        }
+    }
+
+    async function setMarkers(latitude, longitude, visits) {
+        try {
+            if (!map) {
+                logError('Map not initialized');
+                return;
+            }
+
+            if (!routeAdded) {
+                pendingSetMarkers = { latitude, longitude, visits };
+                return;
+            }
+
+            log('Setting markers...');
+
+            markers.forEach(m => m.remove());
+            markers = [];
+
+            const currentMarker = new maplibregl.Marker({ color: '#0078D4' })
+                .setLngLat([longitude, latitude])
+                .setPopup(new maplibregl.Popup({ offset: 25 }).setText(labels.currentLocation))
+                .addTo(map);
+            markers.push(currentMarker);
+
+            const bounds = new maplibregl.LngLatBounds();
+            bounds.extend([longitude, latitude]);
+
+            map.getSource('route').setData({ type: 'FeatureCollection', features: [] });
+
+            if (visits && visits.length > 0) {
+                const sortedVisits = visits.slice().sort((a, b) => a.visitOrder - b.visitOrder);
+
+                sortedVisits.forEach((visit, index) => {
+                    if (!visit || !visit.householderLatitude || !visit.householderLongitude) return;
+
+                    const {
+                        householderLatitude, householderLongitude,
+                        householderName, householderDistance,
+                        visitSubject, visitOrder, householderAddress
+                    } = visit;
+
+                    log('Adding marker for: ' + householderName + ' (order: ' + visitOrder + ')');
+
+                    const el = document.createElement('div');
+                    el.style.cssText = 'position:relative;cursor:pointer;';
+                    el.innerHTML =
+                        '<svg width="25" height="41" viewBox="0 0 25 41" xmlns="http://www.w3.org/2000/svg">' +
+                        '<path d="M12.5 0C5.6 0 0 5.6 0 12.5c0 9.4 12.5 28.5 12.5 28.5S25 21.9 25 12.5C25 5.6 19.4 0 12.5 0z" fill="#dc2626"/>' +
+                        '</svg>' +
+                        '<div style="position:absolute;top:4px;left:0;width:25px;text-align:center;color:white;font-weight:bold;font-size:11px;line-height:1;">' +
+                        (visitOrder + 1) +
+                        '</div>';
+
+                    const popupContent =
+                        '<div>' +
+                        '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+                        '<strong>' + householderName + '</strong>' +
+                        '<span style="font-size:0.9em;color:#666;margin-left:8px;">Order: ' + (visitOrder + 1) + '</span>' +
+                        '</div>' +
+                        '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+                        '<span>' + visitSubject + '</span>' +
+                        '<span style="font-size:0.9em;color:#666;">' + (householderDistance || '') + '</span>' +
+                        '</div>' +
+                        householderAddress +
+                        '</div>';
+
+                    const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+                        .setLngLat([householderLongitude, householderLatitude])
+                        .setPopup(new maplibregl.Popup({ offset: 5 }).setHTML(popupContent))
+                        .addTo(map);
+
+                    el.addEventListener('click', () => {
+                        if (window.Visits && window.Visits.onMarkerClicked) {
+                            window.Visits.onMarkerClicked('marker_' + index);
+                        }
+                    });
+
+                    markers.push(marker);
+                    bounds.extend([householderLongitude, householderLatitude]);
+                });
+
+                if (sortedVisits.length > 0 && sortedVisits[0].routeGeometry) {
+                    log('Drawing route with geometry');
+                    map.getSource('route').setData(sortedVisits[0].routeGeometry);
+                } else if (sortedVisits.length > 1) {
+                    log('Drawing simple route line');
+                    const routePoints = [[longitude, latitude]];
+                    sortedVisits.forEach(visit => {
+                        if (visit.householderLatitude && visit.householderLongitude) {
+                            routePoints.push([visit.householderLongitude, visit.householderLatitude]);
+                        }
+                    });
+                    if (routePoints.length > 1) {
+                        map.getSource('route').setData({
+                            type: 'Feature',
+                            geometry: { type: 'LineString', coordinates: routePoints }
+                        });
+                    }
+                }
+
+                if (!didFitBounds && !bounds.isEmpty()) {
+                    didFitBounds = true;
+                    map.fitBounds(bounds, { padding: 40 });
+                }
+
+                log('All markers added successfully');
+            } else {
+                log('No visits provided or visits array is empty.');
+                if (!didFitBounds) {
+                    didFitBounds = true;
+                    map.setCenter([longitude, latitude]);
+                    map.setZoom(15);
+                }
+            }
+        } catch (error) {
+            logError('Error setting markers: ' + error.message);
+            if (window.Visits && window.Visits.onMapInitializationError) {
+                window.Visits.onMapInitializationError(error.message || error.toString());
+            }
+        }
+    }
+
+    window.onerror = function(message, source, lineno, colno, error) {
+        logError('JavaScript error: ' + message + ' at ' + source + ' ' + lineno + ':' + colno);
+        if (window.Visits && window.Visits.onMapInitializationError) {
+            window.Visits.onMapInitializationError(message);
+        }
+    };
+</script>
+</body>
+</html>
