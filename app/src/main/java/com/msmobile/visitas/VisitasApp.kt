@@ -1,11 +1,22 @@
 package com.msmobile.visitas
 
 import android.app.Application
+import androidx.appfunctions.service.AppFunctionConfiguration
+import com.msmobile.visitas.appfunctions.VisitAppFunctions
 import dagger.hilt.android.HiltAndroidApp
 import io.sentry.android.core.SentryAndroid
+import javax.inject.Inject
 
 @HiltAndroidApp
-class VisitasApp : Application() {
+class VisitasApp : Application(), AppFunctionConfiguration.Provider {
+
+    @Inject lateinit var visitAppFunctions: VisitAppFunctions
+
+    override val appFunctionConfiguration: AppFunctionConfiguration
+        get() = AppFunctionConfiguration.Builder()
+            .addEnclosingClassFactory(VisitAppFunctions::class.java) { visitAppFunctions }
+            .build()
+
     override fun onCreate() {
         super.onCreate()
         initSentry()

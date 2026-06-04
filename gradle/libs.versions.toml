@@ -1,5 +1,6 @@
 [versions]
 activity-compose = "1.13.0"
+appfunctions = "1.0.0-alpha09"
 agp = "9.2.1"
 android-compile-sdk="37"
 android-min-sdk="26"
@@ -38,6 +39,9 @@ sentry-gradle-plugin = "6.9.0"
 
 [libraries]
 activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activity-compose" }
+appfunctions = { group = "androidx.appfunctions", name = "appfunctions", version.ref = "appfunctions" }
+appfunctions-compiler = { group = "androidx.appfunctions", name = "appfunctions-compiler", version.ref = "appfunctions" }
+appfunctions-service = { group = "androidx.appfunctions", name = "appfunctions-service", version.ref = "appfunctions" }
 android-test-runner = { module = "androidx.test:runner", version.ref = "androidx-test" }
 androidx-room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
 androidx-security-crypto = { module = "androidx.security:security-crypto", version.ref = "security-crypto" }
