@@ -85,18 +85,21 @@ jobs:
           workflow_conclusion: success
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Resolve version code from build run
+      - name: Download build info
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          name: build-info
+          path: build-info
+          workflow: build.yml
+          run_id: ${{ steps.download.outputs.run-id }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Read version code
         id: vcode
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          RUN_ID="${{ steps.download.outputs.run-id }}"
-          RUN_DATA=$(gh api "repos/${{ github.repository }}/actions/runs/$RUN_ID")
-          RUN_NUMBER=$(echo "$RUN_DATA" | jq -r '.run_number')
-          RUN_ATTEMPT=$(echo "$RUN_DATA" | jq -r '.run_attempt')
-          CODE=$(( ${{ vars.VERSION_CODE_OFFSET }} + RUN_NUMBER * 10 + RUN_ATTEMPT ))
+          CODE=$(cat build-info/version-code.txt)
           echo "code=$CODE" >> $GITHUB_OUTPUT
-          echo "Version code: $CODE (build run #$RUN_NUMBER, attempt $RUN_ATTEMPT)"
+          echo "Version code: $CODE"
 
       - name: Create git tag
         run: |
