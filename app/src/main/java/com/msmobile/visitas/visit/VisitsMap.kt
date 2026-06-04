@@ -17,7 +17,8 @@ fun VisitsMap(
     currentLocation: Pair<Double, Double>,
     visitMapState: VisitMapState.Visits,
     engine: VisitMapEngineOption,
-    onMapEvent: (VisitsMapEvent) -> Unit
+    onMapEvent: (VisitsMapEvent) -> Unit,
+    onMapReady: () -> Unit = {}
 ) {
     val currentLocationText = stringResource(R.string.current_location).replace("'", "\\'")
     val webViewBridgeState = remember { mutableStateOf<WebViewViewBridge?>(null) }
@@ -34,7 +35,7 @@ fun VisitsMap(
 
     WebView(
         url = assetPath(engine),
-        javascriptInterface = VisitsMapJavascriptInterface(onMapEvent),
+        javascriptInterface = VisitsMapJavascriptInterface(onMapEvent, onMapReady),
         isJavaScriptEnabled = true,
         isZoomEnabled = true,
         isDomStorageEnabled = true,
@@ -60,7 +61,7 @@ sealed class VisitsMapEvent {
 @Composable
 private fun darkLandColor(engine: VisitMapEngineOption): String? {
     if (engine != VisitMapEngineOption.MapLibre || !isSystemInDarkTheme()) return null
-    val c = MaterialTheme.colorScheme.surfaceContainerHigh
+    val c = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = .5f)
     return "#%02x%02x%02x".format(
         (c.red * 255).roundToInt().coerceIn(0, 255),
         (c.green * 255).roundToInt().coerceIn(0, 255),

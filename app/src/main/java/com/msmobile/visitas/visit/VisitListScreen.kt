@@ -888,39 +888,47 @@ private fun LazyLoadedVisitsMap(
     onVisitMapEvent: (VisitsMapEvent) -> Unit
 ) {
     var didLoadMap by remember { mutableStateOf(false) }
+    var isMapEngineReady by remember(engine) { mutableStateOf(false) }
     val didLoadMapData = visitMapState is VisitMapState.Visits
     val isMapLoading = visitMapState is VisitMapState.Loading
     val didFailLoadingMap = visitMapState is VisitMapState.Error
     val noMapData = visitMapState is VisitMapState.Empty
 
-    // Use LaunchedEffect to delay the map loading and prevent UI hanging
     LaunchedEffect(Unit) {
-        // Give the UI a frame to render the loading state first
         delay(100)
         didLoadMap = true
     }
 
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        if (!didLoadMap || isMapLoading) {
-            VisitMapLoadingState()
-        } else if (didFailLoadingMap) {
-            VisitMapErrorState()
-        } else if (noMapData) {
-            VisitMapEmptyState()
-        } else if (didLoadMapData) {
-            AnimatedVisibility(
-                visible = true,
-                enter = fadeIn(animationSpec = tween(300))
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        // WebView renders in the background as soon as data is ready so it can fetch tiles
+        if (didLoadMap && didLoadMapData) {
+            VisitsMap(
+                currentLocation = currentCoordinate,
+                visitMapState = visitMapState,
+                engine = engine,
+                onMapEvent = onVisitMapEvent,
+                onMapReady = { isMapEngineReady = true }
+            )
+        }
+
+        // Overlay covers the WebView until the map engine signals it has rendered
+        val showOverlay = !didLoadMap || isMapLoading || didFailLoadingMap || noMapData || !isMapEngineReady
+        AnimatedVisibility(
+            visible = showOverlay,
+            enter = androidx.compose.animation.EnterTransition.None,
+            exit = fadeOut(animationSpec = tween(300))
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background),
+                contentAlignment = Alignment.Center
             ) {
-                VisitsMap(
-                    currentLocation = currentCoordinate,
-                    visitMapState = visitMapState,
-                    engine = engine,
-                    onMapEvent = onVisitMapEvent
-                )
+                when {
+                    didFailLoadingMap -> VisitMapErrorState()
+                    noMapData -> VisitMapEmptyState()
+                    else -> VisitMapLoadingState()
+                }
             }
         }
     }
