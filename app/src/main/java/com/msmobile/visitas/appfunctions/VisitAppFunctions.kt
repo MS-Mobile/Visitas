@@ -4,16 +4,20 @@ import androidx.appfunctions.AppFunctionContext
 import androidx.appfunctions.AppFunctionInvalidArgumentException
 import androidx.appfunctions.AppFunctionSerializable
 import androidx.appfunctions.service.AppFunction
+import com.msmobile.visitas.util.DateTimeProvider
+import com.msmobile.visitas.util.DispatcherProvider
+import com.msmobile.visitas.util.LocaleProvider
 import com.msmobile.visitas.visit.VisitHouseholderRepository
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import javax.inject.Inject
 
 class VisitAppFunctions @Inject constructor(
-    private val visitHouseholderRepository: VisitHouseholderRepository
+    private val visitHouseholderRepository: VisitHouseholderRepository,
+    private val dateTimeProvider: DateTimeProvider,
+    private val dispatcherProvider: DispatcherProvider,
+    private val localeProvider: LocaleProvider,
 ) {
     @AppFunctionSerializable(isDescribedByKDoc = true)
     data class VisitItem(
@@ -54,9 +58,9 @@ class VisitAppFunctions @Inject constructor(
          * Omit to list all upcoming pending visits.
          */
         dateFilter: String? = null
-    ): VisitListResult = withContext(Dispatchers.IO) {
+    ): VisitListResult = withContext(dispatcherProvider.io) {
         val allVisits = visitHouseholderRepository.getAll()
-        val todayStart = LocalDate.now().atStartOfDay()
+        val todayStart = dateTimeProvider.nowLocalDateTime().toLocalDate().atStartOfDay()
         val tomorrowStart = todayStart.plusDays(1)
         val dayAfterTomorrowStart = todayStart.plusDays(2)
 
@@ -80,7 +84,7 @@ class VisitAppFunctions @Inject constructor(
             )
         }
 
-        val formatter = DateTimeFormatter.ofPattern("EEEE, MMMM d 'at' h:mm a", Locale.getDefault())
+        val formatter = DateTimeFormatter.ofPattern("EEEE, MMMM d 'at' h:mm a", localeProvider.getLocale())
         VisitListResult(
             visits = filtered.map { visit ->
                 VisitItem(
