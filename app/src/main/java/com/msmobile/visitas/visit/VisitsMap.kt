@@ -13,7 +13,7 @@ fun VisitsMap(
     currentLocation: Pair<Double, Double>,
     visitMapState: VisitMapState.Visits,
     engine: VisitMapEngineOption,
-    onMapEvent: (VisitsMapEvent) -> Unit,
+    onMapError: (String) -> Unit,
     onMapReady: () -> Unit = {}
 ) {
     val currentLocationText = stringResource(R.string.current_location).replace("'", "\\'")
@@ -31,7 +31,7 @@ fun VisitsMap(
     WebView(
         url = assetPath(engine),
         javascriptInterface = VisitsMapJavascriptInterface(
-            onMapError = { onMapEvent(VisitsMapEvent.ErrorLoadingMap(it)) },
+            onMapError = onMapError,
             onMapReady = onMapReady
         ),
         isJavaScriptEnabled = true,

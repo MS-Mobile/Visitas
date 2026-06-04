@@ -140,10 +140,10 @@ fun VisitListScreen(
         navigator.navigate(direction)
     }
     val isKeyboardOpen by isKeyboardOpen()
-    val onVisitMapEvent = { visitMapEvent: VisitsMapEvent ->
+    val onMapError = { error: String ->
         visitListViewModel.onEvent(
             VisitListViewModel.UiEvent.VisitMapEventTriggered(
-                visitMapEvent = visitMapEvent
+                visitMapEvent = VisitsMapEvent.ErrorLoadingMap(error)
             )
         )
     }
@@ -200,7 +200,7 @@ fun VisitListScreen(
         onMonthPickerEvent = onMonthPickerEvent,
         onNavigate = onNavigate,
         onIntentStateHandled = onIntentStateHandled,
-        onVisitMapEvent = onVisitMapEvent
+        onMapError = onMapError
     )
 }
 
@@ -216,7 +216,7 @@ private fun VisitListScreenContent(
     onMonthPickerEvent: (MonthNavigatorEvent) -> Unit,
     onNavigate: (Direction) -> Unit,
     onIntentStateHandled: OnIntentStateHandled,
-    onVisitMapEvent: (VisitsMapEvent) -> Unit
+    onMapError: (String) -> Unit
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(verticalFieldPadding)
@@ -245,7 +245,7 @@ private fun VisitListScreenContent(
             onDismiss = {
                 onVisitListEvent(VisitListViewModel.UiEvent.VisitMapSheetDismissed)
             },
-            onVisitMapEvent = onVisitMapEvent
+            onMapError = onMapError
         )
         PermissionRationaleSheet(
             isVisible = visitListUiState.showLocationRationale,
@@ -834,7 +834,7 @@ private fun ColumnScope.VisitMapSheet(
     visitMapState: VisitMapState,
     engine: VisitMapEngineOption,
     onDismiss: () -> Unit,
-    onVisitMapEvent: (VisitsMapEvent) -> Unit
+    onMapError: (String) -> Unit
 ) {
     AnimatedVisibility(
         visible = isVisible,
@@ -860,7 +860,7 @@ private fun ColumnScope.VisitMapSheet(
                     currentCoordinate = currentCoordinate,
                     visitMapState = visitMapState,
                     engine = engine,
-                    onVisitMapEvent = onVisitMapEvent
+                    onMapError = onMapError
                 )
 
                 FilledTonalIconButton(
@@ -885,7 +885,7 @@ private fun LazyLoadedVisitsMap(
     currentCoordinate: Pair<Double, Double>,
     visitMapState: VisitMapState,
     engine: VisitMapEngineOption,
-    onVisitMapEvent: (VisitsMapEvent) -> Unit
+    onMapError: (String) -> Unit
 ) {
     var didLoadMap by remember { mutableStateOf(false) }
     var isMapEngineReady by remember(engine) { mutableStateOf(false) }
@@ -906,7 +906,7 @@ private fun LazyLoadedVisitsMap(
                 currentLocation = currentCoordinate,
                 visitMapState = visitMapState,
                 engine = engine,
-                onMapEvent = onVisitMapEvent,
+                onMapError = onMapError,
                 onMapReady = { isMapEngineReady = true }
             )
         }
@@ -1019,7 +1019,7 @@ internal fun VisitListScreenPreview(
                 onMonthPickerEvent = {},
                 onNavigate = {},
                 onIntentStateHandled = {},
-                onVisitMapEvent = {}
+                onMapError = {}
             )
         }
     }
