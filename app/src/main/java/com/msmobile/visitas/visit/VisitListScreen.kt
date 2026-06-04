@@ -241,6 +241,7 @@ private fun VisitListScreenContent(
             isVisible = visitListUiState.showVisitMapSheet,
             currentCoordinate = visitListUiState.currentCoordinates,
             visitMapState = visitListUiState.visitMapState,
+            engine = visitListUiState.visitMapEngine,
             onDismiss = {
                 onVisitListEvent(VisitListViewModel.UiEvent.VisitMapSheetDismissed)
             },
@@ -831,6 +832,7 @@ private fun ColumnScope.VisitMapSheet(
     isVisible: Boolean,
     currentCoordinate: Pair<Double, Double>,
     visitMapState: VisitMapState,
+    engine: VisitMapEngineOption,
     onDismiss: () -> Unit,
     onVisitMapEvent: (VisitsMapEvent) -> Unit
 ) {
@@ -857,6 +859,7 @@ private fun ColumnScope.VisitMapSheet(
                 LazyLoadedVisitsMap(
                     currentCoordinate = currentCoordinate,
                     visitMapState = visitMapState,
+                    engine = engine,
                     onVisitMapEvent = onVisitMapEvent
                 )
 
@@ -881,6 +884,7 @@ private fun ColumnScope.VisitMapSheet(
 private fun LazyLoadedVisitsMap(
     currentCoordinate: Pair<Double, Double>,
     visitMapState: VisitMapState,
+    engine: VisitMapEngineOption,
     onVisitMapEvent: (VisitsMapEvent) -> Unit
 ) {
     var didLoadMap by remember { mutableStateOf(false) }
@@ -914,6 +918,7 @@ private fun LazyLoadedVisitsMap(
                 VisitsMap(
                     currentLocation = currentCoordinate,
                     visitMapState = visitMapState,
+                    engine = engine,
                     onMapEvent = onVisitMapEvent
                 )
             }
