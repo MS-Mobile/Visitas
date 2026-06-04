@@ -35,6 +35,9 @@
         android:theme="@style/Theme.Visitas"
         tools:targetApi="36">
 
+        <!-- AppFunctions service declarations and metadata are auto-injected via
+             manifest merging by the androidx.appfunctions:appfunctions-service library. -->
+
         <!-- Disable Sentry auto-init; manual init in VisitasApp -->
         <meta-data
             android:name="io.sentry.auto-init"

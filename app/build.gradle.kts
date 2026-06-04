@@ -101,6 +101,10 @@ room {
     schemaDirectory("$projectDir/schemas")
 }
 
+ksp {
+    arg("appfunctions:aggregateAppFunctions", "true")
+}
+
 sentry {
     val sentryOrg = System.getenv(EnvKeys.SENTRY_ORG)
     val sentryProject = System.getenv(EnvKeys.SENTRY_PROJECT)
@@ -152,6 +156,10 @@ easylauncher {
 }
 
 dependencies {
+
+    implementation(libs.appfunctions)
+    implementation(libs.appfunctions.service)
+    ksp(libs.appfunctions.compiler)
 
     implementation(libs.core.ktx)
     implementation(libs.lifecycle.runtime.ktx)
