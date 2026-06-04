@@ -71,6 +71,8 @@
     <string name="nearby_visits">Visitas cercanas</string>
     <string name="nearby_visit">(Cercana)</string>
     <string name="colon">: </string>
+    <string name="settings_section_backup">Copia de seguridad</string>
+    <string name="settings_section_map">Configuración del mapa</string>
     <string name="create_backup">Crear copia de seguridad</string>
     <string name="restore_backup">Restaurar copia de seguridad</string>
     <string name="restore_backup_title">Restaurar copia de seguridad</string>

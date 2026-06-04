@@ -5,6 +5,7 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,6 +16,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.OutlinedButton
@@ -86,41 +88,41 @@ private fun SettingsScreenContent(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedButton(
-            modifier = Modifier.fillMaxWidth(),
-            onClick = {
-                onEvent(
-                    SettingsDetailViewModel.UiEvent.CreateBackup(
-                        successMessage = createBackupSuccessMessage,
-                        errorMessage = createBackupFailureMessage
+        SettingsSection(title = stringResource(R.string.settings_section_backup)) {
+            OutlinedButton(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = {
+                    onEvent(
+                        SettingsDetailViewModel.UiEvent.CreateBackup(
+                            successMessage = createBackupSuccessMessage,
+                            errorMessage = createBackupFailureMessage
+                        )
                     )
-                )
+                }
+            ) {
+                Text(text = stringResource(R.string.create_backup))
             }
-        ) {
-            Text(text = stringResource(R.string.create_backup))
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedButton(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = {
+                    restoreBackupLauncher.launch(arrayOf(BACKUP_MIME_TYPE))
+                }
+            ) {
+                Text(text = stringResource(R.string.restore_backup))
+            }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedButton(
-            modifier = Modifier.fillMaxWidth(),
-            onClick = {
-                restoreBackupLauncher.launch(arrayOf(BACKUP_MIME_TYPE))
-            }
-        ) {
-            Text(text = stringResource(R.string.restore_backup))
+        SettingsSection(title = stringResource(R.string.settings_section_map)) {
+            MapEngineDropdown(
+                selectedEngine = uiState.selectedMapEngine,
+                onEngineSelected = { engine ->
+                    onEvent(SettingsDetailViewModel.UiEvent.MapEngineSelected(engine))
+                }
+            )
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        MapEngineDropdown(
-            selectedEngine = uiState.selectedMapEngine,
-            onEngineSelected = { engine ->
-                onEvent(SettingsDetailViewModel.UiEvent.MapEngineSelected(engine))
-            }
-        )
 
         if (uiState.isLoading) {
             Spacer(modifier = Modifier.height(16.dp))
@@ -157,6 +159,24 @@ private fun SettingsScreenContent(
 
         Spacer(modifier = Modifier.height(16.dp))
     }
+}
+
+@Composable
+private fun ColumnScope.SettingsSection(
+    title: String,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 24.dp, bottom = 8.dp)
+    )
+    HorizontalDivider()
+    Spacer(modifier = Modifier.height(12.dp))
+    content()
 }
 
 @Composable
