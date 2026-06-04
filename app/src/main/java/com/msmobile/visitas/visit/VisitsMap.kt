@@ -52,5 +52,5 @@ sealed class VisitsMapEvent {
 
 private fun assetPath(engine: VisitMapEngineOption) = when (engine) {
     VisitMapEngineOption.MapLibre -> "file:///android_asset/map/maplibre/visits-map.html"
-    VisitMapEngineOption.Leaflet  -> "file:///android_asset/map/leaflet/visits-map.html"
+    VisitMapEngineOption.Leaflet -> "file:///android_asset/map/leaflet/visits-map.html"
 }
