@@ -1,50 +1,94 @@
-# Release Pipeline - Deploy to Google Play Store
-# Equivalent to Azure DevOps Release Pipeline
-# Triggered manually or after successful build on master
+# Release Pipeline - Create tag, GitHub release, and deploy to Google Play Store
+# Triggered manually only
 
 name: Release
 
 on:
   workflow_dispatch:
     inputs:
+      version_name:
+        description: 'Version name for the tag (e.g. 1.0.1). Defaults to version.properties.'
+        required: false
+        default: ''
       release_notes:
         description: 'Release notes (Portuguese)'
         required: false
         default: 'Ajustes e melhorias.'
         type: string
-  workflow_run:
-    workflows: ["Build"]
-    types:
-      - completed
-    branches:
-      - master
 
 jobs:
   release:
-    name: Deploy to Play Store
+    name: Tag, Release, and Deploy
     runs-on: ubuntu-latest
     permissions:
       actions: read
-      contents: read
-    # Only run if triggered manually OR if the build workflow succeeded
-    if: >
-      github.event_name == 'workflow_dispatch' || 
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+      contents: write
 
     steps:
-      # When auto-triggered: download artifact from the build workflow that triggered this
-      - name: Download artifact from build workflow
-        if: github.event_name == 'workflow_run'
-        uses: dawidd6/action-download-artifact@v6
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
-          name: app-bundle
-          path: artifacts
-          run_id: ${{ github.event.workflow_run.id }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
 
-      # When manually triggered: download latest successful build artifact
+      - name: Resolve version
+        id: version
+        run: |
+          INPUT="${{ inputs.version_name }}"
+          if [ -n "$INPUT" ]; then
+            NAME="$INPUT"
+          else
+            NAME=$(grep '^versionName=' version.properties | cut -d'=' -f2)
+          fi
+          echo "name=$NAME" >> $GITHUB_OUTPUT
+          echo "tag=v$NAME" >> $GITHUB_OUTPUT
+          echo "Resolved version: $NAME (tag: v$NAME)"
+
+      - name: Verify version bump
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            PREV_VERSION="${PREV_TAG#v}"
+            CURR_VERSION="${{ steps.version.outputs.name }}"
+            if [ "$PREV_VERSION" = "$CURR_VERSION" ]; then
+              echo "ERROR: Version has not changed. Current version ($CURR_VERSION) matches the latest tag ($PREV_TAG)."
+              echo "Update versionName in version.properties before releasing."
+              exit 1
+            fi
+            echo "Version bump confirmed: $PREV_VERSION → $CURR_VERSION"
+          else
+            echo "No previous tag found — skipping version check"
+          fi
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            echo "Generating changelog since $PREV_TAG"
+            LOG=$(git log "$PREV_TAG"..HEAD --pretty=format:"- %s" --no-merges)
+          else
+            echo "No previous tag found — including all commits"
+            LOG=$(git log --pretty=format:"- %s" --no-merges)
+          fi
+          echo "content<<EOF" >> $GITHUB_OUTPUT
+          echo "$LOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create git tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "${{ steps.version.outputs.tag }}" -m "Release ${{ steps.version.outputs.tag }}"
+          git push origin "${{ steps.version.outputs.tag }}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Release ${{ steps.version.outputs.tag }}
+          body: ${{ steps.changelog.outputs.content }}
+
       - name: Download latest successful build artifact
-        if: github.event_name == 'workflow_dispatch'
         uses: dawidd6/action-download-artifact@v6
         with:
           name: app-bundle
@@ -59,22 +103,10 @@ jobs:
           echo "Downloaded artifacts:"
           find artifacts -name "*.aab" -type f
 
-
-      - name: Set Release Notes
-        id: release_notes
-        run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            NOTES="${{ inputs.release_notes }}"
-          else
-            NOTES="Ajustes e melhorias."
-          fi
-          echo "notes=$NOTES" >> $GITHUB_OUTPUT
-          echo "Release notes: $NOTES"
-
       - name: Create whatsnew directory
         run: |
           mkdir -p whatsnew
-          echo "${{ steps.release_notes.outputs.notes }}" > whatsnew/whatsnew-pt-BR
+          echo "${{ inputs.release_notes }}" > whatsnew/whatsnew-pt-BR
 
       - name: Deploy to Play Store (Internal Testing)
         uses: r0adkll/upload-google-play@v1
@@ -84,6 +116,6 @@ jobs:
           releaseFiles: artifacts/*.aab
           track: internal
           status: completed
-          releaseName: ${{ github.event_name == 'workflow_dispatch' && inputs.release_notes || 'Automatic Release' }}
+          releaseName: ${{ inputs.release_notes }}
           whatsNewDirectory: whatsnew
           inAppUpdatePriority: 5
