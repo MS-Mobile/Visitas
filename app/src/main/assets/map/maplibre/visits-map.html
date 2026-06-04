@@ -35,7 +35,7 @@
 
     log('Script loaded successfully');
 
-    async function initializeMap(currentLocationText) {
+    async function initializeMap(currentLocationText, darkLandColor) {
         try {
             log('Initializing map');
 
@@ -72,6 +72,9 @@
                     }
                 });
                 routeAdded = true;
+                if (darkLandColor) {
+                    map.setPaintProperty('background', 'background-color', darkLandColor);
+                }
                 log('Map initialized successfully');
                 if (window.Visits && window.Visits.onMapReady) window.Visits.onMapReady();
 
