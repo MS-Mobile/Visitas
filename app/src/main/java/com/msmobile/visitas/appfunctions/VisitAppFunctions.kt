@@ -13,6 +13,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import javax.inject.Inject
 
+
 class VisitAppFunctions @Inject constructor(
     private val visitHouseholderRepository: VisitHouseholderRepository,
     private val dateTimeProvider: DateTimeProvider,
@@ -67,24 +68,28 @@ class VisitAppFunctions @Inject constructor(
         val filtered = when (dateFilter?.lowercase(Locale.ROOT)) {
             // Omitted: default to all upcoming pending visits.
             null -> allVisits.filter { !it.isDone && it.date >= todayStart }
-            "today" -> allVisits.filter {
+            VisitDateFilter.TODAY.value -> allVisits.filter {
                 !it.isDone && it.date >= todayStart && it.date < tomorrowStart
             }
-            "tomorrow" -> allVisits.filter {
+
+            VisitDateFilter.TOMORROW.value -> allVisits.filter {
                 !it.isDone && it.date >= tomorrowStart && it.date < dayAfterTomorrowStart
             }
-            "past_due" -> allVisits.filter {
+
+            VisitDateFilter.PAST_DUE.value -> allVisits.filter {
                 !it.isDone && it.date < todayStart
             }
-            "done" -> allVisits.filter { it.isDone }
+
+            VisitDateFilter.DONE.value -> allVisits.filter { it.isDone }
             // Provided but unrecognized: surface an error so the agent retries with a
             // documented value instead of silently returning a wrong result set.
             else -> throw AppFunctionInvalidArgumentException(
-                "Unknown dateFilter '$dateFilter'. Accepted values: today, tomorrow, past_due, done."
+                "Unknown dateFilter '$dateFilter'. Accepted values: ${VisitDateFilter.entries.joinToString { it.value }}."
             )
         }
 
-        val formatter = DateTimeFormatter.ofPattern("EEEE, MMMM d 'at' h:mm a", localeProvider.getLocale())
+        val formatter =
+            DateTimeFormatter.ofPattern("EEEE, MMMM d 'at' h:mm a", localeProvider.getLocale())
         VisitListResult(
             visits = filtered.map { visit ->
                 VisitItem(
@@ -97,5 +102,12 @@ class VisitAppFunctions @Inject constructor(
             },
             count = filtered.size
         )
+    }
+
+    private enum class VisitDateFilter(val value: String) {
+        TODAY("today"),
+        TOMORROW("tomorrow"),
+        PAST_DUE("past_due"),
+        DONE("done"),
     }
 }
