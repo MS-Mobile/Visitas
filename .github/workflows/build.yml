@@ -92,7 +92,6 @@ jobs:
           VERSION_CODE=$(( VERSION_CODE_OFFSET + ${{ github.run_number }} * 10 + ${{ github.run_attempt }} ))
           echo "code=${VERSION_CODE}" >> $GITHUB_OUTPUT
           echo "Calculated VERSION_CODE: ${VERSION_CODE} (Base: ${VERSION_CODE_OFFSET}, Run: ${{ github.run_number }}, Attempt: ${{ github.run_attempt }})"
-          echo "${VERSION_CODE}" > version-code.txt
         env:
           VERSION_CODE_OFFSET: ${{ vars.VERSION_CODE_OFFSET }}
 
@@ -124,7 +123,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-bundle
-          path: |
-            app/build/outputs/bundle/release/*.aab
-            version-code.txt
+          path: app/build/outputs/bundle/release/*.aab
           retention-days: 30

@@ -75,6 +75,7 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Download latest successful build artifact
+        id: download
         uses: dawidd6/action-download-artifact@v6
         with:
           name: app-bundle
@@ -84,12 +85,18 @@ jobs:
           workflow_conclusion: success
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Read version code
+      - name: Resolve version code from build run
         id: vcode
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          CODE=$(cat artifacts/version-code.txt 2>/dev/null || echo "unknown")
+          RUN_ID="${{ steps.download.outputs.run-id }}"
+          RUN_DATA=$(gh api "repos/${{ github.repository }}/actions/runs/$RUN_ID")
+          RUN_NUMBER=$(echo "$RUN_DATA" | jq -r '.run_number')
+          RUN_ATTEMPT=$(echo "$RUN_DATA" | jq -r '.run_attempt')
+          CODE=$(( ${{ vars.VERSION_CODE_OFFSET }} + RUN_NUMBER * 10 + RUN_ATTEMPT ))
           echo "code=$CODE" >> $GITHUB_OUTPUT
-          echo "Version code: $CODE"
+          echo "Version code: $CODE (build run #$RUN_NUMBER, attempt $RUN_ATTEMPT)"
 
       - name: Create git tag
         run: |
