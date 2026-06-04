@@ -74,6 +74,23 @@ jobs:
           echo "$LOG" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
+      - name: Download latest successful build artifact
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          name: app-bundle
+          path: artifacts
+          workflow: build.yml
+          branch: master
+          workflow_conclusion: success
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Read version code
+        id: vcode
+        run: |
+          CODE=$(cat artifacts/version-code.txt 2>/dev/null || echo "unknown")
+          echo "code=$CODE" >> $GITHUB_OUTPUT
+          echo "Version code: $CODE"
+
       - name: Create git tag
         run: |
           git config user.name "github-actions[bot]"
@@ -86,17 +103,11 @@ jobs:
         with:
           tag_name: ${{ steps.version.outputs.tag }}
           name: Release ${{ steps.version.outputs.tag }}
-          body: ${{ steps.changelog.outputs.content }}
+          body: |
+            ${{ steps.changelog.outputs.content }}
 
-      - name: Download latest successful build artifact
-        uses: dawidd6/action-download-artifact@v6
-        with:
-          name: app-bundle
-          path: artifacts
-          workflow: build.yml
-          branch: master
-          workflow_conclusion: success
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+            ---
+            **Build:** `${{ steps.vcode.outputs.code }}`
 
       - name: List artifacts
         run: |
