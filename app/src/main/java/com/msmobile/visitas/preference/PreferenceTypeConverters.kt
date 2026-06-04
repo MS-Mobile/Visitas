@@ -3,6 +3,7 @@ package com.msmobile.visitas.preference
 import androidx.room.TypeConverter
 import com.msmobile.visitas.visit.VisitListDateFilterOption
 import com.msmobile.visitas.visit.VisitListDistanceFilterOption
+import com.msmobile.visitas.visit.VisitMapEngineOption
 
 class PreferenceTypeConverters {
     @TypeConverter
@@ -33,4 +34,11 @@ class PreferenceTypeConverters {
             VisitListDistanceFilterOption.All
         }
     }
+
+    @TypeConverter
+    fun fromMapEngineOption(value: VisitMapEngineOption): String = value.name
+
+    @TypeConverter
+    fun toMapEngineOption(value: String): VisitMapEngineOption =
+        runCatching { VisitMapEngineOption.valueOf(value) }.getOrDefault(VisitMapEngineOption.MapLibre)
 }
