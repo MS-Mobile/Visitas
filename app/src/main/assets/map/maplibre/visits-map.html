@@ -197,7 +197,7 @@
 
                 if (!didFitBounds && !bounds.isEmpty()) {
                     didFitBounds = true;
-                    map.fitBounds(bounds, { padding: 40 });
+                    map.fitBounds(bounds, { padding: 40, animate: false });
                 }
 
                 log('All markers added successfully');
