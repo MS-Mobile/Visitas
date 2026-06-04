@@ -7,7 +7,7 @@ import android.webkit.JavascriptInterface
 import com.msmobile.visitas.ui.views.WebViewJavascriptInterface
 
 class VisitsMapJavascriptInterface(
-    private val onMapEvent: (VisitsMapEvent) -> Unit,
+    private val onMapError: (String) -> Unit,
     private val onMapReady: () -> Unit = {}
 ) : WebViewJavascriptInterface {
     override val name: String
@@ -27,7 +27,7 @@ class VisitsMapJavascriptInterface(
     @JavascriptInterface
     fun onMapInitializationError(error: String) {
         Log.e("VisitsMap", "Map initialization error: $error")
-        onMapEvent(VisitsMapEvent.ErrorLoadingMap(error))
+        onMapError(error)
     }
 
     @JavascriptInterface
