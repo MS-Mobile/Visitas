@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.DropdownMenu
@@ -54,6 +55,7 @@ fun AppScaffold(
     onEvent: (MainActivityViewModel.UiEvent) -> Unit,
     onNavigateToTab: (DirectionDestinationSpec) -> Unit,
     onNavigate: (Direction) -> Unit,
+    onNavigateUp: () -> Unit = {},
     topBarActions: List<TopBarAction> = emptyList(),
     detailFooterActions: DetailFooterActions? = null,
     content: @Composable () -> Unit
@@ -66,8 +68,10 @@ fun AppScaffold(
         VisitListScreenDestination,
         ConversationListScreenDestination,
         VisitDetailScreenDestination,
-        ConversationDetailScreenDestination
+        ConversationDetailScreenDestination,
+        SettingsScreenDestination
     )
+    val showBackButton = currentDestination == SettingsScreenDestination
     val showBottomNavigation = currentDestination in listOf(
         VisitListScreenDestination,
         ConversationListScreenDestination
@@ -83,6 +87,8 @@ fun AppScaffold(
         ConversationListScreenDestination,
         ConversationDetailScreenDestination -> stringResource(id = R.string.conversations)
 
+        SettingsScreenDestination -> stringResource(id = R.string.settings)
+
         else -> stringResource(id = R.string.app_name)
     }
     Scaffold(
@@ -91,6 +97,16 @@ fun AppScaffold(
                 var menuExpanded by remember { mutableStateOf(false) }
                 TopAppBar(
                     title = { Text(text = title) },
+                    navigationIcon = {
+                        if (showBackButton) {
+                            IconButton(onClick = onNavigateUp) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                                    contentDescription = stringResource(id = R.string.navigate_back_content_description)
+                                )
+                            }
+                        }
+                    },
                     actions = {
                         topBarActions.forEach { action ->
                             Box {

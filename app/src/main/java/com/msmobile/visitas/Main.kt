@@ -38,6 +38,10 @@ fun Main(
     val onNavigate = { direction: Direction ->
         destinationsNavigator.navigate(direction)
     }
+    val onNavigateUp = {
+        destinationsNavigator.navigateUp()
+        Unit
+    }
     VisitasTheme {
         AppScaffold(
             uiState = uiState,
@@ -45,6 +49,7 @@ fun Main(
             onEvent = onEvent,
             onNavigateToTab = onNavigateToTab,
             onNavigate = onNavigate,
+            onNavigateUp = onNavigateUp,
             topBarActions = appScaffoldState.uiState.topBarActions,
             detailFooterActions = appScaffoldState.uiState.detailFooterActions,
             content = {
