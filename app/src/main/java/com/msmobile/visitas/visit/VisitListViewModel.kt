@@ -6,7 +6,6 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.msmobile.visitas.extension.containsAllWords
-import com.msmobile.visitas.visit.VisitMapEngineOption
 import com.msmobile.visitas.preference.PreferenceRepository
 import com.msmobile.visitas.util.AddressProvider
 import com.msmobile.visitas.util.CalendarEventManager

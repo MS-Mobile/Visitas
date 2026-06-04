@@ -13,7 +13,6 @@ import com.msmobile.visitas.util.MockReferenceHolder
 import com.msmobile.visitas.util.PermissionChecker
 import com.msmobile.visitas.util.UserLocationProvider
 import com.msmobile.visitas.util.VisitMapAdapter
-import com.msmobile.visitas.visit.VisitMapEngineOption
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertTrue
