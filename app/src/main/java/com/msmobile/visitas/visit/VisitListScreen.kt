@@ -899,7 +899,12 @@ private fun LazyLoadedVisitsMap(
         didLoadMap = true
     }
 
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+        contentAlignment = Alignment.Center
+    ) {
         // WebView renders in the background as soon as data is ready so it can fetch tiles
         if (didLoadMap && didLoadMapData) {
             VisitsMap(
@@ -912,7 +917,8 @@ private fun LazyLoadedVisitsMap(
         }
 
         // Overlay covers the WebView until the map engine signals it has rendered
-        val showOverlay = !didLoadMap || isMapLoading || didFailLoadingMap || noMapData || !isMapEngineReady
+        val showOverlay =
+            !didLoadMap || isMapLoading || didFailLoadingMap || noMapData || !isMapEngineReady
         AnimatedVisibility(
             visible = showOverlay,
             enter = androidx.compose.animation.EnterTransition.None,
