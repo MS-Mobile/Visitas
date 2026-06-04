@@ -5,7 +5,7 @@
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
     <title>Leaflet Map</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+    <link rel="stylesheet" href="leaflet-2.0.0-alpha.1.css"/>
     <style>
         #map {
             height: 100vh;
@@ -19,7 +19,7 @@
 </head>
 <body>
 <div id="map"></div>
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="leaflet-2.0.0-alpha.1.js"></script>
 <script>
     let map;
     let currentLocation = null; // store current location
@@ -51,16 +51,16 @@
         try {
             log('Initializing map (no coordinates yet)');
 
-            if (typeof L === 'undefined') {
+            if (typeof leaflet === 'undefined') {
                 throw new Error('Leaflet library not loaded');
             }
 
             labels.currentLocation = currentLocationText;
 
             // Initialize map with a neutral view; real center will be applied in setMarkers
-            map = L.map('map').setView([0, 0], 2);
+            map = new leaflet.Map('map').setView([0, 0], 2);
 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            new leaflet.TileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
               attribution: '&copy; OpenStreetMap contributors'
             }).addTo(map);
 
@@ -94,7 +94,7 @@
            if (currentLocationMarker) {
                map.removeLayer(currentLocationMarker);
            }
-           currentLocationMarker = L.marker(currentLocation)
+           currentLocationMarker = new leaflet.Marker(currentLocation)
                .addTo(map)
                .bindPopup(labels.currentLocation);
 
@@ -104,7 +104,7 @@
                routeLayer = null;
            }
 
-           const bounds = L.latLngBounds([]);
+           const bounds = new leaflet.LatLngBounds([]);
 
            // Always include current location in bounds
            if (currentLocation) {
@@ -122,7 +122,7 @@
 
                         log('Adding marker for: ' + householderName + ' at ' + householderLatitude + ', ' + householderLongitude + ' (order: ' + visitOrder + ')');
 
-                        const redIcon = L.icon({
+                        const redIcon = new leaflet.Icon({
                             iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
                             shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
                             iconSize: [25, 41],
@@ -144,7 +144,7 @@
                         '</div>';
 
                         // Create numbered marker
-                        const marker = L.marker([householderLatitude, householderLongitude], { icon: redIcon })
+                        const marker = new leaflet.Marker([householderLatitude, householderLongitude], { icon: redIcon })
                             .addTo(map)
                             .on('click', () => {
                                 if (window.Visits && window.Visits.onMarkerClicked) {
@@ -154,14 +154,14 @@
                             .bindPopup(popupContent);
 
                         // Add visit order number as a div icon overlay
-                        const numberIcon = L.divIcon({
+                        const numberIcon = new leaflet.DivIcon({
                             className: 'visit-order-number',
                             html: '<div style="background: white; border: 2px solid red; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; color: red; margin-left: 18px; margin-top: -8px;">' + (visitOrder + 1) + '</div>',
                             iconSize: [20, 20],
                             iconAnchor: [10, 10]
                         });
 
-                        L.marker([householderLatitude, householderLongitude], { icon: numberIcon })
+                        new leaflet.Marker([householderLatitude, householderLongitude], { icon: numberIcon })
                             .addTo(map);
 
                         bounds.extend([householderLatitude, householderLongitude]);
@@ -175,7 +175,7 @@
                         const routeGeometry = sortedVisits[0].routeGeometry;
 
                         // Create route line with styling
-                        routeLayer = L.geoJSON(routeGeometry, {
+                        routeLayer = new leaflet.GeoJSON(routeGeometry, {
                             style: {
                                 color: '#2E86AB',
                                 weight: 4,
@@ -208,7 +208,7 @@
                         });
 
                         if (routePoints.length > 1) {
-                            routeLayer = L.polyline(routePoints, {
+                            routeLayer = new leaflet.Polyline(routePoints, {
                                 color: '#2E86AB',
                                 weight: 3,
                                 opacity: 0.6,

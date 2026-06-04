@@ -54,4 +54,4 @@ sealed class VisitsMapEvent {
     data class ErrorLoadingMap(val errorMessage: String) : VisitsMapEvent()
 }
 
-private const val VISITS_MAP_HTML_ASSET_PATH = "file:///android_asset/visits-map.html"
+private const val VISITS_MAP_HTML_ASSET_PATH = "file:///android_asset/map/visits-map.html"
