@@ -92,11 +92,12 @@ jobs:
           VERSION_CODE=$(( VERSION_CODE_OFFSET + ${{ github.run_number }} * 10 + ${{ github.run_attempt }} ))
           echo "code=${VERSION_CODE}" >> $GITHUB_OUTPUT
           echo "Calculated VERSION_CODE: ${VERSION_CODE} (Base: ${VERSION_CODE_OFFSET}, Run: ${{ github.run_number }}, Attempt: ${{ github.run_attempt }})"
+          echo "${VERSION_CODE}" > version-code.txt
         env:
           VERSION_CODE_OFFSET: ${{ vars.VERSION_CODE_OFFSET }}
 
       - name: Build Release Bundle and Run Tests
-        run: ./gradlew bundleRelease test validateDebugScreenshotTest
+        run: ./gradlew bundleRelease assembleRelease test validateDebugScreenshotTest
         env:
           VERSION_CODE: ${{ steps.version.outputs.code }}
           KEYSTORE_FILE: ${{ github.workspace }}/app/keystore.jks
@@ -125,3 +126,17 @@ jobs:
           name: app-bundle
           path: app/build/outputs/bundle/release/*.aab
           retention-days: 30
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-apk
+          path: app/build/outputs/apk/release/*.apk
+          retention-days: 30
+
+      - name: Upload build info
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-info
+          path: version-code.txt
+          retention-days: 400
