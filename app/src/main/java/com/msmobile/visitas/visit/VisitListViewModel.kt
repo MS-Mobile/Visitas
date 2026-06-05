@@ -305,6 +305,7 @@ constructor(
             val preference = preferenceRepository.get()
             val selectedVisitFilterOption = preference.visitListDateFilterOption
             val selectedVisitDistanceFilterOption = preference.visitListDistanceFilterOption
+            val visitMapEngine = preference.visitMapEngineOption
             val visitList = visitHouseholderRepository.getAll().map { visitHouseholder ->
                 visitHouseholder.asState
             }.filterBy(_uiState.value.filter)
@@ -318,7 +319,8 @@ constructor(
                     visitsFilterOptions = visitsFilterOptions,
                     selectedVisitFilterOption = selectedVisitFilterOption,
                     isLoadingVisits = false,
-                    showNearbyVisits = showNearbyVisits
+                    showNearbyVisits = showNearbyVisits,
+                    visitMapEngine = visitMapEngine
                 ).applyFilters()
                     .calculateDistanceBetweenUserAndHouseholders(userLocation)
                     .applyFilters()
@@ -872,7 +874,8 @@ constructor(
         val showVisitMapSheet: Boolean,
         val currentCoordinates: Pair<Double, Double>,
         val visitMapState: VisitMapState,
-        val previewBackupFileState: PreviewBackupFileState
+        val previewBackupFileState: PreviewBackupFileState,
+        val visitMapEngine: VisitMapEngineOption = VisitMapEngineOption.MapLibre
     )
 
     companion object {

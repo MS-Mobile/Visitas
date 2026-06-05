@@ -1,11 +1,14 @@
 package com.msmobile.visitas.visit
 
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.webkit.JavascriptInterface
 import com.msmobile.visitas.ui.views.WebViewJavascriptInterface
 
 class VisitsMapJavascriptInterface(
-    private val onMapEvent: (VisitsMapEvent) -> Unit
+    private val onMapError: (String) -> Unit,
+    private val onMapReady: () -> Unit = {}
 ) : WebViewJavascriptInterface {
     override val name: String
         get() = "Visits"
@@ -13,6 +16,7 @@ class VisitsMapJavascriptInterface(
     @JavascriptInterface
     fun onMapReady() {
         Log.d("VisitsMap", "Map is ready")
+        Handler(Looper.getMainLooper()).post(onMapReady)
     }
 
     @JavascriptInterface
@@ -23,7 +27,7 @@ class VisitsMapJavascriptInterface(
     @JavascriptInterface
     fun onMapInitializationError(error: String) {
         Log.e("VisitsMap", "Map initialization error: $error")
-        onMapEvent(VisitsMapEvent.ErrorLoadingMap(error))
+        Handler(Looper.getMainLooper()).post { onMapError(error) }
     }
 
     @JavascriptInterface

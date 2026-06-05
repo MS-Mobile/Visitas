@@ -1,5 +1,6 @@
 package com.msmobile.visitas.ui.views
 
+import android.graphics.Color
 import android.view.ViewGroup
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
@@ -26,6 +27,7 @@ fun WebView(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
             )
+            setBackgroundColor(Color.TRANSPARENT)
             settings.apply {
                 javaScriptEnabled = isJavaScriptEnabled
                 domStorageEnabled = isDomStorageEnabled

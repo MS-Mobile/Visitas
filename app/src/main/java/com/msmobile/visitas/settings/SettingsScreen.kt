@@ -5,19 +5,30 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -27,8 +38,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.BuildConfig
 import com.msmobile.visitas.R
 import com.msmobile.visitas.extension.showShareIntent
+import com.msmobile.visitas.visit.VisitMapEngineOption
 import com.msmobile.visitas.util.DetailScreenStyle
 import com.msmobile.visitas.util.borderPadding
+import com.msmobile.visitas.util.cardInnerPadding
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 
@@ -41,6 +54,10 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val onEvent = viewModel::onEvent
+
+    LaunchedEffect(Unit) {
+        onEvent(SettingsDetailViewModel.UiEvent.ViewCreated)
+    }
 
     SettingsScreenContent(
         uiState = uiState,
@@ -68,35 +85,44 @@ private fun SettingsScreenContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = borderPadding),
+            .padding(horizontal = borderPadding + cardInnerPadding),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedButton(
-            modifier = Modifier.fillMaxWidth(),
-            onClick = {
-                onEvent(
-                    SettingsDetailViewModel.UiEvent.CreateBackup(
-                        successMessage = createBackupSuccessMessage,
-                        errorMessage = createBackupFailureMessage
+        SettingsSection(title = stringResource(R.string.settings_section_backup)) {
+            OutlinedButton(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = {
+                    onEvent(
+                        SettingsDetailViewModel.UiEvent.CreateBackup(
+                            successMessage = createBackupSuccessMessage,
+                            errorMessage = createBackupFailureMessage
+                        )
                     )
-                )
+                }
+            ) {
+                Text(text = stringResource(R.string.create_backup))
             }
-        ) {
-            Text(text = stringResource(R.string.create_backup))
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedButton(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = {
+                    restoreBackupLauncher.launch(arrayOf(BACKUP_MIME_TYPE))
+                }
+            ) {
+                Text(text = stringResource(R.string.restore_backup))
+            }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedButton(
-            modifier = Modifier.fillMaxWidth(),
-            onClick = {
-                restoreBackupLauncher.launch(arrayOf(BACKUP_MIME_TYPE))
-            }
-        ) {
-            Text(text = stringResource(R.string.restore_backup))
+        SettingsSection(title = stringResource(R.string.settings_section_map)) {
+            MapEngineDropdown(
+                selectedEngine = uiState.selectedMapEngine,
+                onEngineSelected = { engine ->
+                    onEvent(SettingsDetailViewModel.UiEvent.MapEngineSelected(engine))
+                }
+            )
         }
 
         if (uiState.isLoading) {
@@ -137,6 +163,24 @@ private fun SettingsScreenContent(
 }
 
 @Composable
+private fun ColumnScope.SettingsSection(
+    title: String,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 24.dp, bottom = 8.dp)
+    )
+    HorizontalDivider()
+    Spacer(modifier = Modifier.height(12.dp))
+    content()
+}
+
+@Composable
 private fun rememberRestoreBackupLauncher(
     onEvent: (SettingsDetailViewModel.UiEvent) -> Unit
 ): ActivityResultLauncher<Array<String>> {
@@ -153,6 +197,45 @@ private fun rememberRestoreBackupLauncher(
                     errorMessage = restoreBackupFailureMessage
                 )
             )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MapEngineDropdown(
+    selectedEngine: VisitMapEngineOption,
+    onEngineSelected: (VisitMapEngineOption) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        OutlinedTextField(
+            value = selectedEngine.name,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text(text = stringResource(R.string.map_engine_label)) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                .fillMaxWidth()
+        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            VisitMapEngineOption.entries.forEach { engine ->
+                DropdownMenuItem(
+                    text = { Text(text = engine.name) },
+                    onClick = {
+                        onEngineSelected(engine)
+                        expanded = false
+                    }
+                )
+            }
         }
     }
 }

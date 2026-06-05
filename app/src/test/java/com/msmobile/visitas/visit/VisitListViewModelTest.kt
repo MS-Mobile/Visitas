@@ -340,13 +340,23 @@ class VisitListViewModelTest {
         )
     }
 
+    @Test
+    fun `onEvent with ViewCreated loads visitMapEngine from preference`() {
+        val viewModel = createViewModel(savedMapEngine = VisitMapEngineOption.Leaflet)
+
+        viewModel.onEvent(VisitListViewModel.UiEvent.ViewCreated)
+
+        assertEquals(VisitMapEngineOption.Leaflet, viewModel.uiState.value.visitMapEngine)
+    }
+
     private fun createViewModel(
         visitHouseholderRepositoryRef: MockReferenceHolder<VisitHouseholderRepository>? = null,
         uriRef: MockReferenceHolder<Uri>? = null,
         hasLocationPermission: Boolean = false,
         locationFlowRef: MockReferenceHolder<MutableStateFlow<UserLocationProvider.UserLocation>>? = null,
         distanceResults: Map<DistanceInput, AddressProvider.AddressDistance> = emptyMap(),
-        visitListDateFilterOption: VisitListDateFilterOption = VisitListDateFilterOption.All
+        visitListDateFilterOption: VisitListDateFilterOption = VisitListDateFilterOption.All,
+        savedMapEngine: VisitMapEngineOption = VisitMapEngineOption.MapLibre
     ): VisitListViewModel {
         val dispatchers = DispatcherProvider(
             io = mainDispatcherRule.dispatcher
@@ -371,7 +381,8 @@ class VisitListViewModelTest {
         val preferenceRepository = mock<PreferenceRepository> {
             on { get() } doReturn Preference(
                 visitListDateFilterOption = visitListDateFilterOption,
-                visitListDistanceFilterOption = VisitListDistanceFilterOption.All
+                visitListDistanceFilterOption = VisitListDistanceFilterOption.All,
+                visitMapEngineOption = savedMapEngine
             )
         }
         val actualAddressProvider = mock<AddressProvider> {

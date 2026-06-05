@@ -3,8 +3,10 @@ package com.msmobile.visitas.settings
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.msmobile.visitas.preference.PreferenceRepository
 import com.msmobile.visitas.util.BackupHandler
 import com.msmobile.visitas.util.DispatcherProvider
+import com.msmobile.visitas.visit.VisitMapEngineOption
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,6 +16,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SettingsDetailViewModel @Inject constructor(
+    private val preferenceRepository: PreferenceRepository,
     private val backupHandler: BackupHandler,
     private val dispatchers: DispatcherProvider
 ) : ViewModel() {
@@ -23,6 +26,8 @@ class SettingsDetailViewModel @Inject constructor(
 
     fun onEvent(event: UiEvent) {
         when (event) {
+            is UiEvent.ViewCreated -> viewCreated()
+            is UiEvent.MapEngineSelected -> mapEngineSelected(event.engine)
             is UiEvent.CreateBackup -> handleCreateBackup(event.successMessage, event.errorMessage)
             is UiEvent.RestoreBackup -> handleRestoreBackup(event.fileUri, event.successMessage, event.errorMessage)
             is UiEvent.CreateBackupFailed -> handleCreateBackupError(event.message)
@@ -30,6 +35,21 @@ class SettingsDetailViewModel @Inject constructor(
             is UiEvent.BackupCanceled -> handleBackupCanceled()
             is UiEvent.BackupResultAcknowledged -> handleBackupResultAcknowledged()
         }
+    }
+
+    private fun viewCreated() {
+        viewModelScope.launch(dispatchers.io) {
+            val preference = preferenceRepository.get()
+            _uiState.update { it.copy(selectedMapEngine = preference.visitMapEngineOption) }
+        }
+    }
+
+    private fun mapEngineSelected(engine: VisitMapEngineOption) {
+        viewModelScope.launch(dispatchers.io) {
+            val preference = preferenceRepository.get().copy(visitMapEngineOption = engine)
+            preferenceRepository.save(preference)
+        }
+        _uiState.update { it.copy(selectedMapEngine = engine) }
     }
 
     private fun handleCreateBackup(successMessage: String, errorMessage: String) {
@@ -108,6 +128,9 @@ class SettingsDetailViewModel @Inject constructor(
     }
 
     sealed class UiEvent {
+        data object ViewCreated : UiEvent()
+        data class MapEngineSelected(val engine: VisitMapEngineOption) : UiEvent()
+
         data class CreateBackup(
             val successMessage: String,
             val errorMessage: String
@@ -142,7 +165,7 @@ class SettingsDetailViewModel @Inject constructor(
     data class UiState(
         val isLoading: Boolean = false,
         val backupResult: BackupResult? = null,
-        val eventState: UiEventState = UiEventState.Idle
+        val eventState: UiEventState = UiEventState.Idle,
+        val selectedMapEngine: VisitMapEngineOption = VisitMapEngineOption.MapLibre
     )
 }
-

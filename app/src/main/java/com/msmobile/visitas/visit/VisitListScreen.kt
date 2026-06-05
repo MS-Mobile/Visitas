@@ -140,10 +140,10 @@ fun VisitListScreen(
         navigator.navigate(direction)
     }
     val isKeyboardOpen by isKeyboardOpen()
-    val onVisitMapEvent = { visitMapEvent: VisitsMapEvent ->
+    val onMapError = { error: String ->
         visitListViewModel.onEvent(
             VisitListViewModel.UiEvent.VisitMapEventTriggered(
-                visitMapEvent = visitMapEvent
+                visitMapEvent = VisitsMapEvent.ErrorLoadingMap(error)
             )
         )
     }
@@ -200,7 +200,7 @@ fun VisitListScreen(
         onMonthPickerEvent = onMonthPickerEvent,
         onNavigate = onNavigate,
         onIntentStateHandled = onIntentStateHandled,
-        onVisitMapEvent = onVisitMapEvent
+        onMapError = onMapError
     )
 }
 
@@ -216,7 +216,7 @@ private fun VisitListScreenContent(
     onMonthPickerEvent: (MonthNavigatorEvent) -> Unit,
     onNavigate: (Direction) -> Unit,
     onIntentStateHandled: OnIntentStateHandled,
-    onVisitMapEvent: (VisitsMapEvent) -> Unit
+    onMapError: (String) -> Unit
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(verticalFieldPadding)
@@ -241,10 +241,11 @@ private fun VisitListScreenContent(
             isVisible = visitListUiState.showVisitMapSheet,
             currentCoordinate = visitListUiState.currentCoordinates,
             visitMapState = visitListUiState.visitMapState,
+            engine = visitListUiState.visitMapEngine,
             onDismiss = {
                 onVisitListEvent(VisitListViewModel.UiEvent.VisitMapSheetDismissed)
             },
-            onVisitMapEvent = onVisitMapEvent
+            onMapError = onMapError
         )
         PermissionRationaleSheet(
             isVisible = visitListUiState.showLocationRationale,
@@ -831,8 +832,9 @@ private fun ColumnScope.VisitMapSheet(
     isVisible: Boolean,
     currentCoordinate: Pair<Double, Double>,
     visitMapState: VisitMapState,
+    engine: VisitMapEngineOption,
     onDismiss: () -> Unit,
-    onVisitMapEvent: (VisitsMapEvent) -> Unit
+    onMapError: (String) -> Unit
 ) {
     AnimatedVisibility(
         visible = isVisible,
@@ -857,7 +859,8 @@ private fun ColumnScope.VisitMapSheet(
                 LazyLoadedVisitsMap(
                     currentCoordinate = currentCoordinate,
                     visitMapState = visitMapState,
-                    onVisitMapEvent = onVisitMapEvent
+                    engine = engine,
+                    onMapError = onMapError
                 )
 
                 FilledTonalIconButton(
@@ -881,41 +884,57 @@ private fun ColumnScope.VisitMapSheet(
 private fun LazyLoadedVisitsMap(
     currentCoordinate: Pair<Double, Double>,
     visitMapState: VisitMapState,
-    onVisitMapEvent: (VisitsMapEvent) -> Unit
+    engine: VisitMapEngineOption,
+    onMapError: (String) -> Unit
 ) {
     var didLoadMap by remember { mutableStateOf(false) }
+    var isMapEngineReady by remember(engine) { mutableStateOf(false) }
     val didLoadMapData = visitMapState is VisitMapState.Visits
     val isMapLoading = visitMapState is VisitMapState.Loading
     val didFailLoadingMap = visitMapState is VisitMapState.Error
     val noMapData = visitMapState is VisitMapState.Empty
 
-    // Use LaunchedEffect to delay the map loading and prevent UI hanging
     LaunchedEffect(Unit) {
-        // Give the UI a frame to render the loading state first
         delay(100)
         didLoadMap = true
     }
 
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
         contentAlignment = Alignment.Center
     ) {
-        if (!didLoadMap || isMapLoading) {
-            VisitMapLoadingState()
-        } else if (didFailLoadingMap) {
-            VisitMapErrorState()
-        } else if (noMapData) {
-            VisitMapEmptyState()
-        } else if (didLoadMapData) {
-            AnimatedVisibility(
-                visible = true,
-                enter = fadeIn(animationSpec = tween(300))
+        // WebView renders in the background as soon as data is ready so it can fetch tiles
+        if (didLoadMap && didLoadMapData) {
+            VisitsMap(
+                currentLocation = currentCoordinate,
+                visitMapState = visitMapState,
+                engine = engine,
+                onMapError = onMapError,
+                onMapReady = { isMapEngineReady = true }
+            )
+        }
+
+        // Overlay covers the WebView until the map engine signals it has rendered
+        val showOverlay =
+            !didLoadMap || isMapLoading || didFailLoadingMap || noMapData || !isMapEngineReady
+        AnimatedVisibility(
+            visible = showOverlay,
+            enter = androidx.compose.animation.EnterTransition.None,
+            exit = fadeOut(animationSpec = tween(300))
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background),
+                contentAlignment = Alignment.Center
             ) {
-                VisitsMap(
-                    currentLocation = currentCoordinate,
-                    visitMapState = visitMapState,
-                    onMapEvent = onVisitMapEvent
-                )
+                when {
+                    didFailLoadingMap -> VisitMapErrorState()
+                    noMapData -> VisitMapEmptyState()
+                    else -> VisitMapLoadingState()
+                }
             }
         }
     }
@@ -1006,7 +1025,7 @@ internal fun VisitListScreenPreview(
                 onMonthPickerEvent = {},
                 onNavigate = {},
                 onIntentStateHandled = {},
-                onVisitMapEvent = {}
+                onMapError = {}
             )
         }
     }
