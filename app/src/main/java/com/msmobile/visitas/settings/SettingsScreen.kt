@@ -216,7 +216,7 @@ private fun MapEngineDropdown(
             value = selectedEngine.name,
             onValueChange = {},
             readOnly = true,
-            label = { Text(text = "Map Engine") },
+            label = { Text(text = stringResource(R.string.map_engine_label)) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = Modifier
                 .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
