@@ -41,6 +41,7 @@ import com.msmobile.visitas.extension.showShareIntent
 import com.msmobile.visitas.visit.VisitMapEngineOption
 import com.msmobile.visitas.util.DetailScreenStyle
 import com.msmobile.visitas.util.borderPadding
+import com.msmobile.visitas.util.cardInnerPadding
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 
@@ -84,7 +85,7 @@ private fun SettingsScreenContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = borderPadding),
+            .padding(horizontal = borderPadding + cardInnerPadding),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
