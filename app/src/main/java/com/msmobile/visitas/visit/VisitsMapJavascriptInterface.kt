@@ -27,7 +27,7 @@ class VisitsMapJavascriptInterface(
     @JavascriptInterface
     fun onMapInitializationError(error: String) {
         Log.e("VisitsMap", "Map initialization error: $error")
-        onMapError(error)
+        Handler(Looper.getMainLooper()).post { onMapError(error) }
     }
 
     @JavascriptInterface
