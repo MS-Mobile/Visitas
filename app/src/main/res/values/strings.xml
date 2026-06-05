@@ -74,6 +74,7 @@
     <string name="colon">: </string>
     <string name="settings_section_backup">Backup</string>
     <string name="settings_section_map">Map settings</string>
+    <string name="map_engine_label">Map Engine</string>
     <string name="create_backup">Create backup</string>
     <string name="restore_backup">Restore backup</string>
     <string name="restore_backup_title">Restore Backup</string>
