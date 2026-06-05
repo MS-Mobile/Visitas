@@ -86,7 +86,11 @@
             });
 
             map.on('error', (e) => {
-                logError('MapLibre error: ' + e.error.message);
+                const msg = (e.error && e.error.message) || 'Unknown map error';
+                logError('MapLibre error: ' + msg);
+                if (!routeAdded && window.Visits && window.Visits.onMapInitializationError) {
+                    window.Visits.onMapInitializationError(msg);
+                }
             });
 
         } catch (error) {
