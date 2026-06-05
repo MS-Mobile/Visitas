@@ -17,7 +17,7 @@ fun VisitsMap(
     onMapReady: () -> Unit = {}
 ) {
     val currentLocationText = stringResource(R.string.current_location).replace("'", "\\'")
-    val webViewBridgeState = remember { mutableStateOf<WebViewViewBridge?>(null) }
+    val webViewBridgeState = remember(engine) { mutableStateOf<WebViewViewBridge?>(null) }
 
     val (currentLatitude, currentLongitude) = currentLocation
 
