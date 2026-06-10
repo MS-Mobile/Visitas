@@ -943,27 +943,13 @@ private fun StateHandler(
         }
 
         is VisitDetailViewModel.UiEventState.NoAddressFound -> {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
-                Snackbar(
-                    modifier = Modifier.padding(borderPadding),
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    dismissAction = {
-                        IconButton(onClick = {
-                            onEvent(VisitDetailViewModel.UiEvent.SnackbarDismissed)
-                        }) {
-                            Icon(
-                                imageVector = Icons.Rounded.Close,
-                                contentDescription = stringResource(R.string.close_icon_content_description),
-                                tint = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    }) {
-                    Text(
-                        text = stringResource(R.string.houlseholder_no_address_found),
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                }
-            }
+            NoAddressFoundSnackbar(
+                modifier = Modifier
+                    .padding(borderPadding)
+                    .imePadding()
+                    .padding(bottom = verticalFieldPadding + floatingBarBottomPadding),
+                onEvent = onEvent
+            )
         }
 
         is VisitDetailViewModel.UiEventState.CopiedToClipboard -> {
@@ -1056,6 +1042,34 @@ private fun DiscardChangesMessage(onEvent: (VisitDetailViewModel.UiEvent) -> Uni
             }
         }
     )
+}
+
+@Composable
+private fun NoAddressFoundSnackbar(
+    modifier: Modifier,
+    onEvent: (VisitDetailViewModel.UiEvent) -> Unit
+) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+        Snackbar(
+            modifier = modifier,
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            dismissAction = {
+                IconButton(onClick = {
+                    onEvent(VisitDetailViewModel.UiEvent.SnackbarDismissed)
+                }) {
+                    Icon(
+                        imageVector = Icons.Rounded.Close,
+                        contentDescription = stringResource(R.string.close_icon_content_description),
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }) {
+            Text(
+                text = stringResource(R.string.houlseholder_no_address_found),
+                color = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+        }
+    }
 }
 
 @Composable
