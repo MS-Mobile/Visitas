@@ -4,12 +4,14 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
@@ -42,6 +44,8 @@ import com.msmobile.visitas.visit.VisitMapEngineOption
 import com.msmobile.visitas.util.DetailScreenStyle
 import com.msmobile.visitas.util.borderPadding
 import com.msmobile.visitas.util.cardInnerPadding
+import com.msmobile.visitas.util.floatingBarBottomPadding
+import com.msmobile.visitas.util.verticalFieldPadding
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 
@@ -75,7 +79,8 @@ private fun SettingsScreenContent(
     val createBackupFailureMessage = stringResource(R.string.create_backup_failure)
     val restoreBackupLauncher = rememberRestoreBackupLauncher(onEvent)
 
-    val backupResult = uiState.backupResult as? SettingsDetailViewModel.BackupResult.BackupCreationSuccess
+    val backupResult =
+        uiState.backupResult as? SettingsDetailViewModel.BackupResult.BackupCreationSuccess
     val shareUri = backupResult?.shareFileUri
     LaunchedEffect(shareUri) {
         if (shareUri == null) return@LaunchedEffect
@@ -130,25 +135,22 @@ private fun SettingsScreenContent(
             CircularProgressIndicator()
         }
 
-        uiState.backupResult?.let { result ->
-            if (result is SettingsDetailViewModel.BackupResult.BackupCreationSuccess) {
-                return@let
+
+        when (uiState.backupResult) {
+            is SettingsDetailViewModel.BackupResult.RestoreFailure -> {
+                RestoreBackupSnackbar(uiState.backupResult.message)
             }
-            Spacer(modifier = Modifier.height(16.dp))
-            Snackbar(
-                modifier = Modifier.padding(borderPadding),
-                containerColor = MaterialTheme.colorScheme.secondaryContainer
-            ) {
-                Text(
-                    text = when (result) {
-                        is SettingsDetailViewModel.BackupResult.RestoreFailure -> result.message
-                        is SettingsDetailViewModel.BackupResult.RestoreSuccess -> result.message
-                        is SettingsDetailViewModel.BackupResult.BackupCreationSuccess -> return@Snackbar
-                    },
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                )
+
+            is SettingsDetailViewModel.BackupResult.RestoreSuccess -> {
+                RestoreBackupSnackbar(uiState.backupResult.message)
+            }
+
+            is SettingsDetailViewModel.BackupResult.BackupCreationSuccess,
+            null -> {
+                // Do nothing
             }
         }
+
 
         Spacer(modifier = Modifier.weight(1f))
 
@@ -159,6 +161,24 @@ private fun SettingsScreenContent(
         )
 
         Spacer(modifier = Modifier.height(16.dp))
+    }
+}
+
+@Composable
+private fun RestoreBackupSnackbar(message: String) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+        Snackbar(
+            modifier = Modifier
+                .padding(borderPadding)
+                .imePadding()
+                .padding(bottom = verticalFieldPadding + floatingBarBottomPadding),
+            containerColor = MaterialTheme.colorScheme.secondaryContainer
+        ) {
+            Text(
+                text = message,
+                color = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+        }
     }
 }
 
