@@ -10,7 +10,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -941,46 +943,50 @@ private fun StateHandler(
         }
 
         is VisitDetailViewModel.UiEventState.NoAddressFound -> {
-            Snackbar(
-                modifier = Modifier.padding(borderPadding),
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                dismissAction = {
-                    IconButton(onClick = {
-                        onEvent(VisitDetailViewModel.UiEvent.SnackbarDismissed)
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+                Snackbar(
+                    modifier = Modifier.padding(borderPadding),
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    dismissAction = {
+                        IconButton(onClick = {
+                            onEvent(VisitDetailViewModel.UiEvent.SnackbarDismissed)
+                        }) {
+                            Icon(
+                                imageVector = Icons.Rounded.Close,
+                                contentDescription = stringResource(R.string.close_icon_content_description),
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
                     }) {
-                        Icon(
-                            imageVector = Icons.Rounded.Close,
-                            contentDescription = stringResource(R.string.close_icon_content_description),
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                }) {
-                Text(
-                    text = stringResource(R.string.houlseholder_no_address_found),
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                )
+                    Text(
+                        text = stringResource(R.string.houlseholder_no_address_found),
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                }
             }
         }
 
         is VisitDetailViewModel.UiEventState.CopiedToClipboard -> {
-            Snackbar(
-                modifier = Modifier.padding(borderPadding),
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                dismissAction = {
-                    IconButton(onClick = {
-                        onEvent(VisitDetailViewModel.UiEvent.SnackbarDismissed)
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+                Snackbar(
+                    modifier = Modifier.padding(borderPadding),
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    dismissAction = {
+                        IconButton(onClick = {
+                            onEvent(VisitDetailViewModel.UiEvent.SnackbarDismissed)
+                        }) {
+                            Icon(
+                                imageVector = Icons.Rounded.Close,
+                                contentDescription = stringResource(R.string.close_icon_content_description),
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
                     }) {
-                        Icon(
-                            imageVector = Icons.Rounded.Close,
-                            contentDescription = stringResource(R.string.close_icon_content_description),
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                }) {
-                Text(
-                    text = stringResource(R.string.copied_to_clipboard),
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                )
+                    Text(
+                        text = stringResource(R.string.copied_to_clipboard),
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                }
             }
         }
     }

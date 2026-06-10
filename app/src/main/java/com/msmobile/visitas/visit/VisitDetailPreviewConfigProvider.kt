@@ -162,6 +162,16 @@ internal class VisitDetailPreviewConfigProvider : PreviewParameterProvider<Visit
             ),
             isDarkMode = false
         ),
+        VisitDetailPreviewConfig(
+            configName = "No Address Found Snackbar",
+            mainActivityUiState = previewMainActivityUiState,
+            householderId = UUID.randomUUID(),
+            uiState = previewVisitDetailUiState.copy(
+                visitList = listOf(previewFirstVisitUiState.copy(canBeRemoved = false)),
+                eventState = VisitDetailViewModel.UiEventState.NoAddressFound
+            ),
+            isDarkMode = false
+        ),
     )
 
     override fun getDisplayName(index: Int): String {
