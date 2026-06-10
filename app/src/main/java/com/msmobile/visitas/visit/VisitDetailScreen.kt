@@ -12,11 +12,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
@@ -29,10 +29,11 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.ArrowDropDown
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.DateRange
+import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.TravelExplore
@@ -96,7 +97,6 @@ import com.msmobile.visitas.extension.toString
 import com.msmobile.visitas.ui.theme.PreviewFoldable
 import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
-import com.msmobile.visitas.ui.views.CopyDataButton
 import com.msmobile.visitas.ui.views.DateTimePicker
 import com.msmobile.visitas.ui.views.LazyColumnWithScrollbar
 import com.msmobile.visitas.ui.views.PermissionRationaleSheet
@@ -154,6 +154,7 @@ private fun VisitDetailScreenContent(
         onEvent(VisitDetailViewModel.UiEvent.CancelClicked)
     }
 
+    val copyDataDescription = stringResource(id = R.string.copy_data_content_description)
     val deleteDescription = stringResource(id = R.string.delete)
     val chromeOwner = remember { Any() }
     DisposableEffect(Unit) {
@@ -161,6 +162,11 @@ private fun VisitDetailScreenContent(
             owner = chromeOwner,
             uiState = AppScaffoldState.UiState(
                 topBarActions = listOf(
+                    TopBarAction(
+                        contentDescription = copyDataDescription,
+                        icon = Icons.Rounded.ContentCopy,
+                        onClick = { onEvent(VisitDetailViewModel.UiEvent.CopyVisitDataClicked) }
+                    ),
                     TopBarAction(
                         contentDescription = deleteDescription,
                         icon = Icons.Rounded.Delete,
@@ -275,9 +281,6 @@ private fun HouseholderDetail(
         value = householder.name,
         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
         trailingIcon = {
-            CopyDataButton(householder.showCopyData, onClick = {
-                onEvent(VisitDetailViewModel.UiEvent.CopyVisitDataClicked)
-            })
             TextFieldClearButton(householder.showClearName, onClear = {
                 onEvent(VisitDetailViewModel.UiEvent.ClearNameClicked)
             })
@@ -1110,6 +1113,11 @@ internal fun VisitDetailScreenPreview(
             onNavigateToTab = {},
             onNavigate = {},
             topBarActions = listOf(
+                TopBarAction(
+                    contentDescription = stringResource(id = R.string.copy_data_content_description),
+                    icon = Icons.Rounded.ContentCopy,
+                    onClick = { }
+                ),
                 TopBarAction(
                     contentDescription = stringResource(id = R.string.delete),
                     icon = Icons.Rounded.Delete,
