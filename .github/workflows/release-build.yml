@@ -84,6 +84,7 @@ jobs:
           echo "code=${VERSION_CODE}" >> $GITHUB_OUTPUT
           echo "Calculated VERSION_CODE: ${VERSION_CODE} (Base: ${VERSION_CODE_OFFSET}, Run: ${{ github.run_number }}, Attempt: ${{ github.run_attempt }})"
           echo "${VERSION_CODE}" > version-code.txt
+          echo "$GITHUB_SHA" > build-sha.txt
         env:
           VERSION_CODE_OFFSET: ${{ vars.VERSION_CODE_OFFSET }}
 
@@ -129,7 +130,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-info
-          path: version-code.txt
+          path: |
+            version-code.txt
+            build-sha.txt
           retention-days: 400
 
   open-version-bump-pr:

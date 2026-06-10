@@ -98,6 +98,13 @@ jobs:
           echo "code=$CODE" >> $GITHUB_OUTPUT
           echo "Version code: $CODE"
 
+      - name: Read build SHA
+        id: sha
+        run: |
+          SHA=$(cat build-info/build-sha.txt)
+          echo "commit=$SHA" >> $GITHUB_OUTPUT
+          echo "Build SHA: $SHA"
+
       - name: List artifacts
         run: |
           echo "Downloaded artifacts:"
@@ -125,6 +132,7 @@ jobs:
         with:
           tag_name: ${{ steps.version.outputs.tag }}
           name: Release ${{ steps.version.outputs.tag }}
+          target_commitish: ${{ steps.sha.outputs.commit }}
           body: |
             ${{ steps.changelog.outputs.content }}
 
