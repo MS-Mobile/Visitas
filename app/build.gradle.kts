@@ -22,7 +22,7 @@ android {
         applicationId = "com.msmobile.visitas"
         minSdk = libs.versions.android.min.sdk.get().toInt()
         targetSdk = libs.versions.android.target.sdk.get().toInt()
-        versionCode = requireEnvVariable(EnvKeys.VERSION_CODE).toInt()
+        versionCode = System.getenv(EnvKeys.VERSION_CODE)?.toIntOrNull() ?: 1
         versionName = requireVersionName()
 
         testInstrumentationRunner = "com.msmobile.visitas.HiltTestRunner"
@@ -33,10 +33,13 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = file(requireEnvVariable(EnvKeys.KEYSTORE_FILE))
-            storePassword = requireEnvVariable(EnvKeys.KEYSTORE_PASSWORD)
-            keyAlias = requireEnvVariable(EnvKeys.KEYSTORE_ALIAS)
-            keyPassword = requireEnvVariable(EnvKeys.KEYSTORE_PASSWORD)
+            val keystoreFile = System.getenv(EnvKeys.KEYSTORE_FILE)
+            if (keystoreFile != null) {
+                storeFile = file(keystoreFile)
+                storePassword = System.getenv(EnvKeys.KEYSTORE_PASSWORD)
+                keyAlias = System.getenv(EnvKeys.KEYSTORE_ALIAS)
+                keyPassword = System.getenv(EnvKeys.KEYSTORE_PASSWORD)
+            }
         }
     }
 

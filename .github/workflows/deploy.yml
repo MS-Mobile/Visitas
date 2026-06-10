@@ -1,15 +1,14 @@
-# Release Pipeline - Create tag, GitHub release, and deploy to Google Play Store
-# Triggered manually only
+# Play Store Deploy — manual deployment from a release branch
+# Downloads artifacts produced by release-build.yml on the specified branch
 
-name: Release
+name: Deploy
 
 on:
   workflow_dispatch:
     inputs:
-      version_name:
-        description: 'Version name for the tag (e.g. 1.0.1). Defaults to version.properties.'
-        required: false
-        default: ''
+      release_branch:
+        description: 'Release branch to deploy from (e.g. release/1.1.0)'
+        required: true
       release_notes:
         description: 'Release notes (Portuguese)'
         required: false
@@ -17,47 +16,36 @@ on:
         type: string
 
 jobs:
-  release:
-    name: Tag, Release, and Deploy
+  deploy:
+    name: Deploy to Play Store
     runs-on: ubuntu-latest
     permissions:
       actions: read
       contents: write
 
     steps:
-      - name: Checkout code
+      - name: Checkout release branch
         uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.release_branch }}
           fetch-depth: 0
 
-      - name: Resolve version
+      - name: Read version from release branch
         id: version
         run: |
-          INPUT="${{ inputs.version_name }}"
-          if [ -n "$INPUT" ]; then
-            NAME="$INPUT"
-          else
-            NAME=$(grep '^versionName=' version.properties | cut -d'=' -f2)
-          fi
+          NAME=$(grep '^versionName=' version.properties | cut -d'=' -f2)
           echo "name=$NAME" >> $GITHUB_OUTPUT
           echo "tag=v$NAME" >> $GITHUB_OUTPUT
-          echo "Resolved version: $NAME (tag: v$NAME)"
+          echo "Version: $NAME (tag: v$NAME)"
 
-      - name: Verify version bump
+      - name: Guard — fail if tag already exists
         run: |
-          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          if [ -n "$PREV_TAG" ]; then
-            PREV_VERSION="${PREV_TAG#v}"
-            CURR_VERSION="${{ steps.version.outputs.name }}"
-            if [ "$PREV_VERSION" = "$CURR_VERSION" ]; then
-              echo "ERROR: Version has not changed. Current version ($CURR_VERSION) matches the latest tag ($PREV_TAG)."
-              echo "Update versionName in version.properties before releasing."
-              exit 1
-            fi
-            echo "Version bump confirmed: $PREV_VERSION → $CURR_VERSION"
-          else
-            echo "No previous tag found — skipping version check"
+          TAG="${{ steps.version.outputs.tag }}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "ERROR: Tag $TAG already exists. This version has already been released."
+            exit 1
           fi
+          echo "Tag $TAG does not exist — safe to proceed"
 
       - name: Generate changelog
         id: changelog
@@ -74,14 +62,14 @@ jobs:
           echo "$LOG" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Download latest successful build artifact
+      - name: Download App Bundle from release branch
         id: download
         uses: dawidd6/action-download-artifact@v6
         with:
           name: app-bundle
           path: artifacts
-          workflow: build.yml
-          branch: master
+          workflow: release-build.yml
+          branch: ${{ inputs.release_branch }}
           workflow_conclusion: success
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -90,7 +78,7 @@ jobs:
         with:
           name: build-info
           path: build-info
-          workflow: build.yml
+          workflow: release-build.yml
           run_id: ${{ steps.download.outputs.run-id }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -99,7 +87,7 @@ jobs:
         with:
           name: app-apk
           path: apk
-          workflow: build.yml
+          workflow: release-build.yml
           run_id: ${{ steps.download.outputs.run-id }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
 

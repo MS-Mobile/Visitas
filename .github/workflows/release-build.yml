@@ -1,23 +1,20 @@
-# Android Build Pipeline
-# Equivalent to azure-pipelines.yml
+# Release Branch CI — full release build with version code + signing
+# After a successful build, opens an idempotent version bump PR on master
 
-name: Build
+name: Release Build
 
 on:
   push:
     branches:
-      - master
-  pull_request:
-    branches:
-      - master
+      - 'release/**'
 
 concurrency:
-  group: build-${{ github.ref }}
+  group: release-build-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   build:
-    name: Build Android App
+    name: Build Release
     runs-on: ubuntu-latest
 
     steps:
@@ -29,7 +26,6 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-
 
       - name: Decode Keystore
         run: |
@@ -49,11 +45,9 @@ jobs:
           GOOGLE_SERVICES_DEBUG: ${{ secrets.GOOGLE_SERVICES_JSON_DEBUG }}
           GOOGLE_SERVICES_RELEASE: ${{ secrets.GOOGLE_SERVICES_JSON_RELEASE }}
         run: |
-          # Create for both variants with separate configs
           mkdir -p app/src/debug app/src/release
           printf '%s' "$GOOGLE_SERVICES_DEBUG" > app/src/debug/google-services.json
           printf '%s' "$GOOGLE_SERVICES_RELEASE" > app/src/release/google-services.json
-          
           if [ ! -f "app/src/debug/google-services.json" ] || [ ! -f "app/src/release/google-services.json" ]; then
             echo "ERROR: google-services.json files were not created"
             exit 1
@@ -81,9 +75,6 @@ jobs:
       - name: Calculate Version Code
         id: version
         run: |
-          # Guaranteed monotonic version code: BASE_OFFSET + (run_number * 10) + attempt
-          # Base offset ensures version > existing Play Store version (2854)
-          # VERSION_CODE_OFFSET must be set as a repository variable
           if [ -z "$VERSION_CODE_OFFSET" ]; then
             echo "ERROR: VERSION_CODE_OFFSET variable is required but not set"
             echo "Set it at: Settings → Secrets and variables → Actions → Variables"
@@ -125,14 +116,14 @@ jobs:
         with:
           name: app-bundle
           path: app/build/outputs/bundle/release/*.aab
-          retention-days: 30
+          retention-days: 400
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-apk
           path: app/build/outputs/apk/release/*.apk
-          retention-days: 30
+          retention-days: 400
 
       - name: Upload build info
         uses: actions/upload-artifact@v4
@@ -140,3 +131,87 @@ jobs:
           name: build-info
           path: version-code.txt
           retention-days: 400
+
+  open-version-bump-pr:
+    name: Open Version Bump PR on Master
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout master
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          token: ${{ secrets.WORKFLOW_TOKEN }}
+          fetch-depth: 0
+
+      - name: Parse release version and compute next
+        id: versions
+        run: |
+          BRANCH="${{ github.ref_name }}"
+          RELEASE_VERSION="${BRANCH#release/}"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$RELEASE_VERSION"
+          NEXT_MINOR=$(( MINOR + 1 ))
+          NEXT_VERSION="${MAJOR}.${NEXT_MINOR}.0"
+          BUMP_BRANCH="bump/version-${NEXT_VERSION}"
+          echo "release_version=$RELEASE_VERSION" >> $GITHUB_OUTPUT
+          echo "next_version=$NEXT_VERSION" >> $GITHUB_OUTPUT
+          echo "bump_branch=$BUMP_BRANCH" >> $GITHUB_OUTPUT
+          echo "Release: $RELEASE_VERSION  →  Next: $NEXT_VERSION  (branch: $BUMP_BRANCH)"
+
+      - name: Guard 1 — skip if bump PR already open
+        id: guard1
+        run: |
+          BUMP_BRANCH="${{ steps.versions.outputs.bump_branch }}"
+          COUNT=$(gh pr list --head "$BUMP_BRANCH" --state open --json number --jq 'length')
+          echo "open_count=$COUNT" >> $GITHUB_OUTPUT
+          echo "Open PRs with head $BUMP_BRANCH: $COUNT"
+        env:
+          GH_TOKEN: ${{ secrets.WORKFLOW_TOKEN }}
+
+      - name: Guard 2 — skip if master already bumped
+        id: guard2
+        run: |
+          NEXT_VERSION="${{ steps.versions.outputs.next_version }}"
+          MASTER_VERSION=$(grep '^versionName=' version.properties | cut -d'=' -f2)
+          # needs_bump=true only when MASTER_VERSION < NEXT_VERSION
+          HIGHER=$(printf '%s\n' "$MASTER_VERSION" "$NEXT_VERSION" | sort -V | tail -1)
+          if [ "$MASTER_VERSION" = "$HIGHER" ]; then
+            echo "needs_bump=false" >> $GITHUB_OUTPUT
+            echo "Master ($MASTER_VERSION) >= next ($NEXT_VERSION) — no bump needed"
+          else
+            echo "needs_bump=true" >> $GITHUB_OUTPUT
+            echo "Master ($MASTER_VERSION) < next ($NEXT_VERSION) — bump needed"
+          fi
+
+      - name: Create bump branch and update version.properties
+        if: steps.guard1.outputs.open_count == '0' && steps.guard2.outputs.needs_bump == 'true'
+        run: |
+          BUMP_BRANCH="${{ steps.versions.outputs.bump_branch }}"
+          NEXT_VERSION="${{ steps.versions.outputs.next_version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Clean up any orphaned remote branch from a cancelled prior run
+          git push origin --delete "$BUMP_BRANCH" 2>/dev/null || true
+          git checkout -b "$BUMP_BRANCH"
+          sed -i "s/^versionName=.*/versionName=${NEXT_VERSION}/" version.properties
+          git add version.properties
+          git commit -m "Bump version to ${NEXT_VERSION}"
+          git push origin "$BUMP_BRANCH"
+
+      - name: Open PR to master
+        if: steps.guard1.outputs.open_count == '0' && steps.guard2.outputs.needs_bump == 'true'
+        run: |
+          NEXT_VERSION="${{ steps.versions.outputs.next_version }}"
+          BUMP_BRANCH="${{ steps.versions.outputs.bump_branch }}"
+          RELEASE_BRANCH="${{ github.ref_name }}"
+          BODY="Automated version bump after cutting \`${RELEASE_BRANCH}\`.
+
+To override with a major bump, edit \`version.properties\` in this PR before merging."
+          gh pr create \
+            --title "Bump version to ${NEXT_VERSION}" \
+            --body "$BODY" \
+            --base master \
+            --head "$BUMP_BRANCH"
+        env:
+          GH_TOKEN: ${{ secrets.WORKFLOW_TOKEN }}
