@@ -106,6 +106,7 @@ import com.msmobile.visitas.util.DetailScreenStyle
 import com.msmobile.visitas.util.borderPadding
 import com.msmobile.visitas.util.floatingBarBottomPadding
 import com.msmobile.visitas.util.horizontalFieldPadding
+import com.msmobile.visitas.util.snackbarPadding
 import com.msmobile.visitas.util.verticalFieldPadding
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
@@ -944,10 +945,7 @@ private fun StateHandler(
 
         is VisitDetailViewModel.UiEventState.NoAddressFound -> {
             NoAddressFoundSnackbar(
-                modifier = Modifier
-                    .padding(borderPadding)
-                    .imePadding()
-                    .padding(bottom = verticalFieldPadding + floatingBarBottomPadding),
+                modifier = Modifier.snackbarPadding(),
                 onEvent = onEvent
             )
         }
