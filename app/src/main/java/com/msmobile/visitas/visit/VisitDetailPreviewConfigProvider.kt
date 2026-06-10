@@ -172,6 +172,16 @@ internal class VisitDetailPreviewConfigProvider : PreviewParameterProvider<Visit
             ),
             isDarkMode = false
         ),
+        VisitDetailPreviewConfig(
+            configName = "Copied to Clipboard Snackbar",
+            mainActivityUiState = previewMainActivityUiState,
+            householderId = UUID.randomUUID(),
+            uiState = previewVisitDetailUiState.copy(
+                visitList = listOf(previewFirstVisitUiState.copy(canBeRemoved = false)),
+                eventState = VisitDetailViewModel.UiEventState.CopiedToClipboard
+            ),
+            isDarkMode = false
+        ),
     )
 
     override fun getDisplayName(index: Int): String {
