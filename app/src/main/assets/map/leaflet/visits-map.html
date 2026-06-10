@@ -28,6 +28,7 @@
     let currentLocation = null; // store current location
     let routeLayer = null; // store route layer
     let currentLocationMarker = null; // marker for current location
+    let visitMarkers = []; // track all visit markers for cleanup
     let labels = {
         currentLocation: undefined,
     };
@@ -101,6 +102,10 @@
                .addTo(map)
                .bindPopup(labels.currentLocation);
 
+           // Clear existing visit markers
+           visitMarkers.forEach(m => map.removeLayer(m));
+           visitMarkers = [];
+
            // Clear existing route layer
            if (routeLayer) {
                map.removeLayer(routeLayer);
@@ -155,6 +160,7 @@
                                 }
                             })
                             .bindPopup(popupContent);
+                        visitMarkers.push(marker);
 
                         // Add visit order number as a div icon overlay
                         const numberIcon = new leaflet.DivIcon({
@@ -164,8 +170,8 @@
                             iconAnchor: [10, 10]
                         });
 
-                        new leaflet.Marker([householderLatitude, householderLongitude], { icon: numberIcon })
-                            .addTo(map);
+                        visitMarkers.push(new leaflet.Marker([householderLatitude, householderLongitude], { icon: numberIcon })
+                            .addTo(map));
 
                         bounds.extend([householderLatitude, householderLongitude]);
                     }
