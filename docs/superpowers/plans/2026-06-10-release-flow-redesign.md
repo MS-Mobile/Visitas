@@ -4,20 +4,20 @@
 
 **Goal:** Replace the monolithic `release.yml` with four focused workflows: master CI (debug-only), manual release branch creation, release branch CI (with Play Store artifacts + version bump PR), and a manual deploy.
 
-**Architecture:** `build.yml` handles master CI with no version code or signing concerns. `cut-release.yml` is a `workflow_dispatch` that creates the `release/x.y.z` branch from master. `release-build.yml` handles release branch CI with the full version code + signing setup, and runs an idempotent version bump PR job on master after a successful build. `deploy.yml` is the manual Play Store deploy, replacing `release.yml`, downloading artifacts from a specified release branch.
+**Architecture:** `pull-request-build.yml` handles master CI with no version code or signing concerns. `cut-release.yml` is a `workflow_dispatch` that creates the `release/x.y.z` branch from master. `release-build.yml` handles release branch CI with the full version code + signing setup, and runs an idempotent version bump PR job on master after a successful build. `deploy.yml` is the manual Play Store deploy, replacing `release.yml`, downloading artifacts from a specified release branch.
 
 **Tech Stack:** GitHub Actions, `dawidd6/action-download-artifact@v6`, `r0adkll/upload-google-play@v1`, `softprops/action-gh-release@v2`, `gh` CLI, `WORKFLOW_TOKEN` PAT (already used by `branch-sync.yml`)
 
 ---
 
-### Task 1: Simplify `build.yml` to debug-only master CI
+### Task 1: Simplify `pull-request-build.yml` to debug-only master CI
 
 **Files:**
 - Modify: `.github/workflows/build.yml`
 
 The keystore decode, version code calculation, and release build tasks are removed. Only a debug build and tests remain. `GOOGLE_SERVICES_RELEASE` and the three release artifact uploads are dropped.
 
-- [ ] **Step 1: Rewrite `build.yml`**
+- [ ] **Step 1: Rewrite `pull-request-build.yml`**
 
 Replace the entire file with:
 

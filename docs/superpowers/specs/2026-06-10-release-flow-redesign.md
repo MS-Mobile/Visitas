@@ -24,7 +24,7 @@ The current `release.yml` bundles too many concerns: CI build, Play Store deploy
 
 ## Workflow Structure
 
-### 1. `build.yml` (modified) — master CI
+### 1. `pull-request-build.yml` (modified) — master CI
 
 **Trigger:** push to `master`, PRs to `master`
 
@@ -64,7 +64,7 @@ Pushing the branch automatically triggers `release-build.yml`.
 
 **Trigger:** `push` to `release/**`
 
-**Build steps:** identical to the current `build.yml` release build:
+**Build steps:** identical to the current `pull-request-build.yml` release build:
 - Decodes keystore, creates `google-services.json`
 - Calculates `VERSION_CODE = VERSION_CODE_OFFSET + (run_number × 10) + run_attempt`
 - Runs `bundleRelease assembleRelease test validateDebugScreenshotTest`
@@ -145,6 +145,6 @@ Pushing the branch automatically triggers `release-build.yml`.
 - Confirm `release-build.yml` artifacts upload and version bump PR opens on master
 - Push a second commit to the release branch before the bump PR merges → confirm no duplicate PR is opened (Guard 1)
 - Merge the bump PR, then push a third commit to the release branch → confirm no new PR is opened (Guard 2)
-- Push a commit to master → confirm `build.yml` runs debug-only with no VERSION_CODE_OFFSET in logs
+- Push a commit to master → confirm `pull-request-build.yml` runs debug-only with no VERSION_CODE_OFFSET in logs
 - Trigger `deploy.yml` with a valid release branch → confirm Play Store upload, tag creation, GitHub release
 - Trigger `deploy.yml` a second time for the same version → confirm it fails at the tag guard step

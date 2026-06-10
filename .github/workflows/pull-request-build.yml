@@ -1,7 +1,7 @@
-# Android Build Pipeline — master CI (debug builds + tests only)
+# PR Build — debug build + tests for master PRs and master pushes
 # Release builds run in release-build.yml on release/** branches
 
-name: Build
+name: PR Build
 
 on:
   push:
