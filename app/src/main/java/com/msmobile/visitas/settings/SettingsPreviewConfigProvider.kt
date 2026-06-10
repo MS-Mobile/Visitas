@@ -15,7 +15,7 @@ internal class SettingsPreviewConfigProvider : PreviewParameterProvider<Settings
             mainActivityUiState = previewMainActivityUiState,
             uiState = SettingsDetailViewModel.UiState(
                 selectedMapEngine = VisitMapEngineOption.MapLibre,
-                versionName = "1.0.0"
+                versionName = APP_VERSION
             )
         ),
         SettingsPreviewConfig(
@@ -23,7 +23,7 @@ internal class SettingsPreviewConfigProvider : PreviewParameterProvider<Settings
             mainActivityUiState = previewMainActivityUiState,
             uiState = SettingsDetailViewModel.UiState(
                 selectedMapEngine = VisitMapEngineOption.Leaflet,
-                versionName = "1.0.0"
+                versionName = APP_VERSION
             )
         ),
         SettingsPreviewConfig(
@@ -31,7 +31,7 @@ internal class SettingsPreviewConfigProvider : PreviewParameterProvider<Settings
             mainActivityUiState = previewMainActivityUiState,
             uiState = SettingsDetailViewModel.UiState(
                 isLoading = true,
-                versionName = "1.0.0"
+                versionName = APP_VERSION
             )
         ),
         SettingsPreviewConfig(
@@ -39,7 +39,7 @@ internal class SettingsPreviewConfigProvider : PreviewParameterProvider<Settings
             mainActivityUiState = previewMainActivityUiState,
             uiState = SettingsDetailViewModel.UiState(
                 backupResult = SettingsDetailViewModel.BackupResult.RestoreSuccess("Backup restored successfully"),
-                versionName = "1.0.0"
+                versionName = APP_VERSION
             )
         ),
         SettingsPreviewConfig(
@@ -47,13 +47,17 @@ internal class SettingsPreviewConfigProvider : PreviewParameterProvider<Settings
             mainActivityUiState = previewMainActivityUiState,
             uiState = SettingsDetailViewModel.UiState(
                 backupResult = SettingsDetailViewModel.BackupResult.RestoreFailure("Failed to restore backup"),
-                versionName = "1.0.0"
+                versionName = APP_VERSION
             )
         )
     )
 
     override fun getDisplayName(index: Int): String {
         return values.elementAt(index).configName
+    }
+
+    companion object {
+        private const val APP_VERSION = "1.2.3#456"
     }
 }
 
