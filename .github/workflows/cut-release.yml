@@ -1,5 +1,5 @@
-# Cut Release — creates a release branch from master
-# Pushing the branch automatically triggers release-build.yml
+# Cut Release — creates a release branch from master via GitHub API
+# Branch creation via API (not git push) triggers release-build.yml reliably
 
 name: Cut Release
 
@@ -47,10 +47,14 @@ jobs:
           fi
           echo "Branch $BRANCH does not exist — safe to proceed"
 
-      - name: Create and push release branch
+      - name: Create release branch via API
         run: |
           BRANCH="${{ steps.version.outputs.branch }}"
-          git checkout -b "$BRANCH"
-          git push origin "$BRANCH"
-          echo "Release branch $BRANCH created and pushed."
-          echo "release-build.yml will trigger automatically."
+          SHA=$(git rev-parse HEAD)
+          gh api repos/${{ github.repository }}/git/refs \
+            -X POST \
+            -f ref="refs/heads/${BRANCH}" \
+            -f sha="${SHA}"
+          echo "Release branch ${BRANCH} created at ${SHA}."
+        env:
+          GH_TOKEN: ${{ secrets.WORKFLOW_TOKEN }}
