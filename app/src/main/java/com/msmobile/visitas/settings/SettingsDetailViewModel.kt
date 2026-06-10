@@ -28,7 +28,7 @@ class SettingsDetailViewModel @Inject constructor(
 
     init {
         _uiState.update { state ->
-            state.copy(versionName = appVersionProvider.getVersionName())
+            state.copy(versionName = appVersionProvider.getVersion())
         }
     }
 
