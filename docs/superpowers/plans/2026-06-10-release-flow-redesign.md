@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Replace the monolithic `release.yml` with three focused workflows: master CI (debug-only), release branch CI (with Play Store artifacts + version bump PR), and a manual deploy.
+**Goal:** Replace the monolithic `release.yml` with four focused workflows: master CI (debug-only), manual release branch creation, release branch CI (with Play Store artifacts + version bump PR), and a manual deploy.
 
-**Architecture:** `build.yml` handles master CI with no version code or signing concerns. `release-build.yml` handles release branch CI with the full version code + signing setup, and runs an idempotent version bump PR job on master after a successful build. `deploy.yml` is the manual Play Store deploy, replacing `release.yml`, downloading artifacts from a specified release branch.
+**Architecture:** `build.yml` handles master CI with no version code or signing concerns. `cut-release.yml` is a `workflow_dispatch` that creates the `release/x.y.z` branch from master. `release-build.yml` handles release branch CI with the full version code + signing setup, and runs an idempotent version bump PR job on master after a successful build. `deploy.yml` is the manual Play Store deploy, replacing `release.yml`, downloading artifacts from a specified release branch.
 
 **Tech Stack:** GitHub Actions, `dawidd6/action-download-artifact@v6`, `r0adkll/upload-google-play@v1`, `softprops/action-gh-release@v2`, `gh` CLI, `WORKFLOW_TOKEN` PAT (already used by `branch-sync.yml`)
 
@@ -122,7 +122,92 @@ git commit -m "ci: simplify build.yml to debug-only master CI"
 
 ---
 
-### Task 2: Create `release-build.yml`
+### Task 2: Create `cut-release.yml`
+
+**Files:**
+- Create: `.github/workflows/cut-release.yml`
+
+A `workflow_dispatch` that reads the current version from `version.properties` on master (or accepts an override), guards against an already-existing release branch, then creates and pushes `release/{version}`. Pushing the branch triggers `release-build.yml` automatically.
+
+- [ ] **Step 1: Create `.github/workflows/cut-release.yml`**
+
+```yaml
+# Cut Release — creates a release branch from master
+# Pushing the branch automatically triggers release-build.yml
+
+name: Cut Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: 'Version to release (e.g. 1.1.0). Defaults to version.properties.'
+        required: false
+        default: ''
+
+jobs:
+  cut:
+    name: Cut Release Branch
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout master
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          token: ${{ secrets.WORKFLOW_TOKEN }}
+
+      - name: Resolve version
+        id: version
+        run: |
+          INPUT="${{ inputs.version_name }}"
+          if [ -n "$INPUT" ]; then
+            NAME="$INPUT"
+          else
+            NAME=$(grep '^versionName=' version.properties | cut -d'=' -f2)
+          fi
+          echo "name=$NAME" >> $GITHUB_OUTPUT
+          echo "branch=release/${NAME}" >> $GITHUB_OUTPUT
+          echo "Resolved version: $NAME (branch: release/${NAME})"
+
+      - name: Guard — fail if release branch already exists
+        run: |
+          BRANCH="${{ steps.version.outputs.branch }}"
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            echo "ERROR: Branch $BRANCH already exists on remote."
+            exit 1
+          fi
+          echo "Branch $BRANCH does not exist — safe to proceed"
+
+      - name: Create and push release branch
+        run: |
+          BRANCH="${{ steps.version.outputs.branch }}"
+          git checkout -b "$BRANCH"
+          git push origin "$BRANCH"
+          echo "Release branch $BRANCH created and pushed."
+          echo "release-build.yml will trigger automatically."
+```
+
+- [ ] **Step 2: Validate YAML syntax**
+
+```bash
+actionlint .github/workflows/cut-release.yml
+```
+
+Expected: no output (no errors).
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add .github/workflows/cut-release.yml
+git commit -m "ci: add cut-release.yml workflow_dispatch to create release branches"
+```
+
+---
+
+### Task 4: Create `release-build.yml`
 
 **Files:**
 - Create: `.github/workflows/release-build.yml`
@@ -368,7 +453,7 @@ git commit -m "ci: add release-build.yml for release branch CI and version bump 
 
 ---
 
-### Task 3: Create `deploy.yml`
+### Task 5: Create `deploy.yml`
 
 **Files:**
 - Create: `.github/workflows/deploy.yml`
@@ -530,7 +615,7 @@ git commit -m "ci: add deploy.yml for manual Play Store deployment from release 
 
 ---
 
-### Task 4: Delete `release.yml` and push
+### Task 6: Delete `release.yml` and push
 
 **Files:**
 - Delete: `.github/workflows/release.yml`
@@ -558,7 +643,7 @@ Open the Actions tab on GitHub and confirm:
 
 ---
 
-### Task 5: End-to-end smoke test
+### Task 7: End-to-end smoke test
 
 No code changes — this is manual verification of all three workflows.
 
@@ -569,14 +654,13 @@ Open the "Build" run triggered in Task 4 and confirm:
 - Gradle task logged is `assembleDebug test validateDebugScreenshotTest`
 - Artifacts uploaded: only `test-results` and `screenshot-test-results` (no `app-bundle`, `app-apk`, `build-info`)
 
-- [ ] **Step 2: Cut a test release branch**
+- [ ] **Step 2: Cut a test release branch via `cut-release.yml`**
 
-```bash
-git checkout -b release/smoke-test
-git push origin release/smoke-test
-```
+Trigger `cut-release.yml` from the GitHub Actions UI with `version_name = smoke-test` (or leave blank to use the current `version.properties` value).
 
-Open the Actions tab and confirm "Release Build" triggers on `release/smoke-test`. After it completes:
+Open the Actions tab and confirm:
+- `cut-release.yml` creates `release/smoke-test` (or `release/{current-version}`)
+- "Release Build" triggers automatically on the new branch. After it completes:
 - Steps "Calculate Version Code" and "Build Release Bundle and Run Tests" are present
 - Artifacts `app-bundle`, `app-apk`, `build-info` uploaded with 400-day retention
 - Job `open-version-bump-pr` runs and opens a PR titled "Bump version to X.Y.0" targeting master
@@ -601,12 +685,16 @@ git push origin release/smoke-test
 
 Wait for the run. Confirm: `open-version-bump-pr` job exits silently — no new PR (Guard 2: master version already >= next version).
 
-- [ ] **Step 5: Clean up**
+- [ ] **Step 5: Verify `cut-release.yml` guard**
+
+Trigger `cut-release.yml` again with the same version. Confirm it fails with "Branch already exists on remote."
+
+- [ ] **Step 6: Clean up**
 
 ```bash
 git push origin --delete release/smoke-test
 git checkout master
-git branch -d release/smoke-test
+git branch -d release/smoke-test 2>/dev/null || true
 ```
 
 If the version bump PR incremented to a version you don't want on master, revert `version.properties` manually and push a follow-up commit.

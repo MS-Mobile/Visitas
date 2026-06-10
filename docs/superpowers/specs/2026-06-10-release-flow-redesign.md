@@ -10,6 +10,7 @@ The current `release.yml` bundles too many concerns: CI build, Play Store deploy
 
 - Release artifacts are only ever built from `release/**` branches
 - Master CI is fast and simple (no Play Store involvement, no VERSION_CODE_OFFSET)
+- Cutting a release branch is a single manual workflow dispatch (no local git required)
 - Creating a release branch automatically opens a version bump PR on master
 - Play Store deployment remains a manual step (no accidental deploys)
 
@@ -37,7 +38,29 @@ The current `release.yml` bundles too many concerns: CI build, Play Store deploy
 
 ---
 
-### 2. `release-build.yml` (new) — release branch CI
+### 2. `cut-release.yml` (new) — manual release branch creation
+
+**Trigger:** `workflow_dispatch`
+
+**Inputs:**
+
+| Input | Required | Default |
+|---|---|---|
+| `version_name` | no | read from `version.properties` on master |
+
+**Steps:**
+1. Checkout master
+2. Read version from `version.properties` (or use input override)
+3. **Guard:** verify `release/{version}` does not already exist on remote — fail fast
+4. Create and push `release/{version}` branch from master HEAD
+
+Pushing the branch automatically triggers `release-build.yml`.
+
+**Token:** uses `WORKFLOW_TOKEN` PAT so the push triggers downstream CI (same restriction as `branch-sync.yml`).
+
+---
+
+### 3. `release-build.yml` (new) — release branch CI
 
 **Trigger:** `push` to `release/**`
 
@@ -65,7 +88,7 @@ The current `release.yml` bundles too many concerns: CI build, Play Store deploy
 
 ---
 
-### 3. `deploy.yml` (new, replaces `release.yml`) — manual Play Store deploy
+### 4. `deploy.yml` (new, replaces `release.yml`) — manual Play Store deploy
 
 **Trigger:** `workflow_dispatch`
 
@@ -95,6 +118,7 @@ The current `release.yml` bundles too many concerns: CI build, Play Store deploy
 | File | Action |
 |---|---|
 | `.github/workflows/build.yml` | Modified — debug-only build, drop VERSION_CODE_OFFSET |
+| `.github/workflows/cut-release.yml` | Created — manual release branch creation |
 | `.github/workflows/release-build.yml` | Created — release branch CI + version bump PR job |
 | `.github/workflows/deploy.yml` | Created — manual Play Store deploy |
 | `.github/workflows/release.yml` | Deleted |
@@ -105,7 +129,7 @@ The current `release.yml` bundles too many concerns: CI build, Play Store deploy
 
 ## Release Runbook
 
-1. **Cut release branch**: `git checkout -b release/1.1.0 && git push origin release/1.1.0`
+1. **Cut release branch**: trigger `cut-release.yml` via GitHub Actions UI (version defaults to `version.properties`)
 2. **CI runs automatically**: `release-build.yml` builds the artifact and opens a `bump/version-1.2.0` PR on master
 3. **Review and merge the version bump PR** on master
 4. **Verify the artifact** in the GitHub Actions run for the release branch
@@ -116,7 +140,9 @@ The current `release.yml` bundles too many concerns: CI build, Play Store deploy
 
 ## Verification
 
-- Create a `release/x.y.z` test branch → confirm `release-build.yml` triggers, artifacts upload, version bump PR opens on master
+- Trigger `cut-release.yml` → confirm `release/x.y.z` branch is created and `release-build.yml` triggers automatically
+- Trigger `cut-release.yml` again for the same version → confirm it fails at the guard step (branch already exists)
+- Confirm `release-build.yml` artifacts upload and version bump PR opens on master
 - Push a second commit to the release branch before the bump PR merges → confirm no duplicate PR is opened (Guard 1)
 - Merge the bump PR, then push a third commit to the release branch → confirm no new PR is opened (Guard 2)
 - Push a commit to master → confirm `build.yml` runs debug-only with no VERSION_CODE_OFFSET in logs
