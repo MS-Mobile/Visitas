@@ -57,7 +57,7 @@ internal class SettingsPreviewConfigProvider : PreviewParameterProvider<Settings
     }
 
     companion object {
-        private const val APP_VERSION = "1.2.3#456"
+        private const val APP_VERSION = "1.0.1#710"
     }
 }
 
