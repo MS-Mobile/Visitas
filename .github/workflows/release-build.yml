@@ -205,9 +205,7 @@ jobs:
           NEXT_VERSION="${{ steps.versions.outputs.next_version }}"
           BUMP_BRANCH="${{ steps.versions.outputs.bump_branch }}"
           RELEASE_BRANCH="${{ github.ref_name }}"
-          BODY="Automated version bump after cutting \`${RELEASE_BRANCH}\`.
-
-To override with a major bump, edit \`version.properties\` in this PR before merging."
+          BODY=$(printf "Automated version bump after cutting \`%s\`.\n\nTo override with a major bump, edit \`version.properties\` in this PR before merging." "${RELEASE_BRANCH}")
           gh pr create \
             --title "Bump version to ${NEXT_VERSION}" \
             --body "$BODY" \
