@@ -1,0 +1,56 @@
+# Cut Release — creates a release branch from master
+# Pushing the branch automatically triggers release-build.yml
+
+name: Cut Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: 'Version to release (e.g. 1.1.0). Defaults to version.properties.'
+        required: false
+        default: ''
+
+jobs:
+  cut:
+    name: Cut Release Branch
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout master
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          token: ${{ secrets.WORKFLOW_TOKEN }}
+
+      - name: Resolve version
+        id: version
+        run: |
+          INPUT="${{ inputs.version_name }}"
+          if [ -n "$INPUT" ]; then
+            NAME="$INPUT"
+          else
+            NAME=$(grep '^versionName=' version.properties | cut -d'=' -f2)
+          fi
+          echo "name=$NAME" >> $GITHUB_OUTPUT
+          echo "branch=release/${NAME}" >> $GITHUB_OUTPUT
+          echo "Resolved version: $NAME (branch: release/${NAME})"
+
+      - name: Guard — fail if release branch already exists
+        run: |
+          BRANCH="${{ steps.version.outputs.branch }}"
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            echo "ERROR: Branch $BRANCH already exists on remote."
+            exit 1
+          fi
+          echo "Branch $BRANCH does not exist — safe to proceed"
+
+      - name: Create and push release branch
+        run: |
+          BRANCH="${{ steps.version.outputs.branch }}"
+          git checkout -b "$BRANCH"
+          git push origin "$BRANCH"
+          echo "Release branch $BRANCH created and pushed."
+          echo "release-build.yml will trigger automatically."
