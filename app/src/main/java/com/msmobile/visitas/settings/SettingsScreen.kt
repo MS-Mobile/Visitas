@@ -3,6 +3,7 @@ package com.msmobile.visitas.settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.VisibleForTesting
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,11 +35,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.msmobile.visitas.AppScaffold
 import com.msmobile.visitas.BuildConfig
 import com.msmobile.visitas.R
 import com.msmobile.visitas.extension.showShareIntent
+import com.msmobile.visitas.ui.theme.PreviewFoldable
+import com.msmobile.visitas.ui.theme.PreviewPhone
+import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.util.DetailScreenStyle
 import com.msmobile.visitas.util.borderPadding
 import com.msmobile.visitas.util.cardInnerPadding
@@ -46,6 +52,7 @@ import com.msmobile.visitas.util.snackbarPadding
 import com.msmobile.visitas.visit.VisitMapEngineOption
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.SettingsScreenDestination
 
 private const val BACKUP_MIME_TYPE = "application/octet-stream"
 
@@ -257,6 +264,29 @@ private fun MapEngineDropdown(
                     }
                 )
             }
+        }
+    }
+}
+
+@VisibleForTesting
+@PreviewPhone
+@PreviewFoldable
+@Composable
+internal fun SettingsScreenPreview(
+    @PreviewParameter(SettingsPreviewConfigProvider::class) config: SettingsPreviewConfig
+) {
+    VisitasTheme {
+        AppScaffold(
+            uiState = config.mainActivityUiState,
+            currentDestination = SettingsScreenDestination,
+            onEvent = {},
+            onNavigateToTab = {},
+            onNavigate = {}
+        ) {
+            SettingsScreenContent(
+                uiState = config.uiState,
+                onEvent = {}
+            )
         }
     }
 }
