@@ -1,6 +1,6 @@
 # Visitas
 
-[![Build](https://github.com/fabriciosomini/Visitas/actions/workflows/build.yml/badge.svg)](https://github.com/fabriciosomini/Visitas/actions/workflows/build.yml)
+[![PR Build](https://github.com/MS-Mobile/Visitas/actions/workflows/pull-request-build.yml/badge.svg)](https://github.com/MS-Mobile/Visitas/actions/workflows/pull-request-build.yml)
 
 An Android application for managing visits and householder records.
 
