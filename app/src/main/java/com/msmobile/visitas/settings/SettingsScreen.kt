@@ -11,16 +11,15 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Snackbar
@@ -40,12 +39,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.BuildConfig
 import com.msmobile.visitas.R
 import com.msmobile.visitas.extension.showShareIntent
-import com.msmobile.visitas.visit.VisitMapEngineOption
 import com.msmobile.visitas.util.DetailScreenStyle
 import com.msmobile.visitas.util.borderPadding
 import com.msmobile.visitas.util.cardInnerPadding
-import com.msmobile.visitas.util.floatingBarBottomPadding
-import com.msmobile.visitas.util.verticalFieldPadding
+import com.msmobile.visitas.util.snackbarPadding
+import com.msmobile.visitas.visit.VisitMapEngineOption
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 
@@ -138,11 +136,17 @@ private fun SettingsScreenContent(
 
         when (uiState.backupResult) {
             is SettingsDetailViewModel.BackupResult.RestoreFailure -> {
-                RestoreBackupSnackbar(uiState.backupResult.message)
+                RestoreBackupSnackbar(
+                    modifier = Modifier.snackbarPadding(),
+                    message = uiState.backupResult.message
+                )
             }
 
             is SettingsDetailViewModel.BackupResult.RestoreSuccess -> {
-                RestoreBackupSnackbar(uiState.backupResult.message)
+                RestoreBackupSnackbar(
+                    modifier = Modifier.snackbarPadding(),
+                    message = uiState.backupResult.message
+                )
             }
 
             is SettingsDetailViewModel.BackupResult.BackupCreationSuccess,
@@ -165,13 +169,10 @@ private fun SettingsScreenContent(
 }
 
 @Composable
-private fun RestoreBackupSnackbar(message: String) {
+private fun RestoreBackupSnackbar(modifier: Modifier, message: String) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
         Snackbar(
-            modifier = Modifier
-                .padding(borderPadding)
-                .imePadding()
-                .padding(bottom = verticalFieldPadding + floatingBarBottomPadding),
+            modifier = modifier,
             containerColor = MaterialTheme.colorScheme.secondaryContainer
         ) {
             Text(
