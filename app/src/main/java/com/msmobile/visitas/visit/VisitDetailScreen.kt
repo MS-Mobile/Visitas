@@ -10,11 +10,13 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
@@ -27,10 +29,11 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.ArrowDropDown
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.DateRange
+import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.TravelExplore
@@ -94,7 +97,6 @@ import com.msmobile.visitas.extension.toString
 import com.msmobile.visitas.ui.theme.PreviewFoldable
 import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
-import com.msmobile.visitas.ui.views.CopyDataButton
 import com.msmobile.visitas.ui.views.DateTimePicker
 import com.msmobile.visitas.ui.views.LazyColumnWithScrollbar
 import com.msmobile.visitas.ui.views.PermissionRationaleSheet
@@ -104,6 +106,7 @@ import com.msmobile.visitas.util.DetailScreenStyle
 import com.msmobile.visitas.util.borderPadding
 import com.msmobile.visitas.util.floatingBarBottomPadding
 import com.msmobile.visitas.util.horizontalFieldPadding
+import com.msmobile.visitas.util.snackbarPadding
 import com.msmobile.visitas.util.verticalFieldPadding
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
@@ -151,6 +154,7 @@ private fun VisitDetailScreenContent(
         onEvent(VisitDetailViewModel.UiEvent.CancelClicked)
     }
 
+    val copyDataDescription = stringResource(id = R.string.copy_data_content_description)
     val deleteDescription = stringResource(id = R.string.delete)
     val chromeOwner = remember { Any() }
     DisposableEffect(Unit) {
@@ -158,6 +162,11 @@ private fun VisitDetailScreenContent(
             owner = chromeOwner,
             uiState = AppScaffoldState.UiState(
                 topBarActions = listOf(
+                    TopBarAction(
+                        contentDescription = copyDataDescription,
+                        icon = Icons.Rounded.ContentCopy,
+                        onClick = { onEvent(VisitDetailViewModel.UiEvent.CopyVisitDataClicked) }
+                    ),
                     TopBarAction(
                         contentDescription = deleteDescription,
                         icon = Icons.Rounded.Delete,
@@ -272,9 +281,6 @@ private fun HouseholderDetail(
         value = householder.name,
         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
         trailingIcon = {
-            CopyDataButton(householder.showCopyData, onClick = {
-                onEvent(VisitDetailViewModel.UiEvent.CopyVisitDataClicked)
-            })
             TextFieldClearButton(householder.showClearName, onClear = {
                 onEvent(VisitDetailViewModel.UiEvent.ClearNameClicked)
             })
@@ -941,47 +947,21 @@ private fun StateHandler(
         }
 
         is VisitDetailViewModel.UiEventState.NoAddressFound -> {
-            Snackbar(
-                modifier = Modifier.padding(borderPadding),
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                dismissAction = {
-                    IconButton(onClick = {
-                        onEvent(VisitDetailViewModel.UiEvent.SnackbarDismissed)
-                    }) {
-                        Icon(
-                            imageVector = Icons.Rounded.Close,
-                            contentDescription = stringResource(R.string.close_icon_content_description),
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                }) {
-                Text(
-                    text = stringResource(R.string.houlseholder_no_address_found),
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-            }
+            NoAddressFoundSnackbar(
+                modifier = Modifier.snackbarPadding(),
+                onSnackbarDismissed = {
+                    onEvent(VisitDetailViewModel.UiEvent.SnackbarDismissed)
+                }
+            )
         }
 
         is VisitDetailViewModel.UiEventState.CopiedToClipboard -> {
-            Snackbar(
-                modifier = Modifier.padding(borderPadding),
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                dismissAction = {
-                    IconButton(onClick = {
-                        onEvent(VisitDetailViewModel.UiEvent.SnackbarDismissed)
-                    }) {
-                        Icon(
-                            imageVector = Icons.Rounded.Close,
-                            contentDescription = stringResource(R.string.close_icon_content_description),
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                }) {
-                Text(
-                    text = stringResource(R.string.copied_to_clipboard),
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-            }
+            CopiedToClipboardSnackbar(
+                modifier = Modifier.snackbarPadding(),
+                onSnackbarDismissed = {
+                    onEvent(VisitDetailViewModel.UiEvent.SnackbarDismissed)
+                }
+            )
         }
     }
 }
@@ -1053,6 +1033,58 @@ private fun DiscardChangesMessage(onEvent: (VisitDetailViewModel.UiEvent) -> Uni
 }
 
 @Composable
+private fun NoAddressFoundSnackbar(
+    modifier: Modifier,
+    onSnackbarDismissed: () -> Unit
+) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+        Snackbar(
+            modifier = modifier,
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            dismissAction = {
+                IconButton(onClick = onSnackbarDismissed) {
+                    Icon(
+                        imageVector = Icons.Rounded.Close,
+                        contentDescription = stringResource(R.string.close_icon_content_description),
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }) {
+            Text(
+                text = stringResource(R.string.houlseholder_no_address_found),
+                color = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+        }
+    }
+}
+
+@Composable
+fun CopiedToClipboardSnackbar(
+    modifier: Modifier,
+    onSnackbarDismissed: () -> Unit
+) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+        Snackbar(
+            modifier = modifier,
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            dismissAction = {
+                IconButton(onClick = onSnackbarDismissed) {
+                    Icon(
+                        imageVector = Icons.Rounded.Close,
+                        contentDescription = stringResource(R.string.close_icon_content_description),
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }) {
+            Text(
+                text = stringResource(R.string.copied_to_clipboard),
+                color = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+        }
+    }
+}
+
+@Composable
 private fun NextVisitSuggestionButton(show: Boolean, onClick: () -> Unit) {
     AnimatedVisibility(show) {
         IconButton(
@@ -1081,6 +1113,11 @@ internal fun VisitDetailScreenPreview(
             onNavigateToTab = {},
             onNavigate = {},
             topBarActions = listOf(
+                TopBarAction(
+                    contentDescription = stringResource(id = R.string.copy_data_content_description),
+                    icon = Icons.Rounded.ContentCopy,
+                    onClick = { }
+                ),
                 TopBarAction(
                     contentDescription = stringResource(id = R.string.delete),
                     icon = Icons.Rounded.Delete,

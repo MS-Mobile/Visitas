@@ -153,7 +153,8 @@ fun AppScaffold(
             Surface(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(top = paddingValues.calculateTopPadding()),
+                    .padding(top = paddingValues.calculateTopPadding())
+                    .navigationBarsPadding(),
                 color = MaterialTheme.colorScheme.background
             ) {
                 content()

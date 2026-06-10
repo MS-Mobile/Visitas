@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.msmobile.visitas.preference.PreferenceRepository
+import com.msmobile.visitas.util.AppVersionProvider
 import com.msmobile.visitas.util.BackupHandler
 import com.msmobile.visitas.util.DispatcherProvider
 import com.msmobile.visitas.visit.VisitMapEngineOption
@@ -18,18 +19,30 @@ import javax.inject.Inject
 class SettingsDetailViewModel @Inject constructor(
     private val preferenceRepository: PreferenceRepository,
     private val backupHandler: BackupHandler,
-    private val dispatchers: DispatcherProvider
+    private val dispatchers: DispatcherProvider,
+    private val appVersionProvider: AppVersionProvider
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState
+
+    init {
+        _uiState.update { state ->
+            state.copy(versionName = appVersionProvider.getVersion())
+        }
+    }
 
     fun onEvent(event: UiEvent) {
         when (event) {
             is UiEvent.ViewCreated -> viewCreated()
             is UiEvent.MapEngineSelected -> mapEngineSelected(event.engine)
             is UiEvent.CreateBackup -> handleCreateBackup(event.successMessage, event.errorMessage)
-            is UiEvent.RestoreBackup -> handleRestoreBackup(event.fileUri, event.successMessage, event.errorMessage)
+            is UiEvent.RestoreBackup -> handleRestoreBackup(
+                event.fileUri,
+                event.successMessage,
+                event.errorMessage
+            )
+
             is UiEvent.CreateBackupFailed -> handleCreateBackupError(event.message)
             is UiEvent.RestoreBackupFailed -> handleRestoreBackupError(event.message)
             is UiEvent.BackupCanceled -> handleBackupCanceled()
@@ -166,6 +179,7 @@ class SettingsDetailViewModel @Inject constructor(
         val isLoading: Boolean = false,
         val backupResult: BackupResult? = null,
         val eventState: UiEventState = UiEventState.Idle,
-        val selectedMapEngine: VisitMapEngineOption = VisitMapEngineOption.MapLibre
+        val selectedMapEngine: VisitMapEngineOption = VisitMapEngineOption.MapLibre,
+        val versionName: String = ""
     )
 }

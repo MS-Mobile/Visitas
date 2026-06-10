@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs grep -l \"ScaffoldState\")",
+      "Bash(findstr *)",
+      "Bash(git config *)",
+      "Bash(git fetch *)",
+      "Bash(git credential-manager *)",
+      "PowerShell(Get-ChildItem *)",
+      "mcp__ide__getDiagnostics"
+    ]
+  }
+}

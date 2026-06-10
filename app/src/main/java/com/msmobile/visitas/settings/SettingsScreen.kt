@@ -3,22 +3,25 @@ package com.msmobile.visitas.settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.VisibleForTesting
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Snackbar
@@ -33,17 +36,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.msmobile.visitas.AppScaffold
 import com.msmobile.visitas.BuildConfig
 import com.msmobile.visitas.R
 import com.msmobile.visitas.extension.showShareIntent
-import com.msmobile.visitas.visit.VisitMapEngineOption
+import com.msmobile.visitas.ui.theme.PreviewFoldable
+import com.msmobile.visitas.ui.theme.PreviewPhone
+import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.util.DetailScreenStyle
 import com.msmobile.visitas.util.borderPadding
 import com.msmobile.visitas.util.cardInnerPadding
+import com.msmobile.visitas.util.snackbarPadding
+import com.msmobile.visitas.visit.VisitMapEngineOption
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.SettingsScreenDestination
 
 private const val BACKUP_MIME_TYPE = "application/octet-stream"
 
@@ -75,7 +85,8 @@ private fun SettingsScreenContent(
     val createBackupFailureMessage = stringResource(R.string.create_backup_failure)
     val restoreBackupLauncher = rememberRestoreBackupLauncher(onEvent)
 
-    val backupResult = uiState.backupResult as? SettingsDetailViewModel.BackupResult.BackupCreationSuccess
+    val backupResult =
+        uiState.backupResult as? SettingsDetailViewModel.BackupResult.BackupCreationSuccess
     val shareUri = backupResult?.shareFileUri
     LaunchedEffect(shareUri) {
         if (shareUri == null) return@LaunchedEffect
@@ -130,35 +141,54 @@ private fun SettingsScreenContent(
             CircularProgressIndicator()
         }
 
-        uiState.backupResult?.let { result ->
-            if (result is SettingsDetailViewModel.BackupResult.BackupCreationSuccess) {
-                return@let
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Snackbar(
-                modifier = Modifier.padding(borderPadding),
-                containerColor = MaterialTheme.colorScheme.secondaryContainer
-            ) {
-                Text(
-                    text = when (result) {
-                        is SettingsDetailViewModel.BackupResult.RestoreFailure -> result.message
-                        is SettingsDetailViewModel.BackupResult.RestoreSuccess -> result.message
-                        is SettingsDetailViewModel.BackupResult.BackupCreationSuccess -> return@Snackbar
-                    },
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
+
+        when (uiState.backupResult) {
+            is SettingsDetailViewModel.BackupResult.RestoreFailure -> {
+                RestoreBackupSnackbar(
+                    modifier = Modifier.snackbarPadding(),
+                    message = uiState.backupResult.message
                 )
             }
+
+            is SettingsDetailViewModel.BackupResult.RestoreSuccess -> {
+                RestoreBackupSnackbar(
+                    modifier = Modifier.snackbarPadding(),
+                    message = uiState.backupResult.message
+                )
+            }
+
+            is SettingsDetailViewModel.BackupResult.BackupCreationSuccess,
+            null -> {
+                // Do nothing
+            }
         }
+
 
         Spacer(modifier = Modifier.weight(1f))
 
         Text(
-            text = stringResource(R.string.app_version, BuildConfig.VERSION_NAME),
+            modifier = Modifier.navigationBarsPadding(),
+            text = stringResource(R.string.app_version, uiState.versionName),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Spacer(modifier = Modifier.height(16.dp))
+    }
+}
+
+@Composable
+private fun RestoreBackupSnackbar(modifier: Modifier, message: String) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+        Snackbar(
+            modifier = modifier,
+            containerColor = MaterialTheme.colorScheme.secondaryContainer
+        ) {
+            Text(
+                text = message,
+                color = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+        }
     }
 }
 
@@ -236,6 +266,29 @@ private fun MapEngineDropdown(
                     }
                 )
             }
+        }
+    }
+}
+
+@VisibleForTesting
+@PreviewPhone
+@PreviewFoldable
+@Composable
+internal fun SettingsScreenPreview(
+    @PreviewParameter(SettingsPreviewConfigProvider::class) config: SettingsPreviewConfig
+) {
+    VisitasTheme {
+        AppScaffold(
+            uiState = config.mainActivityUiState,
+            currentDestination = SettingsScreenDestination,
+            onEvent = {},
+            onNavigateToTab = {},
+            onNavigate = {}
+        ) {
+            SettingsScreenContent(
+                uiState = config.uiState,
+                onEvent = {}
+            )
         }
     }
 }
