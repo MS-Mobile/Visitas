@@ -2,6 +2,7 @@ package com.msmobile.visitas.settings
 
 import com.msmobile.visitas.preference.Preference
 import com.msmobile.visitas.preference.PreferenceRepository
+import com.msmobile.visitas.util.AppVersionProvider
 import com.msmobile.visitas.util.BackupHandler
 import com.msmobile.visitas.util.DispatcherProvider
 import com.msmobile.visitas.util.MainDispatcherRule
@@ -66,7 +67,8 @@ class SettingsDetailViewModelTest {
         return SettingsDetailViewModel(
             preferenceRepository = preferenceRepository,
             backupHandler = backupHandler,
-            dispatchers = dispatchers
+            dispatchers = dispatchers,
+            appVersionProvider = AppVersionProvider
         )
     }
 }
