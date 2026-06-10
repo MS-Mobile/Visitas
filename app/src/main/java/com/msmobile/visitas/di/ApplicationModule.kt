@@ -18,6 +18,7 @@ import com.msmobile.visitas.serialization.UUIDAdapter
 import com.msmobile.visitas.summary.SummaryDao
 import com.msmobile.visitas.summary.SummaryRepository
 import com.msmobile.visitas.util.AddressProvider
+import com.msmobile.visitas.util.AppVersionProvider
 import com.msmobile.visitas.util.BackupHandler
 import com.msmobile.visitas.util.CalendarEventManager
 import com.msmobile.visitas.util.ClipboardHandler
@@ -300,5 +301,11 @@ class ApplicationModule {
     @Provides
     fun preferenceDao(roomDatabase: VisitasDatabase): PreferenceDao {
         return roomDatabase.preferenceDao()
+    }
+
+    @Singleton
+    @Provides
+    fun appVersionProvider(): AppVersionProvider {
+        return AppVersionProvider
     }
 }

@@ -14,35 +14,40 @@ internal class SettingsPreviewConfigProvider : PreviewParameterProvider<Settings
             configName = "Default",
             mainActivityUiState = previewMainActivityUiState,
             uiState = SettingsDetailViewModel.UiState(
-                selectedMapEngine = VisitMapEngineOption.MapLibre
+                selectedMapEngine = VisitMapEngineOption.MapLibre,
+                versionName = "1.0.0"
             )
         ),
         SettingsPreviewConfig(
             configName = "Leaflet Engine",
             mainActivityUiState = previewMainActivityUiState,
             uiState = SettingsDetailViewModel.UiState(
-                selectedMapEngine = VisitMapEngineOption.Leaflet
+                selectedMapEngine = VisitMapEngineOption.Leaflet,
+                versionName = "1.0.0"
             )
         ),
         SettingsPreviewConfig(
             configName = "Loading",
             mainActivityUiState = previewMainActivityUiState,
             uiState = SettingsDetailViewModel.UiState(
-                isLoading = true
+                isLoading = true,
+                versionName = "1.0.0"
             )
         ),
         SettingsPreviewConfig(
             configName = "Restore Success",
             mainActivityUiState = previewMainActivityUiState,
             uiState = SettingsDetailViewModel.UiState(
-                backupResult = SettingsDetailViewModel.BackupResult.RestoreSuccess("Backup restored successfully")
+                backupResult = SettingsDetailViewModel.BackupResult.RestoreSuccess("Backup restored successfully"),
+                versionName = "1.0.0"
             )
         ),
         SettingsPreviewConfig(
             configName = "Restore Failure",
             mainActivityUiState = previewMainActivityUiState,
             uiState = SettingsDetailViewModel.UiState(
-                backupResult = SettingsDetailViewModel.BackupResult.RestoreFailure("Failed to restore backup")
+                backupResult = SettingsDetailViewModel.BackupResult.RestoreFailure("Failed to restore backup"),
+                versionName = "1.0.0"
             )
         )
     )

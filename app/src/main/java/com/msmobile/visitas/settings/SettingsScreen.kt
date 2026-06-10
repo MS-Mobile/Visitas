@@ -166,7 +166,7 @@ private fun SettingsScreenContent(
         Spacer(modifier = Modifier.weight(1f))
 
         Text(
-            text = stringResource(R.string.app_version, BuildConfig.VERSION_NAME),
+            text = stringResource(R.string.app_version, uiState.versionName),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
