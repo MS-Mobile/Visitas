@@ -946,32 +946,19 @@ private fun StateHandler(
         is VisitDetailViewModel.UiEventState.NoAddressFound -> {
             NoAddressFoundSnackbar(
                 modifier = Modifier.snackbarPadding(),
-                onEvent = onEvent
+                onSnackbarDismissed = {
+                    onEvent(VisitDetailViewModel.UiEvent.SnackbarDismissed)
+                }
             )
         }
 
         is VisitDetailViewModel.UiEventState.CopiedToClipboard -> {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
-                Snackbar(
-                    modifier = Modifier.padding(borderPadding),
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    dismissAction = {
-                        IconButton(onClick = {
-                            onEvent(VisitDetailViewModel.UiEvent.SnackbarDismissed)
-                        }) {
-                            Icon(
-                                imageVector = Icons.Rounded.Close,
-                                contentDescription = stringResource(R.string.close_icon_content_description),
-                                tint = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    }) {
-                    Text(
-                        text = stringResource(R.string.copied_to_clipboard),
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
+            CopiedToClipboardSnackbar(
+                modifier = Modifier.snackbarPadding(),
+                onSnackbarDismissed = {
+                    onEvent(VisitDetailViewModel.UiEvent.SnackbarDismissed)
                 }
-            }
+            )
         }
     }
 }
@@ -1045,16 +1032,14 @@ private fun DiscardChangesMessage(onEvent: (VisitDetailViewModel.UiEvent) -> Uni
 @Composable
 private fun NoAddressFoundSnackbar(
     modifier: Modifier,
-    onEvent: (VisitDetailViewModel.UiEvent) -> Unit
+    onSnackbarDismissed: () -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
         Snackbar(
             modifier = modifier,
             containerColor = MaterialTheme.colorScheme.secondaryContainer,
             dismissAction = {
-                IconButton(onClick = {
-                    onEvent(VisitDetailViewModel.UiEvent.SnackbarDismissed)
-                }) {
+                IconButton(onClick = onSnackbarDismissed) {
                     Icon(
                         imageVector = Icons.Rounded.Close,
                         contentDescription = stringResource(R.string.close_icon_content_description),
@@ -1064,6 +1049,32 @@ private fun NoAddressFoundSnackbar(
             }) {
             Text(
                 text = stringResource(R.string.houlseholder_no_address_found),
+                color = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+        }
+    }
+}
+
+@Composable
+fun CopiedToClipboardSnackbar(
+    modifier: Modifier,
+    onSnackbarDismissed: () -> Unit
+) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+        Snackbar(
+            modifier = modifier,
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            dismissAction = {
+                IconButton(onClick = onSnackbarDismissed) {
+                    Icon(
+                        imageVector = Icons.Rounded.Close,
+                        contentDescription = stringResource(R.string.close_icon_content_description),
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }) {
+            Text(
+                text = stringResource(R.string.copied_to_clipboard),
                 color = MaterialTheme.colorScheme.onSecondaryContainer
             )
         }
