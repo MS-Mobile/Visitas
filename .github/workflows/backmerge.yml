@@ -1,0 +1,93 @@
+# Backmerge — keeps master up to date with release branches
+# On every push to release/**, opens (or refreshes) a PR from an
+# intermediate backmerge/* branch into master. Conflict resolution
+# happens on the backmerge branch, never on the release branch.
+
+name: Backmerge
+
+on:
+  push:
+    branches:
+      - 'release/**'
+
+concurrency:
+  group: backmerge-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backmerge:
+    name: Open Backmerge PR to Master
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout release branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.WORKFLOW_TOKEN }}
+
+      - name: Compute branch names
+        id: names
+        run: |
+          RELEASE_BRANCH="${{ github.ref_name }}"
+          BACKMERGE_BRANCH="backmerge/${RELEASE_BRANCH#release/}"
+          echo "release_branch=$RELEASE_BRANCH" >> $GITHUB_OUTPUT
+          echo "backmerge_branch=$BACKMERGE_BRANCH" >> $GITHUB_OUTPUT
+          echo "Release: $RELEASE_BRANCH  →  Backmerge: $BACKMERGE_BRANCH"
+
+      - name: Guard — skip if master already has everything
+        id: guard
+        run: |
+          git fetch origin master
+          AHEAD=$(git rev-list --count origin/master..HEAD)
+          if [ "$AHEAD" -eq 0 ]; then
+            echo "needed=false" >> $GITHUB_OUTPUT
+            echo "Master already contains every commit from ${{ steps.names.outputs.release_branch }} — nothing to backmerge"
+          else
+            echo "needed=true" >> $GITHUB_OUTPUT
+            echo "$AHEAD commit(s) to backmerge"
+          fi
+
+      - name: Create backmerge branch and merge master
+        if: steps.guard.outputs.needed == 'true'
+        id: merge
+        run: |
+          BACKMERGE_BRANCH="${{ steps.names.outputs.backmerge_branch }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$BACKMERGE_BRANCH"
+          if git merge origin/master --no-edit; then
+            echo "conflicts=false" >> $GITHUB_OUTPUT
+            echo "Merged master cleanly — PR will be immediately mergeable"
+          else
+            FILES=$(git diff --name-only --diff-filter=U)
+            git merge --abort
+            echo "conflicts=true" >> $GITHUB_OUTPUT
+            echo "files<<EOF" >> $GITHUB_OUTPUT
+            echo "$FILES" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+            echo "Merge conflicts with master — pushing unmerged head; resolve on $BACKMERGE_BRANCH"
+          fi
+          git push -f origin "$BACKMERGE_BRANCH"
+
+      - name: Open or refresh PR to master
+        if: steps.guard.outputs.needed == 'true'
+        run: |
+          RELEASE_BRANCH="${{ steps.names.outputs.release_branch }}"
+          BACKMERGE_BRANCH="${{ steps.names.outputs.backmerge_branch }}"
+          COUNT=$(gh pr list --head "$BACKMERGE_BRANCH" --base master --state open --json number --jq 'length')
+          if [ "$COUNT" -gt 0 ]; then
+            echo "Backmerge PR already open — the branch push refreshed it"
+            exit 0
+          fi
+          if [ "${{ steps.merge.outputs.conflicts }}" = "true" ]; then
+            TITLE="⚠️ Backmerge ${RELEASE_BRANCH} into master (conflicts)"
+            BODY=$(printf 'Automated backmerge of `%s` into master.\n\n**This branch conflicts with master.** Resolve on `%s` (never on the release branch):\n\n```\ngit fetch origin\ngit checkout %s\ngit merge origin/master   # resolve conflicts, commit\ngit push origin %s\n```\n\nConflicting files:\n```\n%s\n```\n\n> Merge with a **merge commit** (not squash) to preserve ancestry.' "$RELEASE_BRANCH" "$BACKMERGE_BRANCH" "$BACKMERGE_BRANCH" "$BACKMERGE_BRANCH" "$CONFLICT_FILES")
+          else
+            TITLE="Backmerge ${RELEASE_BRANCH} into master"
+            BODY=$(printf 'Automated backmerge of `%s` into master. Master was merged into this branch cleanly — no conflicts.\n\n> Merge with a **merge commit** (not squash) to preserve ancestry.' "$RELEASE_BRANCH")
+          fi
+          gh pr create --title "$TITLE" --body "$BODY" --base master --head "$BACKMERGE_BRANCH"
+        env:
+          GH_TOKEN: ${{ secrets.WORKFLOW_TOKEN }}
+          CONFLICT_FILES: ${{ steps.merge.outputs.files }}
