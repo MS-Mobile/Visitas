@@ -38,6 +38,17 @@ jobs:
           echo "tag=v$NAME" >> $GITHUB_OUTPUT
           echo "Version: $NAME (tag: v$NAME)"
 
+      - name: Guard — branch must match version.properties
+        run: |
+          BRANCH="${{ inputs.release_branch }}"
+          NAME="${{ steps.version.outputs.name }}"
+          if [ "$BRANCH" != "release/${NAME}" ]; then
+            echo "ERROR: Branch '$BRANCH' does not match versionName '$NAME' (expected branch 'release/${NAME}')."
+            echo "A merge likely brought master's version bump into this release branch."
+            exit 1
+          fi
+          echo "Branch $BRANCH matches versionName $NAME"
+
       - name: Guard — fail if GitHub Release already exists
         run: |
           TAG="${{ steps.version.outputs.tag }}"
