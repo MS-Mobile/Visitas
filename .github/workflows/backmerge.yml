@@ -75,19 +75,25 @@ jobs:
         run: |
           RELEASE_BRANCH="${{ steps.names.outputs.release_branch }}"
           BACKMERGE_BRANCH="${{ steps.names.outputs.backmerge_branch }}"
-          COUNT=$(gh pr list --head "$BACKMERGE_BRANCH" --base master --state open --json number --jq 'length')
-          if [ "$COUNT" -gt 0 ]; then
-            echo "Backmerge PR already open — the branch push refreshed it"
+          HAS_CONFLICTS="${{ steps.merge.outputs.conflicts }}"
+          PR_NUMBER=$(gh pr list --head "$BACKMERGE_BRANCH" --base master --state open --json number --jq '.[0].number // empty')
+          if [ -n "$PR_NUMBER" ]; then
+            echo "Backmerge PR already open (#$PR_NUMBER) — the branch push refreshed it"
+            if [ "$HAS_CONFLICTS" != "true" ]; then
+              gh pr merge "$PR_NUMBER" --auto --merge || echo "Auto-merge already enabled"
+            fi
             exit 0
           fi
-          if [ "${{ steps.merge.outputs.conflicts }}" = "true" ]; then
+          if [ "$HAS_CONFLICTS" = "true" ]; then
             TITLE="⚠️ Backmerge ${RELEASE_BRANCH} into master (conflicts)"
             BODY=$(printf 'Automated backmerge of `%s` into master.\n\n**This branch conflicts with master.** Resolve on `%s` (never on the release branch):\n\n```\ngit fetch origin\ngit checkout %s\ngit merge origin/master   # resolve conflicts, commit\ngit push origin %s\n```\n\nConflicting files:\n```\n%s\n```\n\n> Merge with a **merge commit** (not squash) to preserve ancestry.' "$RELEASE_BRANCH" "$BACKMERGE_BRANCH" "$BACKMERGE_BRANCH" "$BACKMERGE_BRANCH" "$CONFLICT_FILES")
+            gh pr create --title "$TITLE" --body "$BODY" --base master --head "$BACKMERGE_BRANCH"
           else
             TITLE="Backmerge ${RELEASE_BRANCH} into master"
             BODY=$(printf 'Automated backmerge of `%s` into master. Master was merged into this branch cleanly — no conflicts.\n\n> Merge with a **merge commit** (not squash) to preserve ancestry.' "$RELEASE_BRANCH")
+            PR_URL=$(gh pr create --title "$TITLE" --body "$BODY" --base master --head "$BACKMERGE_BRANCH")
+            gh pr merge "$PR_URL" --auto --merge
           fi
-          gh pr create --title "$TITLE" --body "$BODY" --base master --head "$BACKMERGE_BRANCH"
         env:
           GH_TOKEN: ${{ secrets.WORKFLOW_TOKEN }}
           CONFLICT_FILES: ${{ steps.merge.outputs.files }}
