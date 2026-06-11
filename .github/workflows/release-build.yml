@@ -21,6 +21,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Guard — branch must match version.properties
+        run: |
+          BRANCH="${{ github.ref_name }}"
+          NAME=$(grep '^versionName=' version.properties | cut -d'=' -f2)
+          if [ "$BRANCH" != "release/${NAME}" ]; then
+            echo "ERROR: Branch '$BRANCH' does not match versionName '$NAME' (expected branch 'release/${NAME}')."
+            echo "A merge likely brought master's version bump into this release branch."
+            exit 1
+          fi
+          echo "Branch $BRANCH matches versionName $NAME"
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
