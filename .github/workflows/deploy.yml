@@ -1,5 +1,6 @@
 # Play Store Deploy — manual deployment from a release branch
-# Downloads artifacts produced by release-build.yml on the specified branch
+# Downloads artifacts produced by release-build.yml on the specified branch,
+# then tags the deployed commit and creates the GitHub Release
 
 name: Deploy
 
@@ -49,14 +50,18 @@ jobs:
           fi
           echo "Branch $BRANCH matches versionName $NAME"
 
-      - name: Guard — fail if GitHub Release already exists
+      - name: Guard — fail if tag or GitHub Release already exists
         run: |
           TAG="${{ steps.version.outputs.tag }}"
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "ERROR: GitHub Release $TAG already exists. This version has already been deployed."
             exit 1
           fi
-          echo "No release for $TAG — safe to proceed"
+          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+            echo "ERROR: Tag $TAG already exists. This version has already been deployed."
+            exit 1
+          fi
+          echo "No tag or release for $TAG — safe to proceed"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -89,21 +94,39 @@ jobs:
           run_id: ${{ steps.download.outputs.run-id }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Download changelog
-        uses: dawidd6/action-download-artifact@v6
-        with:
-          name: changelog
-          path: changelog
-          workflow: release-build.yml
-          run_id: ${{ steps.download.outputs.run-id }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Read version code
+      - name: Read build info
         id: vcode
         run: |
           CODE=$(cat build-info/version-code.txt)
+          SHA=$(cat build-info/commit-sha.txt)
           echo "code=$CODE" >> $GITHUB_OUTPUT
-          echo "Version code: $CODE"
+          echo "sha=$SHA" >> $GITHUB_OUTPUT
+          echo "Version code: $CODE (built from commit: $SHA)"
+
+      - name: Guard — built commit must be on the release branch
+        run: |
+          SHA="${{ steps.vcode.outputs.sha }}"
+          if ! git merge-base --is-ancestor "$SHA" HEAD; then
+            echo "ERROR: Built commit $SHA is not on '${{ inputs.release_branch }}'."
+            exit 1
+          fi
+          echo "Built commit $SHA is on '${{ inputs.release_branch }}'"
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          SHA="${{ steps.vcode.outputs.sha }}"
+          PREV_TAG=$(git describe --tags --abbrev=0 "$SHA" 2>/dev/null || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            echo "Generating changelog since $PREV_TAG"
+            LOG=$(git log "$PREV_TAG".."$SHA" --pretty=format:"- %s" --no-merges)
+          else
+            echo "No previous tag found — including all commits"
+            LOG=$(git log "$SHA" --pretty=format:"- %s" --no-merges)
+          fi
+          echo "content<<EOF" >> $GITHUB_OUTPUT
+          echo "$LOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: List artifacts
         run: |
@@ -127,18 +150,11 @@ jobs:
           whatsNewDirectory: whatsnew
           inAppUpdatePriority: 5
 
-      - name: Read changelog
-        id: changelog
-        run: |
-          CONTENT=$(cat changelog/changelog.txt)
-          echo "content<<EOF" >> $GITHUB_OUTPUT
-          echo "$CONTENT" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
+          target_commitish: ${{ steps.vcode.outputs.sha }}
           name: Release ${{ steps.version.outputs.tag }}
           body: |
             ${{ steps.changelog.outputs.content }}
