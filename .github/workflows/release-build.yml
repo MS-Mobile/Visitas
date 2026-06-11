@@ -127,14 +127,14 @@ jobs:
         with:
           name: app-bundle
           path: app/build/outputs/bundle/release/*.aab
-          retention-days: 400
+          retention-days: 30
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-apk
           path: app/build/outputs/apk/release/*.apk
-          retention-days: 400
+          retention-days: 30
 
       - name: Record commit SHA
         run: echo "${{ github.sha }}" > commit-sha.txt
@@ -146,7 +146,7 @@ jobs:
           path: |
             version-code.txt
             commit-sha.txt
-          retention-days: 400
+          retention-days: 30
 
   open-version-bump-pr:
     name: Open Version Bump PR on Master
