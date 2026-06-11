@@ -42,24 +42,6 @@ jobs:
           fi
           echo "Branch $BRANCH matches versionName $NAME"
 
-      - name: Guard — fail if tag or GitHub Release already exists
-        run: |
-          NAME="${{ steps.relversion.outputs.name }}"
-          # Tags are v<name>+<versionCode>, so match by version prefix (also catches legacy v<name> tags)
-          if [ -n "$(git tag -l "v${NAME}" "v${NAME}+*")" ]; then
-            echo "ERROR: A tag for version ${NAME} already exists. This version has already been released."
-            exit 1
-          fi
-          COUNT=$(gh release list --limit 100 --json tagName \
-            --jq "[.[] | select(.tagName == \"v${NAME}\" or (.tagName | startswith(\"v${NAME}+\")))] | length")
-          if [ "$COUNT" -gt 0 ]; then
-            echo "ERROR: A GitHub Release for version ${NAME} already exists. This version has already been released."
-            exit 1
-          fi
-          echo "No tag or release for version ${NAME} — safe to proceed"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -127,6 +109,21 @@ jobs:
           echo "${VERSION_CODE}" > version-code.txt
         env:
           VERSION_CODE_OFFSET: ${{ vars.VERSION_CODE_OFFSET }}
+
+      - name: Guard — fail if tag or GitHub Release already exists
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "ERROR: GitHub Release $TAG already exists."
+            exit 1
+          fi
+          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+            echo "ERROR: Tag $TAG already exists."
+            exit 1
+          fi
+          echo "No tag or release for $TAG — safe to proceed"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Release Bundle and Run Tests
         run: ./gradlew bundleRelease assembleRelease test validateDebugScreenshotTest
