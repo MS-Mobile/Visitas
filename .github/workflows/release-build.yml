@@ -157,13 +157,19 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.WORKFLOW_TOKEN }}
 
+      - name: Download build info
+        uses: actions/download-artifact@v4
+        with:
+          name: build-info
+
       - name: Read version
         id: version
         run: |
           NAME=$(grep '^versionName=' version.properties | cut -d'=' -f2)
+          VERSION_CODE=$(cat version-code.txt)
           echo "name=$NAME" >> $GITHUB_OUTPUT
-          echo "tag=v$NAME" >> $GITHUB_OUTPUT
-          echo "Version: $NAME (tag: v$NAME)"
+          echo "tag=v${NAME}+${VERSION_CODE}" >> $GITHUB_OUTPUT
+          echo "Version: $NAME, code: $VERSION_CODE (tag: v${NAME}+${VERSION_CODE})"
 
       - name: Guard — fail if tag already exists
         run: |
