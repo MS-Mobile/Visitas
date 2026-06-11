@@ -38,29 +38,16 @@ jobs:
           echo "tag=v$NAME" >> $GITHUB_OUTPUT
           echo "Version: $NAME (tag: v$NAME)"
 
-      - name: Guard — fail if tag already exists
+      - name: Guard — fail if GitHub Release already exists
         run: |
           TAG="${{ steps.version.outputs.tag }}"
-          if git rev-parse "$TAG" >/dev/null 2>&1; then
-            echo "ERROR: Tag $TAG already exists. This version has already been released."
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "ERROR: GitHub Release $TAG already exists. This version has already been deployed."
             exit 1
           fi
-          echo "Tag $TAG does not exist — safe to proceed"
-
-      - name: Generate changelog
-        id: changelog
-        run: |
-          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          if [ -n "$PREV_TAG" ]; then
-            echo "Generating changelog since $PREV_TAG"
-            LOG=$(git log "$PREV_TAG"..HEAD --pretty=format:"- %s" --no-merges)
-          else
-            echo "No previous tag found — including all commits"
-            LOG=$(git log --pretty=format:"- %s" --no-merges)
-          fi
-          echo "content<<EOF" >> $GITHUB_OUTPUT
-          echo "$LOG" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          echo "No release for $TAG — safe to proceed"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download App Bundle from release branch
         id: download
@@ -87,6 +74,15 @@ jobs:
         with:
           name: app-apk
           path: apk
+          workflow: release-build.yml
+          run_id: ${{ steps.download.outputs.run-id }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download changelog
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          name: changelog
+          path: changelog
           workflow: release-build.yml
           run_id: ${{ steps.download.outputs.run-id }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -120,7 +116,15 @@ jobs:
           whatsNewDirectory: whatsnew
           inAppUpdatePriority: 5
 
-      - name: Create git tag and GitHub Release
+      - name: Read changelog
+        id: changelog
+        run: |
+          CONTENT=$(cat changelog/changelog.txt)
+          echo "content<<EOF" >> $GITHUB_OUTPUT
+          echo "$CONTENT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
