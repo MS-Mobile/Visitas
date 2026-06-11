@@ -211,6 +211,16 @@ jobs:
           git tag "$TAG" "${{ github.sha }}"
           git push origin "$TAG"
 
+      - name: Create GitHub Release
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          gh release create "$TAG" \
+            --title "v${{ steps.version.outputs.name }}" \
+            --generate-notes \
+            --target "${{ github.sha }}"
+        env:
+          GH_TOKEN: ${{ secrets.WORKFLOW_TOKEN }}
+
   open-version-bump-pr:
     name: Open Version Bump PR on Master
     runs-on: ubuntu-latest
