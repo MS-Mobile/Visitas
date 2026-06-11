@@ -132,6 +132,68 @@ jobs:
           path: version-code.txt
           retention-days: 400
 
+  create-tag:
+    name: Create Release Tag
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout release branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.WORKFLOW_TOKEN }}
+
+      - name: Read version
+        id: version
+        run: |
+          NAME=$(grep '^versionName=' version.properties | cut -d'=' -f2)
+          echo "name=$NAME" >> $GITHUB_OUTPUT
+          echo "tag=v$NAME" >> $GITHUB_OUTPUT
+          echo "Version: $NAME (tag: v$NAME)"
+
+      - name: Guard — fail if tag already exists
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          if git ls-remote --tags origin "refs/tags/$TAG" | grep -q "$TAG"; then
+            echo "ERROR: Tag $TAG already exists — this version was already built."
+            exit 1
+          fi
+          echo "Tag $TAG does not exist — safe to proceed"
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            echo "Generating changelog since $PREV_TAG"
+            LOG=$(git log "$PREV_TAG"..HEAD --pretty=format:"- %s" --no-merges)
+          else
+            echo "No previous tag found — including all commits"
+            LOG=$(git log --pretty=format:"- %s" --no-merges)
+          fi
+          echo "$LOG" > changelog.txt
+          echo "content<<EOF" >> $GITHUB_OUTPUT
+          echo "$LOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Upload changelog
+        uses: actions/upload-artifact@v4
+        with:
+          name: changelog
+          path: changelog.txt
+          retention-days: 400
+
+      - name: Create and push tag
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "$TAG" "${{ github.sha }}"
+          git push origin "$TAG"
+
   open-version-bump-pr:
     name: Open Version Bump PR on Master
     runs-on: ubuntu-latest
