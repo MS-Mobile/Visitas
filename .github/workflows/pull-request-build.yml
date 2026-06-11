@@ -1,4 +1,4 @@
-# PR Build — debug build + tests for master PRs and master pushes
+# PR Build — debug build + tests for master/release PRs and master pushes
 # Release builds run in release-build.yml on release/** branches
 
 name: PR Build
@@ -10,6 +10,7 @@ on:
   pull_request:
     branches:
       - master
+      - 'release/**'
 
 concurrency:
   group: build-${{ github.ref }}
