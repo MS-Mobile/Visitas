@@ -1,0 +1,72 @@
+name: Tech Debt
+description: Track a code smell, anti-pattern, or other technical debt in Visitas
+title: "[Tech Debt]: "
+labels: ["tech-debt"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template to track technical debt: code smells, anti-patterns, missing tooling, or risky shortcuts.
+        If the item comes from the code smell registry, reference its ID (e.g. CS-07) and link the entry in
+        [docs/code-smells.md](../blob/master/docs/code-smells.md).
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What is the debt? Describe the current state of the code.
+      placeholder: |
+        Example: The dirty-check in VisitDetailViewModel compares summed hashCodes of editable fields (CS-07).
+    validations:
+      required: true
+
+  - type: textarea
+    id: location
+    attributes:
+      label: Location
+      description: File and line references where the debt lives.
+      placeholder: |
+        Example: app/src/main/java/com/msmobile/visitas/visit/VisitDetailViewModel.kt:1229-1246
+    validations:
+      required: true
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: Why does this matter? Describe the concrete consequence (bug risk, data loss, untestability, security), not a style preference.
+      placeholder: |
+        Example: Hash collisions can skip the discard-changes confirmation, silently losing user edits.
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggested-fix
+    attributes:
+      label: Suggested Fix
+      description: Direction for the fix. The full design happens when the issue is picked up.
+      placeholder: |
+        Example: Snapshot the editable fields into a data class on load and compare with structural equality.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: effort
+    attributes:
+      label: Effort
+      description: "S = under an hour, M = a focused session, L = multi-session refactor."
+      options:
+        - S
+        - M
+        - L
+    validations:
+      required: true
+
+  - type: input
+    id: registry-id
+    attributes:
+      label: Code Smell Registry ID
+      description: If this item comes from docs/code-smells.md, its ID.
+      placeholder: "Example: CS-07"
+    validations:
+      required: false
