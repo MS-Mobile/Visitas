@@ -5,6 +5,7 @@ import android.location.Geocoder
 import android.os.Looper
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
+import com.msmobile.visitas.BuildConfig
 import com.msmobile.visitas.VisitasDatabase
 import com.msmobile.visitas.conversation.ConversationDao
 import com.msmobile.visitas.conversation.ConversationRepository
@@ -229,9 +230,13 @@ class ApplicationModule {
     @Singleton
     fun provideOkHttpClient(): okhttp3.OkHttpClient {
         return okhttp3.OkHttpClient.Builder()
-            .addInterceptor(okhttp3.logging.HttpLoggingInterceptor().apply {
-                level = okhttp3.logging.HttpLoggingInterceptor.Level.BODY
-            })
+            .apply {
+                if (BuildConfig.DEBUG) {
+                    addInterceptor(okhttp3.logging.HttpLoggingInterceptor().apply {
+                        level = okhttp3.logging.HttpLoggingInterceptor.Level.BODY
+                    })
+                }
+            }
             .build()
     }
 
