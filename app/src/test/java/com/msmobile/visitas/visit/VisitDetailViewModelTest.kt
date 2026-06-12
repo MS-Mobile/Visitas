@@ -6,6 +6,7 @@ import com.msmobile.visitas.householder.Householder
 import com.msmobile.visitas.householder.HouseholderRepository
 import com.msmobile.visitas.util.AddressProvider
 import com.msmobile.visitas.util.CalendarEventManager
+import com.msmobile.visitas.util.SyncVisitCalendarEventUseCase
 import com.msmobile.visitas.util.ClipboardHandler
 import com.msmobile.visitas.util.DateTimeProvider
 import com.msmobile.visitas.util.DispatcherProvider
@@ -861,6 +862,7 @@ class VisitDetailViewModelTest {
         val calendarEventManager = mock<CalendarEventManager> {
             on { hasCalendarPermission() } doReturn false
         }
+        val syncVisitCalendarEvent = mock<SyncVisitCalendarEventUseCase>()
         val visitTimeValidator = mock<VisitTimeValidator> {
             on { isValidVisitTime(any(), any(), any()) } doReturn visitTimeValidResult
         }
@@ -881,6 +883,7 @@ class VisitDetailViewModelTest {
             idProvider = idProvider,
             permissionChecker = permissionChecker,
             calendarEventManager = calendarEventManager,
+            syncVisitCalendarEvent = syncVisitCalendarEvent,
             visitTimeValidator = visitTimeValidator,
             dateTimeProvider = dateTimeProvider,
             latLongParser = latLongParser,

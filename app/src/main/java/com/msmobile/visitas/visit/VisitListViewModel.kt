@@ -8,8 +8,8 @@ import androidx.lifecycle.viewModelScope
 import com.msmobile.visitas.extension.containsAllWords
 import com.msmobile.visitas.preference.PreferenceRepository
 import com.msmobile.visitas.util.AddressProvider
-import com.msmobile.visitas.util.CalendarEventManager
 import com.msmobile.visitas.util.DateTimeProvider
+import com.msmobile.visitas.util.SyncVisitCalendarEventUseCase
 import com.msmobile.visitas.util.DispatcherProvider
 import com.msmobile.visitas.util.PermissionChecker
 import com.msmobile.visitas.util.UserLocationProvider
@@ -50,7 +50,7 @@ constructor(
     private val userLocationProvider: UserLocationProvider,
     private val permissionChecker: PermissionChecker,
     private val osrmRoutingProvider: com.msmobile.visitas.routing.OsrmRoutingProvider,
-    private val calendarEventManager: CalendarEventManager,
+    private val syncVisitCalendarEvent: SyncVisitCalendarEventUseCase,
     private val dateTimeProvider: DateTimeProvider
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(
@@ -253,8 +253,12 @@ constructor(
         }
         viewModelScope.launch(dispatchers.io) {
             val visitModel = visitRepository.getById(visit.visitId).copy(date = date)
-            val calendarEventId = syncCalendarEvent(
-                visitModel = visitModel,
+            val calendarEventId = syncVisitCalendarEvent(
+                calendarEventId = visitModel.calendarEventId,
+                visitType = visitModel.visitType,
+                subject = visitModel.subject,
+                date = visitModel.date,
+                isDone = visitModel.isDone,
                 householderName = visit.householderName
             )
             val updatedVisitModel = visitModel.copy(calendarEventId = calendarEventId)
@@ -427,31 +431,6 @@ constructor(
 
     private fun hasToBeRescheduled(date: LocalDateTime, isDone: Boolean): Boolean {
         return !isDone && date.toLocalDate().isBefore(LocalDate.now())
-    }
-
-    private suspend fun syncCalendarEvent(visitModel: Visit, householderName: String): Long? {
-        if (!calendarEventManager.hasCalendarPermission()) {
-            return visitModel.calendarEventId
-        }
-
-        val title = buildCalendarEventTitle(householderName, visitModel.subject)
-
-        return calendarEventManager.saveEvent(
-            eventId = visitModel.calendarEventId,
-            title = title,
-            description = visitModel.subject,
-            startTime = visitModel.date,
-            isDone = visitModel.isDone
-        )
-    }
-
-    private fun buildCalendarEventTitle(householderName: String, subject: String): String {
-        return if (subject.isNotBlank()) {
-            val subjectPreview = subject.lines().firstOrNull() ?: ""
-            "$householderName - ${subjectPreview}"
-        } else {
-            householderName
-        }
     }
 
     private fun onLocationChanged(location: UserLocationProvider.UserLocation) {
