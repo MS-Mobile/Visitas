@@ -39,8 +39,6 @@ internal fun MainActivity.initializeInAppUpdates(
     launcher: ActivityResultLauncher<IntentSenderRequest>,
     onUpdateTypeChanged: (Int?) -> Unit
 ) {
-    inAppUpdateManager.initialize(this)
-
     inAppUpdateManager.checkForUpdate()
         .onEach { state ->
             when (state) {
