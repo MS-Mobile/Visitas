@@ -7,8 +7,6 @@ body:
     attributes:
       value: |
         Use this template to track technical debt: code smells, anti-patterns, missing tooling, or risky shortcuts.
-        If the item comes from the code smell registry, reference its ID (e.g. CS-07) and link the entry in
-        [docs/code-smells.md](../blob/master/docs/code-smells.md).
 
   - type: textarea
     id: description
@@ -16,7 +14,7 @@ body:
       label: Description
       description: What is the debt? Describe the current state of the code.
       placeholder: |
-        Example: The dirty-check in VisitDetailViewModel compares summed hashCodes of editable fields (CS-07).
+        Example: The dirty-check in VisitDetailViewModel compares summed hashCodes of editable fields.
     validations:
       required: true
 
@@ -61,12 +59,3 @@ body:
         - L
     validations:
       required: true
-
-  - type: input
-    id: registry-id
-    attributes:
-      label: Code Smell Registry ID
-      description: If this item comes from docs/code-smells.md, its ID.
-      placeholder: "Example: CS-07"
-    validations:
-      required: false
