@@ -5,7 +5,6 @@ import android.content.ContentUris
 import android.content.ContentValues
 import android.content.Context
 import android.provider.CalendarContract
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.Duration
 import java.time.LocalDateTime
@@ -15,7 +14,8 @@ import kotlin.coroutines.cancellation.CancellationException
 class CalendarEventManager(
     private val context: Context,
     private val permissionChecker: PermissionChecker,
-    private val logger: Logger
+    private val logger: Logger,
+    private val dispatchers: DispatcherProvider
 ) {
     fun hasCalendarPermission(): Boolean {
         return permissionChecker.hasPermissions(
@@ -32,7 +32,7 @@ class CalendarEventManager(
         duration: Duration = DEFAULT_DURATION,
         isDone: Boolean = false,
         color: Int = DEFAULT_EVENT_COLOR
-    ): Long? = withContext(Dispatchers.IO) {
+    ): Long? = withContext(dispatchers.io) {
         if (!hasCalendarPermission()) {
             return@withContext null
         }
@@ -59,7 +59,7 @@ class CalendarEventManager(
         }
     }
 
-    suspend fun deleteEvent(eventId: Long): Boolean = withContext(Dispatchers.IO) {
+    suspend fun deleteEvent(eventId: Long): Boolean = withContext(dispatchers.io) {
         if (!hasCalendarPermission()) {
             return@withContext false
         }

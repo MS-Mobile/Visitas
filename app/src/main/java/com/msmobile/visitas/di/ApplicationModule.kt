@@ -171,9 +171,10 @@ class ApplicationModule {
     fun calendarEventManager(
         @ApplicationContext context: Context,
         permissionChecker: PermissionChecker,
-        logger: Logger
+        logger: Logger,
+        dispatcherProvider: DispatcherProvider
     ): CalendarEventManager {
-        return CalendarEventManager(context, permissionChecker, logger)
+        return CalendarEventManager(context, permissionChecker, logger, dispatcherProvider)
     }
 
     @Singleton

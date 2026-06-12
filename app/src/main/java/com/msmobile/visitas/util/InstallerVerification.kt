@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.content.pm.Signature
 import android.os.Build
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.security.MessageDigest
 import javax.inject.Inject
@@ -13,7 +12,8 @@ import kotlin.coroutines.cancellation.CancellationException
 
 @Singleton
 class InstallerVerification @Inject constructor(
-    private val logger: Logger
+    private val logger: Logger,
+    private val dispatchers: DispatcherProvider
 ) {
 
     /**
@@ -21,7 +21,7 @@ class InstallerVerification @Inject constructor(
      * @param context Application context
      * @return true if the app is from a valid source, false otherwise
      */
-    suspend fun isValidInstallSource(context: Context): Boolean = withContext(Dispatchers.IO) {
+    suspend fun isValidInstallSource(context: Context): Boolean = withContext(dispatchers.io) {
         try {
             // Check installer package name first
             return@withContext isInstalledFromPlayStore(context) && isValidSignature(context)
