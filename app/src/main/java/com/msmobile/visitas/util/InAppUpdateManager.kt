@@ -1,11 +1,9 @@
 package com.msmobile.visitas.util
 
-import android.app.Activity
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.IntentSenderRequest
 import com.google.android.play.core.appupdate.AppUpdateInfo
 import com.google.android.play.core.appupdate.AppUpdateManager
-import com.google.android.play.core.appupdate.AppUpdateManagerFactory
 import com.google.android.play.core.appupdate.AppUpdateOptions
 import com.google.android.play.core.install.InstallStateUpdatedListener
 import com.google.android.play.core.install.model.AppUpdateType
@@ -31,9 +29,9 @@ import javax.inject.Singleton
  * The priority threshold for immediate updates can be configured via [IMMEDIATE_UPDATE_PRIORITY_THRESHOLD].
  */
 @Singleton
-class InAppUpdateManager @Inject constructor() {
-
-    private var appUpdateManager: AppUpdateManager? = null
+class InAppUpdateManager @Inject constructor(
+    private val appUpdateManager: AppUpdateManager
+) {
 
     /**
      * Minimum priority level that triggers an immediate (forced) update.
@@ -45,23 +43,10 @@ class InAppUpdateManager @Inject constructor() {
     }
 
     /**
-     * Initializes the update manager. Must be called before other methods.
-     */
-    fun initialize(activity: Activity) {
-        appUpdateManager = AppUpdateManagerFactory.create(activity)
-    }
-
-    /**
      * Checks for available updates and returns the update state.
      */
     fun checkForUpdate(): Flow<UpdateState> = callbackFlow {
-        val manager = appUpdateManager ?: run {
-            trySend(UpdateState.Error("AppUpdateManager not initialized"))
-            close()
-            return@callbackFlow
-        }
-
-        manager.appUpdateInfo.addOnSuccessListener { appUpdateInfo ->
+        appUpdateManager.appUpdateInfo.addOnSuccessListener { appUpdateInfo ->
             val state = when (appUpdateInfo.updateAvailability()) {
                 UpdateAvailability.UPDATE_AVAILABLE -> {
                     val updateType = determineUpdateType(appUpdateInfo)
@@ -108,9 +93,7 @@ class InAppUpdateManager @Inject constructor() {
         updateType: Int,
         launcher: ActivityResultLauncher<IntentSenderRequest>
     ) {
-        val manager = appUpdateManager ?: return
-
-        manager.startUpdateFlowForResult(
+        appUpdateManager.startUpdateFlowForResult(
             appUpdateInfo,
             launcher,
             AppUpdateOptions.newBuilder(updateType).build()
@@ -122,11 +105,6 @@ class InAppUpdateManager @Inject constructor() {
      * Use this to show download progress and prompt the user to restart when ready.
      */
     fun observeInstallState(): Flow<InstallState> = callbackFlow {
-        val manager = appUpdateManager ?: run {
-            close()
-            return@callbackFlow
-        }
-
         val listener = InstallStateUpdatedListener { state ->
             val installState = when (state.installStatus()) {
                 InstallStatus.DOWNLOADING -> {
@@ -145,10 +123,10 @@ class InAppUpdateManager @Inject constructor() {
             trySend(installState)
         }
 
-        manager.registerListener(listener)
+        appUpdateManager.registerListener(listener)
 
         awaitClose {
-            manager.unregisterListener(listener)
+            appUpdateManager.unregisterListener(listener)
         }
     }
 
@@ -157,7 +135,7 @@ class InAppUpdateManager @Inject constructor() {
      * Call this when the user confirms they want to restart the app.
      */
     fun completeUpdate() {
-        appUpdateManager?.completeUpdate()
+        appUpdateManager.completeUpdate()
     }
 
     /**
@@ -165,7 +143,7 @@ class InAppUpdateManager @Inject constructor() {
      * Call this in onResume to handle cases where user backs out of an immediate update.
      */
     fun checkForStalledUpdate(launcher: ActivityResultLauncher<IntentSenderRequest>) {
-        appUpdateManager?.appUpdateInfo?.addOnSuccessListener { appUpdateInfo ->
+        appUpdateManager.appUpdateInfo.addOnSuccessListener { appUpdateInfo ->
             if (appUpdateInfo.updateAvailability() == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS) {
                 // Resume the update if it was an immediate update
                 if (appUpdateInfo.isImmediateUpdateAllowed) {
