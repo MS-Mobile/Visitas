@@ -61,6 +61,12 @@ jobs:
             gradle-${{ runner.os }}-
             gradle-
 
+      - name: Run Lint and ktlint
+        run: ./gradlew ktlintCheck lintDebug
+        env:
+          ENCRYPTION_PASSPHRASE: ${{ secrets.ENCRYPTION_PASSPHRASE }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+
       - name: Build Debug and Run Tests
         run: ./gradlew assembleDebug test validateDebugScreenshotTest
         env:

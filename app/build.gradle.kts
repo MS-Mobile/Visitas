@@ -12,6 +12,7 @@ plugins {
     alias(libs.plugins.easylauncher)
     alias(libs.plugins.androidx.room)
     alias(libs.plugins.compose.screenshot)
+    alias(libs.plugins.ktlint)
 }
 
 android {
