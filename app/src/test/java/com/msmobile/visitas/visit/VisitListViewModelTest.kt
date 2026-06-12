@@ -5,7 +5,7 @@ import com.msmobile.visitas.preference.Preference
 import com.msmobile.visitas.preference.PreferenceRepository
 import com.msmobile.visitas.routing.OsrmRoutingProvider
 import com.msmobile.visitas.util.AddressProvider
-import com.msmobile.visitas.util.CalendarEventManager
+import com.msmobile.visitas.util.SyncVisitCalendarEventUseCase
 import com.msmobile.visitas.util.DateTimeProvider
 import com.msmobile.visitas.util.DispatcherProvider
 import com.msmobile.visitas.util.MainDispatcherRule
@@ -398,7 +398,7 @@ class VisitListViewModelTest {
             }
         }
         val osrmRoutingProvider = mock<OsrmRoutingProvider>()
-        val calendarEventManager = mock<CalendarEventManager>()
+        val syncVisitCalendarEvent = mock<SyncVisitCalendarEventUseCase>()
         val dateTimeProvider = mock<DateTimeProvider>()
         val visitMapAdapter = mock<VisitMapAdapter>()
 
@@ -412,7 +412,7 @@ class VisitListViewModelTest {
             userLocationProvider = userLocationProvider,
             permissionChecker = permissionChecker,
             osrmRoutingProvider = osrmRoutingProvider,
-            calendarEventManager = calendarEventManager,
+            syncVisitCalendarEvent = syncVisitCalendarEvent,
             dateTimeProvider = dateTimeProvider
         )
     }

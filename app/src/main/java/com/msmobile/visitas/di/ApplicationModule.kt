@@ -5,6 +5,8 @@ import android.location.Geocoder
 import android.os.Looper
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
+import com.google.android.play.core.appupdate.AppUpdateManager
+import com.google.android.play.core.appupdate.AppUpdateManagerFactory
 import com.msmobile.visitas.BuildConfig
 import com.msmobile.visitas.VisitasDatabase
 import com.msmobile.visitas.conversation.ConversationDao
@@ -172,6 +174,12 @@ class ApplicationModule {
         permissionChecker: PermissionChecker
     ): CalendarEventManager {
         return CalendarEventManager(context, permissionChecker)
+    }
+
+    @Singleton
+    @Provides
+    fun appUpdateManager(@ApplicationContext context: Context): AppUpdateManager {
+        return AppUpdateManagerFactory.create(context)
     }
 
     @Singleton
