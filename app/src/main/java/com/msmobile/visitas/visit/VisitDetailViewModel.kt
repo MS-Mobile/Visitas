@@ -85,6 +85,7 @@ class VisitDetailViewModel
             is UiEvent.VisitDateAccepted -> visitDateAccepted(uiEvent.visit, uiEvent.dateTime)
             is UiEvent.RemoveVisitClicked -> removeVisitClicked(uiEvent.visit)
             is UiEvent.ConversationListDismissed -> conversationListDismissed(uiEvent.visit)
+            is UiEvent.VisitTypeListDismissed -> visitTypeListDismissed(uiEvent.visit)
             is UiEvent.ConversationSelected -> conversationSelected(
                 uiEvent.visit,
                 uiEvent.conversation,
@@ -737,6 +738,18 @@ class VisitDetailViewModel
         }
     }
 
+    private fun visitTypeListDismissed(visit: VisitState) {
+        newState {
+            val updatedList = visitList.toMutableList().apply {
+                set(this@apply.indexOfById(visit), visit.copy(isVisitTypeListExpanded = false))
+            }
+            copy(
+                visitList = updatedList,
+                eventState = UiEventState.Idle
+            )
+        }
+    }
+
     private fun deleteAccepted() {
         newState {
             copy(
@@ -1349,6 +1362,7 @@ class VisitDetailViewModel
             UiEvent()
 
         data class ConversationListDismissed(val visit: VisitState) : UiEvent()
+        data class VisitTypeListDismissed(val visit: VisitState) : UiEvent()
         data class NextVisitSuggestionAccepted(val visit: VisitState) : UiEvent()
         data class PreferredDayChanged(val value: VisitPreferredDay) : UiEvent()
         data class PreferredTimeChanged(val value: VisitPreferredTime) : UiEvent()
