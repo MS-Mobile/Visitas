@@ -875,11 +875,21 @@ private fun StateHandler(
     onNavigateUp: () -> Unit,
     onEvent: (VisitDetailViewModel.UiEvent) -> Unit
 ) {
-    when (val eventState = uiState.eventState) {
+    val eventState = uiState.eventState
+
+    LaunchedEffect(eventState) {
+        when (eventState) {
+            is VisitDetailViewModel.UiEventState.Canceled,
+            is VisitDetailViewModel.UiEventState.SaveSucceeded,
+            is VisitDetailViewModel.UiEventState.Deleted -> onNavigateUp()
+            else -> {}
+        }
+    }
+
+    when (eventState) {
         is VisitDetailViewModel.UiEventState.Canceled,
         is VisitDetailViewModel.UiEventState.SaveSucceeded,
-        is VisitDetailViewModel.UiEventState.Deleted -> onNavigateUp()
-
+        is VisitDetailViewModel.UiEventState.Deleted,
         is VisitDetailViewModel.UiEventState.Idle,
         is VisitDetailViewModel.UiEventState.Saving,
         is VisitDetailViewModel.UiEventState.Deleting,
