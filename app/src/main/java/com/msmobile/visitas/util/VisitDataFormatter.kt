@@ -7,7 +7,9 @@ import java.time.LocalDateTime
 import java.util.Locale
 import javax.inject.Inject
 
-class VisitDataFormatter @Inject constructor() {
+class VisitDataFormatter @Inject constructor(
+    private val localeProvider: LocaleProvider
+) {
     fun format(
         name: String,
         address: String,
@@ -47,7 +49,7 @@ class VisitDataFormatter @Inject constructor() {
             if (nextPendingVisitSubject != null && nextPendingVisitDate != null) {
                 appendLine()
                 appendLine(nextPendingVisitSubject)
-                appendLine(nextPendingVisitDate.toString(Locale.getDefault()))
+                appendLine(nextPendingVisitDate.toString(localeProvider.getLocale()))
             }
         }.trim()
     }

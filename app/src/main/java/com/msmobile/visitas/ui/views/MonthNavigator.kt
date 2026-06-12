@@ -22,13 +22,14 @@ import java.time.temporal.ChronoUnit
 fun MonthNavigator(
     modifier: Modifier = Modifier,
     dateTime: LocalDateTime,
+    now: LocalDateTime = LocalDateTime.now(),
     onEvent: (MonthNavigatorEvent) -> Unit
 ) {
     val dateFormat = DateTimeFormatter.ofPattern("MMM, yyyy")
     val month = dateFormat.format(dateTime)
     val isNextMonthFutureDate = dateTime
         .plusMonths(1)
-        .truncatedTo(ChronoUnit.DAYS) > LocalDateTime.now().truncatedTo(ChronoUnit.DAYS)
+        .truncatedTo(ChronoUnit.DAYS) > now.truncatedTo(ChronoUnit.DAYS)
     val enableFutureDates = !isNextMonthFutureDate
     Row(
         modifier = modifier,

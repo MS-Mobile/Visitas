@@ -14,6 +14,7 @@ import com.msmobile.visitas.util.IdProvider
 import com.msmobile.visitas.util.LatLongParser
 import com.msmobile.visitas.util.MainDispatcherRule
 import com.msmobile.visitas.util.MockReferenceHolder
+import com.msmobile.visitas.util.LocaleProvider
 import com.msmobile.visitas.util.PermissionChecker
 import com.msmobile.visitas.util.VisitDataFormatter
 import junit.framework.TestCase.assertEquals
@@ -871,7 +872,7 @@ class VisitDetailViewModelTest {
         }
         val latLongParser = mock<LatLongParser>()
         val clipboardHandler = mock<ClipboardHandler>()
-        val visitDataFormatter = VisitDataFormatter()
+        val visitDataFormatter = VisitDataFormatter(LocaleProvider())
         clipboardHandlerRef?.value = clipboardHandler
 
         return VisitDetailViewModel(
