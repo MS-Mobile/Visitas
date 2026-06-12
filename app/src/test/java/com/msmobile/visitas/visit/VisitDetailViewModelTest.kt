@@ -798,6 +798,23 @@ class VisitDetailViewModelTest {
         assertFalse(viewModel.uiState.value.visitList.first().hasVisitTimeError)
     }
 
+    @Test
+    fun `onEvent with VisitTypeListDismissed collapses visit type list`() {
+        // Arrange
+        val viewModel = createViewModel()
+        viewModel.onEvent(
+            VisitDetailViewModel.UiEvent.VisitTypeClicked(viewModel.uiState.value.visitList.first())
+        )
+        val expandedVisit = viewModel.uiState.value.visitList.first()
+        assertTrue(expandedVisit.isVisitTypeListExpanded)
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.VisitTypeListDismissed(expandedVisit))
+
+        // Assert
+        assertFalse(viewModel.uiState.value.visitList.first().isVisitTypeListExpanded)
+    }
+
     private fun createViewModel(
         conversationRepositoryRef: MockReferenceHolder<ConversationRepository>? = null,
         householderRepositoryRef: MockReferenceHolder<HouseholderRepository>? = null,
