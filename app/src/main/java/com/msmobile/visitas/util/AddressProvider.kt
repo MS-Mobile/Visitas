@@ -236,7 +236,8 @@ class AddressProvider(
         }
     }
 
-    private fun Address.toStreetAddressString(): String = "$thoroughfare, $subThoroughfare"
+    private fun Address.toStreetAddressString(): String =
+        listOfNotNull(thoroughfare, subThoroughfare).joinToString(", ")
 
     sealed class AddressSpecs {
         data object NoData : AddressSpecs()
