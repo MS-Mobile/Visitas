@@ -168,7 +168,7 @@ private fun SettingsScreenContent(
 
         Text(
             modifier = Modifier.navigationBarsPadding(),
-            text = stringResource(R.string.app_version, uiState.versionName),
+            text = uiState.versionName,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
