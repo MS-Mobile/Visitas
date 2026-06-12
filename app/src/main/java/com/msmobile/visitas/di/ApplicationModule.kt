@@ -125,12 +125,14 @@ class ApplicationModule {
     @Provides
     fun addressProvider(
         geocoder: Geocoder,
-        locationProviderClient: FusedLocationProviderClient
+        locationProviderClient: FusedLocationProviderClient,
+        logger: Logger
     ): AddressProvider {
         return AddressProvider(
             geocoder = geocoder,
             locationProviderClient = locationProviderClient,
-            looper = Looper.getMainLooper()
+            looper = Looper.getMainLooper(),
+            logger = logger
         )
     }
 
@@ -168,9 +170,10 @@ class ApplicationModule {
     @Provides
     fun calendarEventManager(
         @ApplicationContext context: Context,
-        permissionChecker: PermissionChecker
+        permissionChecker: PermissionChecker,
+        logger: Logger
     ): CalendarEventManager {
-        return CalendarEventManager(context, permissionChecker)
+        return CalendarEventManager(context, permissionChecker, logger)
     }
 
     @Singleton
