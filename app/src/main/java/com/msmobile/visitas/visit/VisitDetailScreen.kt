@@ -345,10 +345,11 @@ private fun HouseholderDetail(
     }
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
         val notesHasOverflow = remember(householder.notes, constraints.maxWidth, textStyle) {
-            if (householder.notes.isNullOrEmpty()) false
+            val notes = householder.notes
+            if (notes.isNullOrEmpty()) false
             else {
                 val result = textMeasurer.measure(
-                    text = householder.notes,
+                    text = notes,
                     style = textStyle,
                     constraints = constraints,
                     maxLines = 1,
