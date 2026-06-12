@@ -842,7 +842,7 @@ private fun LazyItemScope.VisitTypeDropdownList(
             expanded = visit.isVisitTypeListExpanded,
             properties = PopupProperties(focusable = false),
             onDismissRequest = {
-                onEvent(VisitDetailViewModel.UiEvent.ConversationListDismissed(visit))
+                onEvent(VisitDetailViewModel.UiEvent.VisitTypeListDismissed(visit))
             }) {
             Text(
                 modifier = Modifier.padding(horizontalFieldPadding),
