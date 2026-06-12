@@ -48,7 +48,7 @@ class VisitDetailViewModel
 ) : ViewModel() {
     private val didEditableDataChange: Boolean
         get() {
-            return _uiState.value.getEditableDataHash() != initialEditableDataHash
+            return _uiState.value.getEditableDataSnapshot() != initialEditableData
         }
     private val _uiState = MutableStateFlow(
         UiState(
@@ -61,7 +61,7 @@ class VisitDetailViewModel
     )
     private var visits: List<Visit> = listOf()
     private var conversations: List<Conversation> = listOf()
-    private var initialEditableDataHash: Int? = null
+    private var initialEditableData: EditableDataSnapshot? = null
     private var loadAddressAfterPermission = false
     private var isUpdatingVisit: Boolean = false
     private var isAddressFieldFocused: Boolean = false
@@ -997,7 +997,7 @@ class VisitDetailViewModel
             val conversationList = conversations.map { conversation ->
                 conversation.asState
             }
-            val isRecreatingView = initialEditableDataHash != null
+            val isRecreatingView = initialEditableData != null
             if (isRecreatingView) {
                 newState {
                     copy(conversationList = conversationList)
@@ -1040,7 +1040,7 @@ class VisitDetailViewModel
                     )
                 }
             }
-            initialEditableDataHash = _uiState.value.getEditableDataHash()
+            initialEditableData = _uiState.value.getEditableDataSnapshot()
         }
     }
 
@@ -1226,23 +1226,25 @@ class VisitDetailViewModel
             .mapIndexed { index, visit -> visit.copy(orderIndex = index) }
     }
 
-    private fun UiState.getEditableDataHash(): Int {
-        val householderDataHash = householder.name.hashCode() +
-                householder.address.hashCode() +
-                householder.notes.hashCode() +
-                householder.addressLatitude.hashCode() +
-                householder.addressLongitude.hashCode() +
-                householder.preferredDay.hashCode() +
-                householder.preferredTime.hashCode()
-
-        val visitDataHash = visitList.sumOf { visit ->
-            visit.subject.hashCode() +
-                    visit.date.hashCode() +
-                    visit.isDone.hashCode() +
-                    visit.orderIndex.hashCode() +
-                    visit.visitType.hashCode()
-        }
-        return householderDataHash + visitDataHash
+    private fun UiState.getEditableDataSnapshot(): EditableDataSnapshot {
+        return EditableDataSnapshot(
+            householderName = householder.name,
+            householderAddress = householder.address,
+            householderNotes = householder.notes,
+            addressLatitude = householder.addressLatitude,
+            addressLongitude = householder.addressLongitude,
+            preferredDay = householder.preferredDay,
+            preferredTime = householder.preferredTime,
+            visits = visitList.map { visit ->
+                EditableVisitSnapshot(
+                    subject = visit.subject,
+                    date = visit.date,
+                    isDone = visit.isDone,
+                    orderIndex = visit.orderIndex,
+                    visitType = visit.visitType
+                )
+            }
+        )
     }
 
     private fun newState(block: UiState.() -> UiState) {
@@ -1312,6 +1314,25 @@ class VisitDetailViewModel
     )
 
     data class VisitTypeState(val type: VisitType, val description: StringResource)
+
+    private data class EditableDataSnapshot(
+        val householderName: String,
+        val householderAddress: String,
+        val householderNotes: String?,
+        val addressLatitude: Double?,
+        val addressLongitude: Double?,
+        val preferredDay: VisitPreferredDay,
+        val preferredTime: VisitPreferredTime,
+        val visits: List<EditableVisitSnapshot>
+    )
+
+    private data class EditableVisitSnapshot(
+        val subject: String,
+        val date: LocalDateTime,
+        val isDone: Boolean,
+        val orderIndex: Int,
+        val visitType: VisitTypeState
+    )
 
     sealed class UiEvent {
         data class ViewCreated(val householderId: UUID?) : UiEvent()
