@@ -23,9 +23,11 @@ internal class VisitDetailPreviewConfigProvider : PreviewParameterProvider<Visit
             uiState = previewVisitDetailUiState.copy(
                 householder = VisitDetailViewModel.HouseholderState(
                     id = UUID.randomUUID(),
-                    name = "",
-                    address = "",
-                    notes = "",
+                    editable = VisitDetailViewModel.EditableHouseholderData(
+                        name = "",
+                        address = "",
+                        notes = "",
+                    ),
                     showClearName = false,
                     showCopyData = true,
                     addressState = VisitDetailViewModel.HouseholderAddressState.LoadLocation,
@@ -56,7 +58,7 @@ internal class VisitDetailPreviewConfigProvider : PreviewParameterProvider<Visit
             householderId = null,
             uiState = previewVisitDetailUiState.copy(
                 householder = previewVisitDetailUiState.householder.copy(
-                    address = "",
+                    editable = previewVisitDetailUiState.householder.editable.copy(address = ""),
                     isLoadingAddress = true
                 )
             ),
@@ -81,7 +83,7 @@ internal class VisitDetailPreviewConfigProvider : PreviewParameterProvider<Visit
             uiState = previewVisitDetailUiState.copy(
                 visitList = listOf(
                     previewFirstVisitUiState.copy(
-                        isDone = true,
+                        editable = previewFirstVisitUiState.editable.copy(isDone = true),
                         canBeRemoved = false,
                         nextConversationSuggestion = previewConversationSuggestion,
                         showNextVisitSuggestion = true
@@ -96,12 +98,14 @@ internal class VisitDetailPreviewConfigProvider : PreviewParameterProvider<Visit
             householderId = UUID.randomUUID(),
             uiState = previewVisitDetailUiState.copy(
                 householder = previewVisitDetailUiState.householder.copy(
-                    preferredDay = VisitPreferredDay.SATURDAY,
-                    preferredTime = VisitPreferredTime.AFTERNOON
+                    editable = previewVisitDetailUiState.householder.editable.copy(
+                        preferredDay = VisitPreferredDay.SATURDAY,
+                        preferredTime = VisitPreferredTime.AFTERNOON
+                    )
                 ),
                 visitList = listOf(
                     previewFirstVisitUiState.copy(
-                        isDone = false,
+                        editable = previewFirstVisitUiState.editable.copy(isDone = false),
                         canBeRemoved = false,
                         hasVisitTimeError = true
                     )
@@ -116,7 +120,9 @@ internal class VisitDetailPreviewConfigProvider : PreviewParameterProvider<Visit
             householderId = UUID.randomUUID(),
             uiState = previewVisitDetailUiState.copy(
                 householder = previewVisitDetailUiState.householder.copy(
-                    notes = "Receptive householder, prefers morning visits. Interested in studying the Bible.",
+                    editable = previewVisitDetailUiState.householder.editable.copy(
+                        notes = "Receptive householder, prefers morning visits. Interested in studying the Bible.",
+                    ),
                     showClearNotes = true,
                     isNotesExpanded = true
                 ),
@@ -130,7 +136,9 @@ internal class VisitDetailPreviewConfigProvider : PreviewParameterProvider<Visit
             householderId = UUID.randomUUID(),
             uiState = previewVisitDetailUiState.copy(
                 householder = previewVisitDetailUiState.householder.copy(
-                    notes = "Receptive householder, prefers morning visits. Interested in studying the Bible.",
+                    editable = previewVisitDetailUiState.householder.editable.copy(
+                        notes = "Receptive householder, prefers morning visits. Interested in studying the Bible.",
+                    ),
                     showClearNotes = false,
                     isNotesExpanded = true
                 ),
@@ -154,7 +162,9 @@ internal class VisitDetailPreviewConfigProvider : PreviewParameterProvider<Visit
             householderId = UUID.randomUUID(),
             uiState = previewVisitDetailUiState.copy(
                 householder = previewVisitDetailUiState.householder.copy(
-                    notes = "Receptive householder, prefers morning visits.\nInterested in studying the Bible.",
+                    editable = previewVisitDetailUiState.householder.editable.copy(
+                        notes = "Receptive householder, prefers morning visits.\nInterested in studying the Bible.",
+                    ),
                     showClearNotes = false,
                     isNotesExpanded = false
                 ),
@@ -205,21 +215,23 @@ private val previewMainActivityUiState = MainActivityViewModel.UiState(
 
 private val previewNewVisitUiState = VisitDetailViewModel.VisitState(
     id = UUID.randomUUID(),
-    subject = "",
-    date = previewDate1,
-    isDone = false,
-    householderId = UUID.randomUUID(),
-    canBeRemoved = false,
-    orderIndex = 0,
-    isConversationListExpanded = false,
-    isVisitTypeListExpanded = false,
-    visitType =  VisitDetailViewModel.VisitTypeState(
-        type = VisitType.FIRST_VISIT,
-        description = StringResource(
-            textResId = R.string.first_visit,
-            arguments = listOf()
+    editable = VisitDetailViewModel.EditableVisitData(
+        subject = "",
+        date = previewDate1,
+        isDone = false,
+        orderIndex = 0,
+        visitType = VisitDetailViewModel.VisitTypeState(
+            type = VisitType.FIRST_VISIT,
+            description = StringResource(
+                textResId = R.string.first_visit,
+                arguments = listOf()
+            )
         )
     ),
+    householderId = UUID.randomUUID(),
+    canBeRemoved = false,
+    isConversationListExpanded = false,
+    isVisitTypeListExpanded = false,
     nextConversationSuggestion = null,
     showNextVisitSuggestion = false,
     showClearSubject = false,
@@ -229,21 +241,23 @@ private val previewNewVisitUiState = VisitDetailViewModel.VisitState(
 
 private val previewFirstVisitUiState = VisitDetailViewModel.VisitState(
     id = UUID.randomUUID(),
-    subject = "What is God's Kingdom?",
-    date = previewDate1,
-    isDone = true,
-    householderId = UUID.randomUUID(),
-    canBeRemoved = true,
-    orderIndex = 0,
-    isConversationListExpanded = false,
-    isVisitTypeListExpanded = false,
-    visitType = VisitDetailViewModel.VisitTypeState(
-        type = VisitType.FIRST_VISIT,
-        description = StringResource(
-            textResId = R.string.first_visit,
-            arguments = listOf()
+    editable = VisitDetailViewModel.EditableVisitData(
+        subject = "What is God's Kingdom?",
+        date = previewDate1,
+        isDone = true,
+        orderIndex = 0,
+        visitType = VisitDetailViewModel.VisitTypeState(
+            type = VisitType.FIRST_VISIT,
+            description = StringResource(
+                textResId = R.string.first_visit,
+                arguments = listOf()
+            )
         )
     ),
+    householderId = UUID.randomUUID(),
+    canBeRemoved = true,
+    isConversationListExpanded = false,
+    isVisitTypeListExpanded = false,
     nextConversationSuggestion = null,
     showNextVisitSuggestion = false,
     showClearSubject = false,
@@ -253,21 +267,23 @@ private val previewFirstVisitUiState = VisitDetailViewModel.VisitState(
 
 private val previewReturnVisit = VisitDetailViewModel.VisitState(
     id = UUID.randomUUID(),
-    subject = "Who is the King of God's Kingdom?",
-    date = previewDate2,
-    isDone = false,
-    householderId = UUID.randomUUID(),
-    canBeRemoved = false,
-    orderIndex = 0,
-    isConversationListExpanded = false,
-    isVisitTypeListExpanded = false,
-    visitType = VisitDetailViewModel.VisitTypeState(
-        type = VisitType.RETURN_VISIT,
-        description = StringResource(
-            textResId = R.string.return_visit,
-            arguments = listOf()
+    editable = VisitDetailViewModel.EditableVisitData(
+        subject = "Who is the King of God's Kingdom?",
+        date = previewDate2,
+        isDone = false,
+        orderIndex = 0,
+        visitType = VisitDetailViewModel.VisitTypeState(
+            type = VisitType.RETURN_VISIT,
+            description = StringResource(
+                textResId = R.string.return_visit,
+                arguments = listOf()
+            )
         )
     ),
+    householderId = UUID.randomUUID(),
+    canBeRemoved = false,
+    isConversationListExpanded = false,
+    isVisitTypeListExpanded = false,
     nextConversationSuggestion = null,
     showNextVisitSuggestion = false,
     showClearSubject = false,
@@ -287,9 +303,11 @@ private val previewConversationSuggestion = VisitDetailViewModel.ConversationSta
 private val previewVisitDetailUiState = VisitDetailViewModel.UiState(
     householder = VisitDetailViewModel.HouseholderState(
         id = UUID.randomUUID(),
-    name = "Pedro",
-    address = "Rua 1",
-    notes = "Receptive householder",
+        editable = VisitDetailViewModel.EditableHouseholderData(
+            name = "Pedro",
+            address = "Rua 1",
+            notes = "Receptive householder",
+        ),
         showClearName = true,
         showCopyData = false,
         addressState = VisitDetailViewModel.HouseholderAddressState.LoadLocation,

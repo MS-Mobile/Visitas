@@ -213,9 +213,11 @@ class VisitDetailViewModel
         newState {
             copy(
                 householder = householder.copy(
-                    isLoadingAddress = true,
-                    addressLatitude = latLong.latitude,
-                    addressLongitude = latLong.longitude
+                    editable = householder.editable.copy(
+                        addressLatitude = latLong.latitude,
+                        addressLongitude = latLong.longitude
+                    ),
+                    isLoadingAddress = true
                 ),
                 eventState = UiEventState.Idle
             )
@@ -241,7 +243,7 @@ class VisitDetailViewModel
                         )
                         copy(
                             householder = householder.copy(
-                                address = addressInfo.address,
+                                editable = householder.editable.copy(address = addressInfo.address),
                                 isLoadingAddress = false,
                                 addressState = addressState
                             ),
@@ -277,9 +279,11 @@ class VisitDetailViewModel
                         )
                         copy(
                             householder = householder.copy(
-                                address = addressInfo.address,
-                                addressLatitude = addressInfo.latitude,
-                                addressLongitude = addressInfo.longitude,
+                                editable = householder.editable.copy(
+                                    address = addressInfo.address,
+                                    addressLatitude = addressInfo.latitude,
+                                    addressLongitude = addressInfo.longitude
+                                ),
                                 isLoadingAddress = false,
                                 addressState = addressState
                             ),
@@ -432,8 +436,10 @@ class VisitDetailViewModel
         newState {
             copy(
                 householder = householder.copy(
-                    addressLatitude = null,
-                    addressLongitude = null
+                    editable = householder.editable.copy(
+                        addressLatitude = null,
+                        addressLongitude = null
+                    )
                 )
             )
         }
@@ -468,9 +474,9 @@ class VisitDetailViewModel
                 set(
                     this@apply.indexOfById(visit),
                     visit.copy(
+                        editable = visit.editable.copy(isDone = true),
                         nextConversationSuggestion = null,
-                        showNextVisitSuggestion = false,
-                        isDone = true
+                        showNextVisitSuggestion = false
                     )
                 )
             }
@@ -485,9 +491,12 @@ class VisitDetailViewModel
             val hasNextConversationSuggestion = nextConversationSuggestion != null
             val showNextVisitSuggestion = hasNextConversationSuggestion && !showClearSubject
             val newVisitOrderIndex = updatedList.nextOrderIndex()
-            val newVisit = newVisit(newVisitOrderIndex).copy(
-                visitType = newVisitType,
-                subject = nextSubject,
+            val baseVisit = newVisit(newVisitOrderIndex)
+            val newVisit = baseVisit.copy(
+                editable = baseVisit.editable.copy(
+                    visitType = newVisitType,
+                    subject = nextSubject
+                ),
                 nextConversationSuggestion = nextConversationSuggestion,
                 showNextVisitSuggestion = showNextVisitSuggestion
             )
@@ -531,7 +540,7 @@ class VisitDetailViewModel
                 set(
                     this@apply.indexOfById(visit),
                     visit.copy(
-                        visitType = visitType,
+                        editable = visit.editable.copy(visitType = visitType),
                         isVisitTypeListExpanded = false
                     )
                 )
@@ -548,9 +557,12 @@ class VisitDetailViewModel
             val nextVisitDate = visitList.determineNextVisitDate()
             val nextVisitType = visitList.determineNextVisitType().asState
             val nextOrderIndex = visitList.nextOrderIndex()
-            val nextVisit = newVisit(nextOrderIndex).copy(
-                visitType = nextVisitType,
-                date = nextVisitDate
+            val baseVisit = newVisit(nextOrderIndex)
+            val nextVisit = baseVisit.copy(
+                editable = baseVisit.editable.copy(
+                    visitType = nextVisitType,
+                    date = nextVisitDate
+                )
             )
             val updatedVisitList = listOf(nextVisit)
                 .plus(visitList)
@@ -594,7 +606,7 @@ class VisitDetailViewModel
                 set(
                     this@apply.indexOfById(visit),
                     visit.copy(
-                        subject = value,
+                        editable = visit.editable.copy(subject = value),
                         isConversationListExpanded = isConversionListExpanded,
                         showClearSubject = showClearSubject,
                         showNextVisitSuggestion = showNextVisitSuggestion,
@@ -616,7 +628,7 @@ class VisitDetailViewModel
                 set(
                     this@apply.indexOfById(visit),
                     visit.copy(
-                        isDone = value
+                        editable = visit.editable.copy(isDone = value)
                     )
                 )
             }.revalidatePendingVisits(householder)
@@ -632,7 +644,7 @@ class VisitDetailViewModel
             val updatedList = visitList.toMutableList().apply {
                 set(
                     this@apply.indexOfById(visit),
-                    visit.copy(date = dateTime)
+                    visit.copy(editable = visit.editable.copy(date = dateTime))
                 )
             }.revalidatePendingVisits(householder)
             copy(
@@ -715,7 +727,7 @@ class VisitDetailViewModel
             }
             val visitIndex = updatedList.indexOfById(visit)
             updatedList[visitIndex] = visit.copy(
-                subject = visitSubject,
+                editable = visit.editable.copy(subject = visitSubject),
                 isConversationListExpanded = false,
                 nextConversationSuggestion = nextConversationSuggestion,
                 showNextVisitSuggestion = showNextVisitSuggestion,
@@ -867,7 +879,10 @@ class VisitDetailViewModel
         newState {
             val showClearName = value.isNotEmpty()
             copy(
-                householder = householder.copy(name = value, showClearName = showClearName),
+                householder = householder.copy(
+                    editable = householder.editable.copy(name = value),
+                    showClearName = showClearName
+                ),
                 eventState = UiEventState.Idle
             )
         }
@@ -878,7 +893,7 @@ class VisitDetailViewModel
             val addressState = resolveAddressState(address = value, hasFocus = true)
             copy(
                 householder = householder.copy(
-                    address = value,
+                    editable = householder.editable.copy(address = value),
                     addressState = addressState
                 ),
                 eventState = UiEventState.Idle
@@ -891,7 +906,7 @@ class VisitDetailViewModel
             val showClearNotes = value.isNotEmpty()
             copy(
                 householder = householder.copy(
-                    notes = value,
+                    editable = householder.editable.copy(notes = value),
                     showClearNotes = showClearNotes
                 ),
                 eventState = UiEventState.Idle
@@ -901,7 +916,8 @@ class VisitDetailViewModel
 
     private fun preferredDayChanged(value: VisitPreferredDay) {
         newState {
-            val updatedHouseholder = householder.copy(preferredDay = value)
+            val updatedHouseholder =
+                householder.copy(editable = householder.editable.copy(preferredDay = value))
             copy(
                 householder = updatedHouseholder,
                 visitList = visitList.revalidatePendingVisits(updatedHouseholder),
@@ -912,7 +928,8 @@ class VisitDetailViewModel
 
     private fun preferredTimeChanged(value: VisitPreferredTime) {
         newState {
-            val updatedHouseholder = householder.copy(preferredTime = value)
+            val updatedHouseholder =
+                householder.copy(editable = householder.editable.copy(preferredTime = value))
             copy(
                 householder = updatedHouseholder,
                 visitList = visitList.revalidatePendingVisits(updatedHouseholder),
@@ -949,9 +966,11 @@ class VisitDetailViewModel
     private fun newHouseholder(): HouseholderState {
         return HouseholderState(
             id = idProvider.generateId(),
-            name = "",
-            address = "",
-            notes = null,
+            editable = EditableHouseholderData(
+                name = "",
+                address = "",
+                notes = null
+            ),
             showClearName = false,
             isNotesExpanded = false,
             addressState = HouseholderAddressState.LoadLocation,
@@ -964,15 +983,17 @@ class VisitDetailViewModel
     private fun newVisit(orderIndex: Int): VisitState {
         return VisitState(
             id = idProvider.generateId(),
-            subject = "",
-            date = dateTimeProvider.nowLocalDateTime(),
-            isDone = false,
+            editable = EditableVisitData(
+                subject = "",
+                date = dateTimeProvider.nowLocalDateTime(),
+                isDone = false,
+                orderIndex = orderIndex,
+                visitType = VisitType.FIRST_VISIT.asState
+            ),
             householderId = null,
             canBeRemoved = isAllowedRemoveVisit(orderIndex),
-            orderIndex = orderIndex,
             isConversationListExpanded = false,
             isVisitTypeListExpanded = false,
-            visitType = VisitType.FIRST_VISIT.asState,
             nextConversationSuggestion = null,
             showNextVisitSuggestion = false,
             showClearSubject = false,
@@ -1072,15 +1093,17 @@ class VisitDetailViewModel
     private fun Visit.asState(nextConversation: ConversationState?): VisitState {
         return VisitState(
             id = id,
-            subject = subject,
-            date = date,
-            isDone = isDone,
+            editable = EditableVisitData(
+                subject = subject,
+                date = date,
+                isDone = isDone,
+                orderIndex = orderIndex,
+                visitType = visitType.asState
+            ),
             householderId = householderId,
             canBeRemoved = isAllowedRemoveVisit(orderIndex),
-            orderIndex = orderIndex,
             isConversationListExpanded = false,
             isVisitTypeListExpanded = false,
-            visitType = visitType.asState,
             nextConversationSuggestion = nextConversation,
             showNextVisitSuggestion = nextConversation != null,
             showClearSubject = false,
@@ -1112,19 +1135,21 @@ class VisitDetailViewModel
             )
             return HouseholderState(
                 id = id,
-                name = name,
-                address = address,
-                notes = notes,
+                editable = EditableHouseholderData(
+                    name = name,
+                    address = address,
+                    notes = notes,
+                    addressLatitude = addressLatitude,
+                    addressLongitude = addressLongitude,
+                    preferredDay = preferredDay,
+                    preferredTime = preferredTime
+                ),
                 showClearName = false,
                 showCopyData = true,
                 addressState = addressState,
                 showClearNotes = false,
                 isNotesExpanded = false, // Notes collapsed by default; user can expand if needed
-                isLoadingAddress = false,
-                addressLatitude = addressLatitude,
-                addressLongitude = addressLongitude,
-                preferredDay = preferredDay,
-                preferredTime = preferredTime
+                isLoadingAddress = false
             )
         }
 
@@ -1214,27 +1239,15 @@ class VisitDetailViewModel
         // Sort by date descending (newest first) so the most recent visits stay at the top
         // and internal indices match the visible ordering in the UI.
         return sortedByDescending { visit -> visit.date }
-            .mapIndexed { index, visit -> visit.copy(orderIndex = index) }
+            .mapIndexed { index, visit ->
+                visit.copy(editable = visit.editable.copy(orderIndex = index))
+            }
     }
 
     private fun UiState.getEditableDataSnapshot(): EditableDataSnapshot {
         return EditableDataSnapshot(
-            householderName = householder.name,
-            householderAddress = householder.address,
-            householderNotes = householder.notes,
-            addressLatitude = householder.addressLatitude,
-            addressLongitude = householder.addressLongitude,
-            preferredDay = householder.preferredDay,
-            preferredTime = householder.preferredTime,
-            visits = visitList.map { visit ->
-                EditableVisitSnapshot(
-                    subject = visit.subject,
-                    date = visit.date,
-                    isDone = visit.isDone,
-                    orderIndex = visit.orderIndex,
-                    visitType = visit.visitType
-                )
-            }
+            householder = householder.editable,
+            visits = visitList.map { visit -> visit.editable }
         )
     }
 
@@ -1248,15 +1261,11 @@ class VisitDetailViewModel
 
     data class VisitState(
         val id: UUID,
-        val subject: String,
-        val date: LocalDateTime,
-        val isDone: Boolean,
+        val editable: EditableVisitData,
         val householderId: UUID?,
         val canBeRemoved: Boolean,
-        val orderIndex: Int,
         val isConversationListExpanded: Boolean,
         val isVisitTypeListExpanded: Boolean,
-        val visitType: VisitTypeState,
         val nextConversationSuggestion: ConversationState?,
         val showNextVisitSuggestion: Boolean,
         val showClearSubject: Boolean,
@@ -1264,7 +1273,13 @@ class VisitDetailViewModel
         val caretPosition: Int,
         val calendarEventId: Long? = null,
         val hasVisitTimeError: Boolean = false
-    )
+    ) {
+        val subject get() = editable.subject
+        val date get() = editable.date
+        val isDone get() = editable.isDone
+        val orderIndex get() = editable.orderIndex
+        val visitType get() = editable.visitType
+    }
 
     data class ConversationState(
         val id: UUID?,
@@ -1289,40 +1304,46 @@ class VisitDetailViewModel
 
     data class HouseholderState(
         var id: UUID,
-        val name: String,
-        val address: String,
-        val notes: String?,
+        val editable: EditableHouseholderData,
         val showClearName: Boolean,
         val showCopyData: Boolean,
         val addressState: HouseholderAddressState,
         val showClearNotes: Boolean,
         val isLoadingAddress: Boolean,
-        val isNotesExpanded: Boolean,
+        val isNotesExpanded: Boolean
+    ) {
+        val name get() = editable.name
+        val address get() = editable.address
+        val notes get() = editable.notes
+        val addressLatitude get() = editable.addressLatitude
+        val addressLongitude get() = editable.addressLongitude
+        val preferredDay get() = editable.preferredDay
+        val preferredTime get() = editable.preferredTime
+    }
+
+    data class VisitTypeState(val type: VisitType, val description: StringResource)
+
+    data class EditableHouseholderData(
+        val name: String,
+        val address: String,
+        val notes: String?,
         val addressLatitude: Double? = null,
         val addressLongitude: Double? = null,
         val preferredDay: VisitPreferredDay = VisitPreferredDay.ANY,
         val preferredTime: VisitPreferredTime = VisitPreferredTime.ANY
     )
 
-    data class VisitTypeState(val type: VisitType, val description: StringResource)
-
-    private data class EditableDataSnapshot(
-        val householderName: String,
-        val householderAddress: String,
-        val householderNotes: String?,
-        val addressLatitude: Double?,
-        val addressLongitude: Double?,
-        val preferredDay: VisitPreferredDay,
-        val preferredTime: VisitPreferredTime,
-        val visits: List<EditableVisitSnapshot>
-    )
-
-    private data class EditableVisitSnapshot(
+    data class EditableVisitData(
         val subject: String,
         val date: LocalDateTime,
         val isDone: Boolean,
         val orderIndex: Int,
         val visitType: VisitTypeState
+    )
+
+    private data class EditableDataSnapshot(
+        val householder: EditableHouseholderData,
+        val visits: List<EditableVisitData>
     )
 
     sealed class UiEvent {
