@@ -399,7 +399,9 @@ class VisitListViewModelTest {
         }
         val osrmRoutingProvider = mock<OsrmRoutingProvider>()
         val syncVisitCalendarEvent = mock<SyncVisitCalendarEventUseCase>()
-        val dateTimeProvider = mock<DateTimeProvider>()
+        val dateTimeProvider = mock<DateTimeProvider> {
+            on { nowLocalDateTime() } doReturn LocalDateTime.now()
+        }
         val visitMapAdapter = mock<VisitMapAdapter>()
 
         return VisitListViewModel(
