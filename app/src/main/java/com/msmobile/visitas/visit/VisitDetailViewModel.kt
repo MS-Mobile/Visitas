@@ -12,6 +12,7 @@ import com.msmobile.visitas.householder.Householder
 import com.msmobile.visitas.householder.HouseholderRepository
 import com.msmobile.visitas.util.AddressProvider
 import com.msmobile.visitas.util.CalendarEventManager
+import com.msmobile.visitas.util.SyncVisitCalendarEventUseCase
 import com.msmobile.visitas.util.ClipboardHandler
 import com.msmobile.visitas.util.DateTimeProvider
 import com.msmobile.visitas.util.DispatcherProvider
@@ -40,6 +41,7 @@ class VisitDetailViewModel
     private val idProvider: IdProvider,
     private val permissionChecker: PermissionChecker,
     private val calendarEventManager: CalendarEventManager,
+    private val syncVisitCalendarEvent: SyncVisitCalendarEventUseCase,
     private val visitTimeValidator: VisitTimeValidator,
     private val dateTimeProvider: DateTimeProvider,
     private val latLongParser: LatLongParser,
@@ -842,42 +844,18 @@ class VisitDetailViewModel
         visitList: List<VisitState>
     ): List<VisitState> {
         return visitList.map { visitState ->
-            val calendarEventId = syncCalendarEvent(visitState, householderName)
+            val calendarEventId = syncVisitCalendarEvent(
+                calendarEventId = visitState.calendarEventId,
+                visitType = visitState.visitType.type,
+                subject = visitState.subject,
+                date = visitState.date,
+                isDone = visitState.isDone,
+                householderName = householderName
+            )
             val updatedVisitState = visitState.copy(calendarEventId = calendarEventId)
             val visitModel = updatedVisitState.asModel(householderId)
             visitRepository.save(visitModel)
             visitModel.asState(visitState.nextConversationSuggestion)
-        }
-    }
-
-    private suspend fun syncCalendarEvent(
-        visitState: VisitState,
-        householderName: String
-    ): Long? {
-        if (!calendarEventManager.hasCalendarPermission()) {
-            return visitState.calendarEventId
-        }
-
-        if (visitState.visitType.type == VisitType.FIRST_VISIT) {
-            return null
-        }
-
-        val title = buildCalendarEventTitle(householderName, visitState.subject)
-
-        return calendarEventManager.saveEvent(
-            eventId = visitState.calendarEventId,
-            title = title,
-            description = visitState.subject,
-            startTime = visitState.date,
-            isDone = visitState.isDone
-        )
-    }
-
-    private fun buildCalendarEventTitle(householderName: String, subject: String): String {
-        return if (subject.isNotBlank()) {
-            "$householderName - ${subject.lines().firstOrNull() ?: ""}"
-        } else {
-            householderName
         }
     }
 
