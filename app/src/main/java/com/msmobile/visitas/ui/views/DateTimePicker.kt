@@ -18,14 +18,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TimePickerState
-import androidx.compose.material3.getSelectedDate
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -54,39 +51,14 @@ fun DateTimePicker(
     onDismiss: () -> Unit
 ) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
-    var selectedDate by remember { mutableStateOf(dateTime) }
-    lateinit var datePickerState: DatePickerState
-    lateinit var timePickerState: TimePickerState
-
-    // Set the date and time picker states based on the selected date
-    key(selectedDate) {
-        datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = selectedDate.atZone(ZoneId.of("UTC")).toInstant()
-                .toEpochMilli()
-        )
-        timePickerState = rememberTimePickerState(
-            initialHour = selectedDate.hour,
-            initialMinute = selectedDate.minute,
-            is24Hour = true
-        )
-    }
-    // Update the selected date when the date picker state changes
-    key(datePickerState.selectedDateMillis) {
-        selectedDate = datePickerState.getSelectedDate()?.atTime(
-            selectedDate.hour,
-            selectedDate.minute
-        ) ?: LocalDateTime.now()
-    }
-    // Update the selected date when the time picker state changes
-    key(timePickerState.hour, timePickerState.minute) {
-        selectedDate = LocalDateTime.of(
-            selectedDate.year,
-            selectedDate.month,
-            selectedDate.dayOfMonth,
-            timePickerState.hour,
-            timePickerState.minute
-        )
-    }
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = dateTime.atZone(ZoneId.of("UTC")).toInstant().toEpochMilli()
+    )
+    val timePickerState = rememberTimePickerState(
+        initialHour = dateTime.hour,
+        initialMinute = dateTime.minute,
+        is24Hour = true
+    )
 
     val onConfirm = {
         val selectedDateMillis = datePickerState.selectedDateMillis
@@ -107,14 +79,13 @@ fun DateTimePicker(
     }
 
     val onDatePresetSelected = { presetDate: LocalDate ->
-        selectedDate = presetDate.atTime(
-            selectedDate.hour,
-            selectedDate.minute
-        )
+        datePickerState.selectedDateMillis =
+            presetDate.atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()
     }
 
     val onTimePresetSelected = { presetTime: LocalDateTime ->
-        selectedDate = presetTime
+        timePickerState.hour = presetTime.hour
+        timePickerState.minute = presetTime.minute
     }
 
     val onTabSelected = { tabIndex: Int ->
