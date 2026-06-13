@@ -87,7 +87,7 @@ internal class VisitDetailPreviewConfigProvider : PreviewParameterProvider<Visit
                         canBeRemoved = false,
                         nextConversationSuggestion = previewConversationSuggestion,
                         showNextVisitSuggestion = true
-                    ).copy(),
+                    ),
                 )
             ),
             isDarkMode = false
