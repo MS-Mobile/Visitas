@@ -10,10 +10,12 @@ import kotlinx.coroutines.withContext
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.ZoneId
+import kotlin.coroutines.cancellation.CancellationException
 
 class CalendarEventManager(
     private val context: Context,
-    private val permissionChecker: PermissionChecker
+    private val permissionChecker: PermissionChecker,
+    private val logger: Logger
 ) {
     fun hasCalendarPermission(): Boolean {
         return permissionChecker.hasPermissions(
@@ -67,6 +69,10 @@ class CalendarEventManager(
             val rowsDeleted = context.contentResolver.delete(uri, null, null)
             rowsDeleted > 0
         } catch (e: Exception) {
+            if (e is CancellationException) {
+                throw e
+            }
+            logger.error(TAG, "Failed to delete calendar event $eventId", e)
             false
         }
     }
@@ -76,6 +82,7 @@ class CalendarEventManager(
             val uri = context.contentResolver.insert(CalendarContract.Events.CONTENT_URI, values)
             uri?.lastPathSegment?.toLongOrNull()
         } catch (e: Exception) {
+            logger.error(TAG, "Failed to insert calendar event", e)
             null
         }
     }
@@ -86,6 +93,7 @@ class CalendarEventManager(
             val rowsUpdated = context.contentResolver.update(uri, values, null, null)
             if (rowsUpdated > 0) eventId else null
         } catch (e: Exception) {
+            logger.error(TAG, "Failed to update calendar event $eventId", e)
             null
         }
     }
@@ -165,12 +173,14 @@ class CalendarEventManager(
             )?.use { cursor ->
                 cursor.count > 0
             } ?: false
-        } catch (_: Throwable) {
+        } catch (e: Exception) {
+            logger.error(TAG, "Failed to check if calendar event $eventId exists", e)
             false
         }
     }
 
     companion object {
+        private const val TAG = "CalendarEventManager"
         private const val CHECKMARK = "✅ "
         private const val GOOGLE_ACCOUNT_TYPE = "com.google"
         private val DEFAULT_DURATION: Duration = Duration.ofMinutes(30)
