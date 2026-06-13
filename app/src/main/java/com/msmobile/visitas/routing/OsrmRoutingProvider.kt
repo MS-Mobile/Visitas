@@ -5,6 +5,7 @@ import com.msmobile.visitas.util.Logger
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
@@ -35,6 +36,9 @@ class OsrmRoutingProvider @Inject constructor(
             val routeGeometry = try {
                 getRouteGeometry(currentLocation, orderedVisits)
             } catch (e: Exception) {
+                if (e is CancellationException) {
+                    throw e
+                }
                 logger.error("OSRM", "Failed to get route geometry: ${e.message}", e)
                 null
             }
@@ -44,6 +48,9 @@ class OsrmRoutingProvider @Inject constructor(
                 routeGeometry = routeGeometry
             )
         } catch (e: Exception) {
+            if (e is CancellationException) {
+                throw e
+            }
             logger.error("OSRM", "Error optimizing route: ${e.message}", e)
 
             // Fallback: return visits in original order
@@ -131,6 +138,9 @@ class OsrmRoutingProvider @Inject constructor(
                 null
             }
         } catch (e: Exception) {
+            if (e is CancellationException) {
+                throw e
+            }
             logger.error("OSRM", "Error getting route geometry: ${e.message}", e)
             null
         }
