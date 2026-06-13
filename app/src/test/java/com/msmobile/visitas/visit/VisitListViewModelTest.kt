@@ -23,6 +23,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verifyBlocking
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -401,6 +402,7 @@ class VisitListViewModelTest {
         val syncVisitCalendarEvent = mock<SyncVisitCalendarEventUseCase>()
         val dateTimeProvider = mock<DateTimeProvider> {
             on { nowLocalDateTime() } doReturn LocalDateTime.now()
+            on { nowLocalDate() } doReturn LocalDate.now()
         }
         val visitMapAdapter = mock<VisitMapAdapter>()
 

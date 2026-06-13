@@ -344,7 +344,7 @@ constructor(
     }
 
     private fun rescheduleVisitTodaySelected(visit: VisitHouseholderState) {
-        val date = dateTimeProvider.nowLocalDateTime().toLocalDate()
+        val date = dateTimeProvider.nowLocalDate()
             .atStartOfDay()
             .withHour(visit.date.hour)
             .withMinute(visit.date.minute)
@@ -352,7 +352,7 @@ constructor(
     }
 
     private fun rescheduleVisitTomorrowSelected(visit: VisitHouseholderState) {
-        val date = dateTimeProvider.nowLocalDateTime().toLocalDate()
+        val date = dateTimeProvider.nowLocalDate()
             .plusDays(1)
             .atStartOfDay()
             .withHour(visit.date.hour)
@@ -361,7 +361,7 @@ constructor(
     }
 
     private fun rescheduleVisitSelected(visit: VisitHouseholderState, dayOfWeek: DayOfWeek) {
-        val date = dateTimeProvider.nowLocalDateTime().toLocalDate()
+        val date = dateTimeProvider.nowLocalDate()
             .with(next(dayOfWeek))
             .atStartOfDay()
             .withHour(visit.date.hour)
@@ -430,7 +430,7 @@ constructor(
     }
 
     private fun hasToBeRescheduled(date: LocalDateTime, isDone: Boolean): Boolean {
-        return !isDone && date.toLocalDate().isBefore(dateTimeProvider.nowLocalDateTime().toLocalDate())
+        return !isDone && date.toLocalDate().isBefore(dateTimeProvider.nowLocalDate())
     }
 
     private fun onLocationChanged(location: UserLocationProvider.UserLocation) {
@@ -644,7 +644,7 @@ constructor(
     }
 
     private fun List<VisitHouseholderState>.filterBy(filter: VisitFilter): List<VisitHouseholderState> {
-        val today = dateTimeProvider.nowLocalDateTime().toLocalDate()
+        val today = dateTimeProvider.nowLocalDate()
         return map { visit ->
             val (search, dateFilter, distanceFilter) = filter
             val householderDistance = visit.householderAddressDistance
@@ -684,7 +684,7 @@ constructor(
 
     private val VisitListDateFilterOption.asDateFilter: VisitDateFilter
         get() {
-            val today = dateTimeProvider.nowLocalDateTime().toLocalDate()
+            val today = dateTimeProvider.nowLocalDate()
             val tomorrow = today.plusDays(1)
             val afterTomorrow = tomorrow.plusDays(1)
             val dateFilter = when (this) {
