@@ -14,11 +14,13 @@ import com.google.android.gms.location.Priority
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlin.coroutines.cancellation.CancellationException
 
 class AddressProvider(
     private val geocoder: Geocoder,
     private val locationProviderClient: FusedLocationProviderClient,
-    private val looper: Looper
+    private val looper: Looper,
+    private val logger: Logger
 ) {
     suspend fun getAddressListFromCurrentLocation(): List<AddressSpecs> {
         // Get location with retries
@@ -67,8 +69,11 @@ class AddressProvider(
                 if (location != null) {
                     return location
                 }
-            } catch (_: Throwable) {
-                // Log error if needed
+            } catch (error: Exception) {
+                if (error is CancellationException) {
+                    throw error
+                }
+                logger.error(TAG, "Failed to get current location", error)
             }
 
             attempts++
@@ -91,8 +96,11 @@ class AddressProvider(
                 if (addresses.isNotEmpty()) {
                     return addresses
                 }
-            } catch (_: Throwable) {
-                // Log error if needed
+            } catch (error: Exception) {
+                if (error is CancellationException) {
+                    throw error
+                }
+                logger.error(TAG, "Failed to get addresses from location", error)
             }
 
             attempts++
@@ -231,7 +239,8 @@ class AddressProvider(
                     longitude = address.longitude
                 )
             }
-        } catch (_: Throwable) {
+        } catch (error: Exception) {
+            logger.error(TAG, "Failed to get address from lat/long", error)
             AddressSpecs.NoData
         }
     }
@@ -256,6 +265,7 @@ class AddressProvider(
     }
 
     private companion object {
+        private const val TAG = "AddressProvider"
         private const val LOCATION_REQUEST_INTERVAL = 3_000L
         private const val MAX_ADDRESS_RESULTS = 10
         private const val LOCATION_ACCURACY = 20
