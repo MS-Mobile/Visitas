@@ -9,9 +9,12 @@ import kotlinx.coroutines.withContext
 import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.coroutines.cancellation.CancellationException
 
 @Singleton
-class InstallerVerification @Inject constructor() {
+class InstallerVerification @Inject constructor(
+    private val logger: Logger
+) {
 
     /**
      * Verifies if the app was installed from Google Play Store or is part of internal test
@@ -22,8 +25,12 @@ class InstallerVerification @Inject constructor() {
         try {
             // Check installer package name first
             return@withContext isInstalledFromPlayStore(context) && isValidSignature(context)
-        } catch (error: Throwable) {
+        } catch (error: Exception) {
+            if (error is CancellationException) {
+                throw error
+            }
             // If any error occurs during verification, assume invalid installation
+            logger.error(TAG, "Install source verification failed", error)
             return@withContext false
         }
     }
@@ -84,6 +91,7 @@ class InstallerVerification @Inject constructor() {
             } ?: false
 
         } catch (e: Exception) {
+            logger.error(TAG, "Signature validation failed", e)
             false
         }
     }
@@ -110,7 +118,12 @@ class InstallerVerification @Inject constructor() {
             }
             false
         } catch (e: Exception) {
+            logger.error(TAG, "Signature digest failed", e)
             false
         }
+    }
+
+    private companion object {
+        private const val TAG = "InstallerVerification"
     }
 }
