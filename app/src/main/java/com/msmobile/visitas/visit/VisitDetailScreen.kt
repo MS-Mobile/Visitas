@@ -879,7 +879,11 @@ private fun StateHandler(
     when (val eventState = uiState.eventState) {
         is VisitDetailViewModel.UiEventState.Canceled,
         is VisitDetailViewModel.UiEventState.SaveSucceeded,
-        is VisitDetailViewModel.UiEventState.Deleted -> onNavigateUp()
+        is VisitDetailViewModel.UiEventState.Deleted -> {
+            LaunchedEffect(eventState) {
+                onNavigateUp()
+            }
+        }
 
         is VisitDetailViewModel.UiEventState.Idle,
         is VisitDetailViewModel.UiEventState.Saving,
