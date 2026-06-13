@@ -51,7 +51,8 @@ private const val TIME_PICKER_TAB = 1
 fun DateTimePicker(
     dateTime: LocalDateTime,
     onDateSelected: (LocalDateTime) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    now: LocalDateTime = LocalDateTime.now()
 ) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     var selectedDate by remember { mutableStateOf(dateTime) }
@@ -75,7 +76,7 @@ fun DateTimePicker(
         selectedDate = datePickerState.getSelectedDate()?.atTime(
             selectedDate.hour,
             selectedDate.minute
-        ) ?: LocalDateTime.now()
+        ) ?: now
     }
     // Update the selected date when the time picker state changes
     key(timePickerState.hour, timePickerState.minute) {
@@ -132,9 +133,9 @@ fun DateTimePicker(
                 horizontalArrangement = Arrangement.spacedBy(horizontalFieldPadding)
             ) {
                 if (selectedTabIndex == DATE_PICKER_TAB) {
-                    SelectTodayButton(onPresetSelected = onDatePresetSelected)
+                    SelectTodayButton(today = now.toLocalDate(), onPresetSelected = onDatePresetSelected)
                 } else {
-                    SelectNowButton(onPresetSelected = onTimePresetSelected)
+                    SelectNowButton(now = now, onPresetSelected = onTimePresetSelected)
                 }
 
                 TextButton(onClick = onDismiss) {
@@ -204,25 +205,15 @@ private fun DateTimePickerContent(
 }
 
 @Composable
-private fun SelectTodayButton(onPresetSelected: (LocalDate) -> Unit) {
-    OutlinedButton(
-        onClick = {
-            val today = LocalDate.now()
-            onPresetSelected(today)
-        }
-    ) {
+private fun SelectTodayButton(today: LocalDate, onPresetSelected: (LocalDate) -> Unit) {
+    OutlinedButton(onClick = { onPresetSelected(today) }) {
         Text(text = stringResource(id = R.string.date_time_picker_today))
     }
 }
 
 @Composable
-private fun SelectNowButton(onPresetSelected: (LocalDateTime) -> Unit) {
-    OutlinedButton(
-        onClick = {
-            val now = LocalDateTime.now()
-            onPresetSelected(now)
-        }
-    ) {
+private fun SelectNowButton(now: LocalDateTime, onPresetSelected: (LocalDateTime) -> Unit) {
+    OutlinedButton(onClick = { onPresetSelected(now) }) {
         Text(text = stringResource(id = R.string.date_time_picker_now))
     }
 }
