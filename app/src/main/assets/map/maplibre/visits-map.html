@@ -10,21 +10,25 @@
         #map { height: 100vh; width: 100%; }
         body { margin: 0; padding: 0; }
         .maplibregl-popup-content { padding: 8px 12px; }
-        @media (prefers-color-scheme: dark) {
-            #map { filter: brightness(0.7); }
-        }
     </style>
 </head>
 <body>
 <div id="map"></div>
 <script src="maplibre-gl.js"></script>
 <script>
+    // Vector map styles. Dark mode uses a genuinely dark-styled basemap
+    // (proper dark land/water/roads with readable labels) rather than a
+    // brightness/inversion filter over the light style.
+    const STYLE_LIGHT = 'https://tiles.openfreemap.org/styles/liberty';
+    const STYLE_DARK = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
+
     let map;
     let markers = [];
     let routeAdded = false;
     let pendingSetMarkers = null;
     let labels = { currentLocation: undefined };
     let didFitBounds = false;
+    let isDarkMode = false;
 
     function log(message) {
         console.log(message);
@@ -38,7 +42,7 @@
 
     log('Script loaded successfully');
 
-    async function initializeMap(currentLocationText) {
+    async function initializeMap(currentLocationText, darkMode) {
         try {
             log('Initializing map');
 
@@ -47,10 +51,11 @@
             }
 
             labels.currentLocation = currentLocationText;
+            isDarkMode = !!darkMode;
 
             map = new maplibregl.Map({
                 container: 'map',
-                style: 'https://tiles.openfreemap.org/styles/liberty',
+                style: isDarkMode ? STYLE_DARK : STYLE_LIGHT,
                 center: [0, 0],
                 zoom: 2
             });
@@ -65,7 +70,7 @@
                     type: 'line',
                     source: 'route',
                     paint: {
-                        'line-color': '#2E86AB',
+                        'line-color': isDarkMode ? '#4DA6FF' : '#2E86AB',
                         'line-width': 4,
                         'line-opacity': 0.8
                     },
