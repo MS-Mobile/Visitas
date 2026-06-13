@@ -1,5 +1,6 @@
 package com.msmobile.visitas.visit
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
@@ -17,6 +18,7 @@ fun VisitsMap(
     onMapReady: () -> Unit = {}
 ) {
     val currentLocationText = stringResource(R.string.current_location).replace("'", "\\'")
+    val isDarkTheme = isSystemInDarkTheme()
     val webViewBridgeState = remember(engine) { mutableStateOf<WebViewViewBridge?>(null) }
 
     val (currentLatitude, currentLongitude) = currentLocation
@@ -40,7 +42,7 @@ fun VisitsMap(
         isFileAccessAllowed = true,
         onInitializationComplete = { webViewBridge ->
             webViewBridgeState.value = webViewBridge
-            val initScript = "initializeMap('${currentLocationText}');"
+            val initScript = "initializeMap('${currentLocationText}', $isDarkTheme);"
             webViewBridge.executeScript(initScript) { _ ->
                 val visitsJson = visitMapState.serialized
                 webViewBridge.executeScript("setMarkers($currentLatitude, $currentLongitude, $visitsJson);") { }
