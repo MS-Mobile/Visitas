@@ -1,5 +1,6 @@
 # Cut Release — creates a release branch from master via GitHub API
 # Branch creation via API (not git push) triggers release-build.yml reliably
+# After cutting, opens a version bump PR advancing master to the next minor
 
 name: Cut Release
 
@@ -17,6 +18,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      name: ${{ steps.version.outputs.name }}
+      branch: ${{ steps.version.outputs.branch }}
 
     steps:
       - name: Checkout master
@@ -56,5 +60,58 @@ jobs:
             -f ref="refs/heads/${BRANCH}" \
             -f sha="${SHA}"
           echo "Release branch ${BRANCH} created at ${SHA}."
+        env:
+          GH_TOKEN: ${{ secrets.WORKFLOW_TOKEN }}
+
+  open-version-bump-pr:
+    name: Open Version Bump PR on Master
+    runs-on: ubuntu-latest
+    needs: cut
+
+    steps:
+      - name: Checkout master
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          token: ${{ secrets.WORKFLOW_TOKEN }}
+          fetch-depth: 0
+
+      - name: Compute next version
+        id: versions
+        run: |
+          RELEASE_VERSION="${{ needs.cut.outputs.name }}"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$RELEASE_VERSION"
+          NEXT_MINOR=$(( MINOR + 1 ))
+          NEXT_VERSION="${MAJOR}.${NEXT_MINOR}.0"
+          BUMP_BRANCH="bump/version-${NEXT_VERSION}"
+          echo "next_version=$NEXT_VERSION" >> $GITHUB_OUTPUT
+          echo "bump_branch=$BUMP_BRANCH" >> $GITHUB_OUTPUT
+          echo "Release: $RELEASE_VERSION  →  Next: $NEXT_VERSION  (branch: $BUMP_BRANCH)"
+
+      - name: Create bump branch and update version.properties
+        run: |
+          BUMP_BRANCH="${{ steps.versions.outputs.bump_branch }}"
+          NEXT_VERSION="${{ steps.versions.outputs.next_version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Clean up any orphaned remote branch from a cancelled prior run
+          git push origin --delete "$BUMP_BRANCH" 2>/dev/null || true
+          git checkout -b "$BUMP_BRANCH"
+          sed -i "s/^versionName=.*/versionName=${NEXT_VERSION}/" version.properties
+          git add version.properties
+          git commit -m "Bump version to ${NEXT_VERSION}"
+          git push origin "$BUMP_BRANCH"
+
+      - name: Open PR to master
+        run: |
+          NEXT_VERSION="${{ steps.versions.outputs.next_version }}"
+          BUMP_BRANCH="${{ steps.versions.outputs.bump_branch }}"
+          RELEASE_BRANCH="${{ needs.cut.outputs.branch }}"
+          BODY=$(printf "Automated version bump after cutting \`%s\`.\n\nTo override with a major bump, edit \`version.properties\` in this PR before merging." "${RELEASE_BRANCH}")
+          gh pr create \
+            --title "Bump version to ${NEXT_VERSION}" \
+            --body "$BODY" \
+            --base master \
+            --head "$BUMP_BRANCH"
         env:
           GH_TOKEN: ${{ secrets.WORKFLOW_TOKEN }}
