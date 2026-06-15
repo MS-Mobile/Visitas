@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.msmobile.visitas.R
 import com.msmobile.visitas.ui.views.MonthNavigatorEvent
+import com.msmobile.visitas.util.DateTimeProvider
 import com.msmobile.visitas.util.DispatcherProvider
 import com.msmobile.visitas.util.StringResource
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,13 +22,14 @@ class SummaryViewModel
 @Inject
 constructor(
     private val summaryRepository: SummaryRepository,
-    private val dispatchers: DispatcherProvider
+    private val dispatchers: DispatcherProvider,
+    private val dateTimeProvider: DateTimeProvider
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(
         UiState(
             returnVisitCount = "",
             bibleStudyCount = "",
-            selectedMonth = LocalDateTime.now(),
+            selectedMonth = dateTimeProvider.nowLocalDateTime(),
             isSummaryMenuExpanded = false,
             summaryFilterOptions = listOf(),
             shouldShowSummaryDetails = false
@@ -90,7 +92,7 @@ constructor(
 
     private fun goToCurrentMonth() {
         newState {
-            val currentMonth = LocalDateTime.now()
+            val currentMonth = dateTimeProvider.nowLocalDateTime()
             copy(selectedMonth = currentMonth)
         }
         loadSummary(_uiState.value.selectedMonth)
