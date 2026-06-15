@@ -1,6 +1,7 @@
 package com.msmobile.visitas.summary
 
 import com.msmobile.visitas.ui.views.MonthNavigatorEvent
+import com.msmobile.visitas.util.DateTimeProvider
 import com.msmobile.visitas.util.DispatcherProvider
 import com.msmobile.visitas.util.MainDispatcherRule
 import com.msmobile.visitas.util.MockReferenceHolder
@@ -166,7 +167,8 @@ class SummaryViewModelTest {
 
         return SummaryViewModel(
             summaryRepository = summaryRepository,
-            dispatchers = dispatchers
+            dispatchers = dispatchers,
+            dateTimeProvider = DateTimeProvider()
         )
     }
 
