@@ -50,6 +50,18 @@ internal class VisitListPreviewConfigProvider : PreviewParameterProvider<VisitLi
             visitListUiState = previewVisitListUiState.copy(
                 showLocationRationale = true
             )
+        ),
+        VisitListPreviewConfig(
+            configName = "With draft visit",
+            mainActivityUiState = previewMainActivityUiState,
+            summaryUiState = previewSummaryUiState,
+            visitListUiState = previewVisitListUiState.copy(
+                visitList = listOf(
+                    previewVisitListUiState.visitList[0].copy(isDraft = true),
+                    previewVisitListUiState.visitList[1],
+                    previewVisitListUiState.visitList[2],
+                )
+            )
         )
     )
 
@@ -89,6 +101,7 @@ private val previewVisitListUiState = VisitListViewModel.UiState(
             householderAddressDistance = AddressProvider.AddressDistance.Nearby(100f),
             date = previewDate1,
             isDone = false,
+            isDraft = false,
             hasToBeRescheduled = false,
             isPendingVisitMenuExpanded = false,
             subject = "What is God's Kingdom?",
@@ -105,6 +118,7 @@ private val previewVisitListUiState = VisitListViewModel.UiState(
             householderAddress = "45 Cedar Avenue",
             date = previewDate2,
             isDone = false,
+            isDraft = false,
             hasToBeRescheduled = true,
             isPendingVisitMenuExpanded = false,
             subjectPreview = "The resurrection of the dead — John 5:28, 29",
@@ -122,6 +136,7 @@ private val previewVisitListUiState = VisitListViewModel.UiState(
             householderAddress = "7 Pharisee Street",
             date = previewDate3,
             isDone = false,
+            isDraft = false,
             hasToBeRescheduled = false,
             isPendingVisitMenuExpanded = false,
             subjectPreview = "Who is Jesus Christ? — Luke 1:31-33",
