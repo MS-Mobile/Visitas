@@ -3,6 +3,7 @@ package com.msmobile.visitas
 import androidx.annotation.VisibleForTesting
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import com.msmobile.visitas.util.IntentState
+import com.ramcosta.composedestinations.generated.destinations.VisitDetailScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.VisitListScreenDestination
 import com.ramcosta.composedestinations.spec.DestinationSpec
 
@@ -25,6 +26,15 @@ internal class AppScaffoldPreviewConfigProvider : PreviewParameterProvider<AppSc
                 intentState = IntentState.None
             ),
             currentDestination = VisitListScreenDestination
+        ),
+        AppScaffoldPreviewConfig(
+            configName = "With Subtitle",
+            uiState = MainActivityViewModel.UiState(
+                eventState = MainActivityViewModel.UiEventState.Idle,
+                intentState = IntentState.None
+            ),
+            currentDestination = VisitDetailScreenDestination,
+            subtitle = "Draft"
         )
     )
 
@@ -37,6 +47,7 @@ internal class AppScaffoldPreviewConfigProvider : PreviewParameterProvider<AppSc
 internal data class AppScaffoldPreviewConfig(
     val configName: String,
     val uiState: MainActivityViewModel.UiState,
-    val currentDestination: DestinationSpec
+    val currentDestination: DestinationSpec,
+    val subtitle: String? = null
 )
 
