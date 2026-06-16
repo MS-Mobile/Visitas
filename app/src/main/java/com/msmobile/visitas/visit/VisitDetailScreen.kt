@@ -73,8 +73,6 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.rememberTextMeasurer
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
@@ -158,8 +156,10 @@ private fun VisitDetailScreenContent(
 
     val copyDataDescription = stringResource(id = R.string.copy_data_content_description)
     val deleteDescription = stringResource(id = R.string.delete)
+    val draftLabel = stringResource(id = R.string.visit_draft)
     val chromeOwner = remember { Any() }
-    DisposableEffect(Unit) {
+    val hasDraft = uiState.visitList.filter { !it.wasRemoved }.any { it.isDraft }
+    DisposableEffect(hasDraft) {
         appScaffoldState.setUiState(
             owner = chromeOwner,
             uiState = AppScaffoldState.UiState(
@@ -179,7 +179,8 @@ private fun VisitDetailScreenContent(
                     onBack = { onEvent(VisitDetailViewModel.UiEvent.CancelClicked) },
                     onSave = { onEvent(VisitDetailViewModel.UiEvent.SaveClicked) },
                     onAdd = { onEvent(VisitDetailViewModel.UiEvent.AddVisitClicked) }
-                )
+                ),
+                subtitle = if (hasDraft) draftLabel else null
             )
         )
         onDispose { appScaffoldState.clearUiState(chromeOwner) }
@@ -231,7 +232,6 @@ private fun VisitDetail(
     onEvent: (VisitDetailViewModel.UiEvent) -> Unit
 ) {
     val visitList = uiState.visitList.filter { !it.wasRemoved }
-    val hasDraft = visitList.any { it.isDraft }
     val listState = rememberLazyListState()
     LazyColumnWithScrollbar(listState = listState) {
         LazyColumn(
@@ -240,20 +240,6 @@ private fun VisitDetail(
                 .padding(horizontal = borderPadding),
             verticalArrangement = Arrangement.spacedBy(verticalFieldPadding)
         ) {
-            if (hasDraft) {
-                item {
-                    Text(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = verticalFieldPadding),
-                        text = stringResource(id = R.string.visit_draft),
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.tertiary,
-                        textAlign = TextAlign.Center
-                    )
-                }
-            }
             item {
                 HouseholderDetail(
                     householder = uiState.householder,
@@ -1150,7 +1136,8 @@ internal fun VisitDetailScreenPreview(
                 onBack = {},
                 onSave = {},
                 onAdd = {}
-            )
+            ),
+            subtitle = if (config.uiState.visitList.filter { !it.wasRemoved }.any { it.isDraft }) stringResource(R.string.visit_draft) else null
         ) {
             VisitDetailScreenContent(
                 householderId = config.householderId,
