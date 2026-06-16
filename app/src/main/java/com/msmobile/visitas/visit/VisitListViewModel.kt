@@ -667,7 +667,8 @@ constructor(
                     || matchesName
             visit.copy(hide = !show) to matchesDistance
         }.sortedWith(
-            compareByDescending<Pair<VisitHouseholderState, Boolean>> { (_, matchesDistance) -> matchesDistance }
+            compareByDescending<Pair<VisitHouseholderState, Boolean>> { (visit, _) -> visit.isDraft }
+                .thenByDescending { (_, matchesDistance) -> matchesDistance }
                 .thenBy { (visit, _) -> visit.date }
         ).map { (visit, _) -> visit }
     }
@@ -706,6 +707,7 @@ constructor(
                 subjectPreview = subject.split("\n").firstOrNull() ?: "",
                 date = date,
                 isDone = isDone,
+                isDraft = isDraft,
                 householderId = householderId,
                 householderName = householderName,
                 householderAddress = householderAddress,
@@ -819,6 +821,7 @@ constructor(
         val subjectPreview: String,
         val date: LocalDateTime,
         val isDone: Boolean,
+        val isDraft: Boolean,
         val householderId: UUID,
         val householderName: String,
         val householderAddress: String,

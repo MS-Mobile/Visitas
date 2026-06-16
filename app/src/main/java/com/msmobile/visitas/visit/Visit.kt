@@ -29,5 +29,6 @@ data class Visit(
     val orderIndex: Int,
     val visitType: VisitType,
     val nextConversationId: UUID?,
-    val calendarEventId: Long? = null
+    val calendarEventId: Long? = null,
+    val isDraft: Boolean = false
 )
