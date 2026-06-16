@@ -560,6 +560,7 @@ fun VisitCardSkeleton() {
             householderAddress = householderAddress,
             date = LocalDateTime.now(),
             isDone = false,
+            isDraft = false,
             hasToBeRescheduled = false,
             isPendingVisitMenuExpanded = false,
             subjectPreview = subjectPreview,
