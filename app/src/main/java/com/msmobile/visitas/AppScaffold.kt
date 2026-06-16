@@ -3,6 +3,7 @@ package com.msmobile.visitas
 import androidx.annotation.VisibleForTesting
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -58,6 +59,7 @@ fun AppScaffold(
     onNavigateUp: () -> Unit = {},
     topBarActions: List<TopBarAction> = emptyList(),
     detailFooterActions: DetailFooterActions? = null,
+    subtitle: String? = null,
     content: @Composable () -> Unit
 ) {
     val showFAB = currentDestination in listOf(
@@ -96,7 +98,20 @@ fun AppScaffold(
             if (showTopBar) {
                 var menuExpanded by remember { mutableStateOf(false) }
                 TopAppBar(
-                    title = { Text(text = title) },
+                    title = {
+                        if (subtitle == null) {
+                            Text(text = title)
+                        } else {
+                            Column {
+                                Text(text = title)
+                                Text(
+                                    text = subtitle,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.tertiary
+                                )
+                            }
+                        }
+                    },
                     navigationIcon = {
                         if (showBackButton) {
                             IconButton(onClick = onNavigateUp) {
@@ -234,7 +249,8 @@ internal fun AppScaffoldPreview(
             currentDestination = config.currentDestination,
             onEvent = {},
             onNavigateToTab = {},
-            onNavigate = {}
+            onNavigate = {},
+            subtitle = config.subtitle
         ) {}
     }
 }

@@ -52,6 +52,7 @@ fun Main(
             onNavigateUp = onNavigateUp,
             topBarActions = appScaffoldState.uiState.topBarActions,
             detailFooterActions = appScaffoldState.uiState.detailFooterActions,
+            subtitle = appScaffoldState.uiState.subtitle,
             content = {
                 DestinationsNavHost(
                     navGraph = NavGraphs.root,
