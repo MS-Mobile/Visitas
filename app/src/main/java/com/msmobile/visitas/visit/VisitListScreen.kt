@@ -682,6 +682,14 @@ private fun VisitCard(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (visit.isDraft) {
+                        Text(
+                            text = stringResource(id = R.string.visit_draft),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.tertiary
+                        )
+                    }
                     if (showNearbyVisits && isHouseholderAddressNearby) {
                         Text(
                             text = stringResource(id = R.string.nearby_visit),

@@ -73,6 +73,8 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
@@ -229,6 +231,7 @@ private fun VisitDetail(
     onEvent: (VisitDetailViewModel.UiEvent) -> Unit
 ) {
     val visitList = uiState.visitList.filter { !it.wasRemoved }
+    val hasDraft = visitList.any { it.isDraft }
     val listState = rememberLazyListState()
     LazyColumnWithScrollbar(listState = listState) {
         LazyColumn(
@@ -237,6 +240,20 @@ private fun VisitDetail(
                 .padding(horizontal = borderPadding),
             verticalArrangement = Arrangement.spacedBy(verticalFieldPadding)
         ) {
+            if (hasDraft) {
+                item {
+                    Text(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = verticalFieldPadding),
+                        text = stringResource(id = R.string.visit_draft),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.tertiary,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
             item {
                 HouseholderDetail(
                     householder = uiState.householder,
