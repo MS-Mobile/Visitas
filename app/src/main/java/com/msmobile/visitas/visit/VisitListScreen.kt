@@ -690,6 +690,10 @@ private fun VisitCard(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.tertiary
                         )
+                        VerticalDivider(
+                            color = Color.Transparent,
+                            thickness = horizontalFieldPadding
+                        )
                     }
                     if (showNearbyVisits && isHouseholderAddressNearby) {
                         Text(
