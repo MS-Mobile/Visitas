@@ -22,8 +22,13 @@ import com.msmobile.visitas.util.PermissionChecker
 import com.msmobile.visitas.util.StringResource
 import com.msmobile.visitas.util.VisitDataFormatter
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
@@ -63,10 +68,11 @@ class VisitDetailViewModel
     )
     private var visits: List<Visit> = listOf()
     private var conversations: List<Conversation> = listOf()
-    private var initialEditableData: EditableDataSnapshot? = null
+    @Volatile private var initialEditableData: EditableDataSnapshot? = null
     private var loadAddressAfterPermission = false
     private var isUpdatingVisit: Boolean = false
     private var isAddressFieldFocused: Boolean = false
+    private var autoSaveJob: Job? = null
 
     val uiState: StateFlow<UiState> = _uiState
 
@@ -803,6 +809,31 @@ class VisitDetailViewModel
         performSave()
     }
 
+    private fun startAutoSave() {
+        if (autoSaveJob != null) return
+        autoSaveJob = _uiState
+            .debounce(250)
+            .onEach { state ->
+                val snapshot = state.getEditableDataSnapshot()
+                if (initialEditableData != null && snapshot != initialEditableData) {
+                    saveDraftSilently(state)
+                    initialEditableData = snapshot
+                }
+            }
+            .flowOn(dispatchers.io)
+            .launchIn(viewModelScope)
+    }
+
+    private suspend fun saveDraftSilently(state: UiState) {
+        val householderModel = state.householder.asModel
+        householderRepository.save(householderModel)
+        state.visitList
+            .filter { !it.wasRemoved }
+            .forEach { visitState ->
+                visitRepository.save(visitState.asModel(householderModel.id))
+            }
+    }
+
     private fun performSave() {
         newState {
             copy(
@@ -818,7 +849,7 @@ class VisitDetailViewModel
             val visitList = addOrUpdateVisits(
                 householderId = householderId,
                 householderName = householderModel.name,
-                visitList = _uiState.value.visitList
+                visitList = _uiState.value.visitList.map { it.finalized() }
             )
             newState {
                 copy(
@@ -987,6 +1018,7 @@ class VisitDetailViewModel
                 subject = "",
                 date = dateTimeProvider.nowLocalDateTime(),
                 isDone = false,
+                isDraft = true,
                 orderIndex = orderIndex,
                 visitType = VisitType.FIRST_VISIT.asState
             ),
@@ -1053,6 +1085,7 @@ class VisitDetailViewModel
                 }
             }
             initialEditableData = _uiState.value.getEditableDataSnapshot()
+            startAutoSave()
         }
     }
 
@@ -1097,6 +1130,7 @@ class VisitDetailViewModel
                 subject = subject,
                 date = date,
                 isDone = isDone,
+                isDraft = isDraft,
                 orderIndex = orderIndex,
                 visitType = visitType.asState
             ),
@@ -1182,12 +1216,15 @@ class VisitDetailViewModel
             )
         }
 
+    private fun VisitState.finalized() = copy(editable = editable.copy(isDraft = false))
+
     private fun VisitState.asModel(householderId: UUID): Visit {
         return Visit(
             id = id,
             subject = subject,
             date = date,
             isDone = isDone,
+            isDraft = isDraft,
             householderId = householderId,
             orderIndex = orderIndex,
             visitType = visitType.type,
@@ -1277,6 +1314,7 @@ class VisitDetailViewModel
         val subject get() = editable.subject
         val date get() = editable.date
         val isDone get() = editable.isDone
+        val isDraft get() = editable.isDraft
         val orderIndex get() = editable.orderIndex
         val visitType get() = editable.visitType
     }
@@ -1337,6 +1375,7 @@ class VisitDetailViewModel
         val subject: String,
         val date: LocalDateTime,
         val isDone: Boolean,
+        val isDraft: Boolean,
         val orderIndex: Int,
         val visitType: VisitTypeState
     )

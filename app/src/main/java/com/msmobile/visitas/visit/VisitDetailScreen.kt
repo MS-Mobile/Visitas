@@ -156,8 +156,10 @@ private fun VisitDetailScreenContent(
 
     val copyDataDescription = stringResource(id = R.string.copy_data_content_description)
     val deleteDescription = stringResource(id = R.string.delete)
+    val draftLabel = stringResource(id = R.string.visit_draft)
     val chromeOwner = remember { Any() }
-    DisposableEffect(Unit) {
+    val hasDraft = uiState.visitList.filter { !it.wasRemoved }.any { it.isDraft }
+    DisposableEffect(hasDraft) {
         appScaffoldState.setUiState(
             owner = chromeOwner,
             uiState = AppScaffoldState.UiState(
@@ -177,7 +179,8 @@ private fun VisitDetailScreenContent(
                     onBack = { onEvent(VisitDetailViewModel.UiEvent.CancelClicked) },
                     onSave = { onEvent(VisitDetailViewModel.UiEvent.SaveClicked) },
                     onAdd = { onEvent(VisitDetailViewModel.UiEvent.AddVisitClicked) }
-                )
+                ),
+                subtitle = if (hasDraft) draftLabel else null
             )
         )
         onDispose { appScaffoldState.clearUiState(chromeOwner) }
@@ -1133,7 +1136,8 @@ internal fun VisitDetailScreenPreview(
                 onBack = {},
                 onSave = {},
                 onAdd = {}
-            )
+            ),
+            subtitle = if (config.uiState.visitList.filter { !it.wasRemoved }.any { it.isDraft }) stringResource(R.string.visit_draft) else null
         ) {
             VisitDetailScreenContent(
                 householderId = config.householderId,
