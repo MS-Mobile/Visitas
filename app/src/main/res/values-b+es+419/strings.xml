@@ -26,6 +26,7 @@
     <string name="visits">Visitas</string>
     <string name="add_visit">Agregar visita</string>
     <string name="visit_is_done">Visita realizada</string>
+    <string name="visit_draft">Borrador</string>
     <string name="done_visits">Realizadas</string>
     <string name="remove_visit">Eliminar visita</string>
     <string name="previous_month">Mes anterior</string>
