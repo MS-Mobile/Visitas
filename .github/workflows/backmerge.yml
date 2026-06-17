@@ -68,6 +68,15 @@ jobs:
             echo "EOF" >> $GITHUB_OUTPUT
             echo "Merge conflicts with master — pushing unmerged head; resolve on $BACKMERGE_BRANCH"
           fi
+          # version.properties holds master's next-dev version. A backmerge must
+          # never drag it down to the release version — always keep master's. Git
+          # otherwise silently takes the release value, since master is unchanged
+          # from the merge-base and so no conflict is raised.
+          git checkout origin/master -- version.properties
+          git add version.properties
+          if ! git diff --cached --quiet; then
+            git commit -m "Backmerge: keep master's version.properties"
+          fi
           git push -f origin "$BACKMERGE_BRANCH"
 
       - name: Open or refresh PR to master
