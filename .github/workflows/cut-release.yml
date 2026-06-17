@@ -51,17 +51,25 @@ jobs:
           fi
           echo "Branch $BRANCH does not exist — safe to proceed"
 
-      - name: Create release branch via API
+      - name: Create release branch
         run: |
           BRANCH="${{ steps.version.outputs.branch }}"
-          SHA=$(git rev-parse HEAD)
-          gh api repos/${{ github.repository }}/git/refs \
-            -X POST \
-            -f ref="refs/heads/${BRANCH}" \
-            -f sha="${SHA}"
-          echo "Release branch ${BRANCH} created at ${SHA}."
-        env:
-          GH_TOKEN: ${{ secrets.WORKFLOW_TOKEN }}
+          NAME="${{ steps.version.outputs.name }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          # If a version was supplied, set it in version.properties before pushing.
+          # The creating push is allowed even though release/* is protected — only
+          # later updates to the branch require a PR.
+          if [ -n "${{ inputs.version_name }}" ]; then
+            sed -i "s/^versionName=.*/versionName=${NAME}/" version.properties
+            if ! git diff --quiet version.properties; then
+              git add version.properties
+              git commit -m "Set release version to ${NAME}"
+            fi
+          fi
+          git push origin "$BRANCH"
+          echo "Release branch ${BRANCH} created."
 
   open-version-bump-pr:
     name: Open Version Bump PR on Master
