@@ -1,6 +1,7 @@
 package com.msmobile.visitas
 
 import androidx.annotation.VisibleForTesting
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,6 +28,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -97,15 +99,19 @@ fun AppScaffold(
         topBar = {
             if (showTopBar) {
                 var menuExpanded by remember { mutableStateOf(false) }
+                // Retain the last non-null subtitle so it stays rendered while the
+                // exit animation plays out (subtitle is already null by then).
+                var lastSubtitle by remember { mutableStateOf(subtitle) }
+                LaunchedEffect(subtitle) {
+                    if (subtitle != null) lastSubtitle = subtitle
+                }
                 TopAppBar(
                     title = {
-                        if (subtitle == null) {
+                        Column {
                             Text(text = title)
-                        } else {
-                            Column {
-                                Text(text = title)
+                            AnimatedVisibility(visible = subtitle != null) {
                                 Text(
-                                    text = subtitle,
+                                    text = lastSubtitle.orEmpty(),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.tertiary
                                 )
