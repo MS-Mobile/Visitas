@@ -39,12 +39,15 @@ class VisitDetailViewModelTest {
         // Arrange
         val viewModel = createViewModel()
 
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = null))
+
         // Assert
         val state = viewModel.uiState.value
         assertEquals("", state.householder.name)
         assertEquals("", state.householder.address)
         assertEquals(1, state.visitList.size)
-        assertTrue(state.conversationList.isEmpty())
+        assertEquals(3, state.conversationList.size)
         assertEquals(VisitDetailViewModel.UiEventState.Idle, state.eventState)
         assertFalse(state.showDeleteButton)
     }
@@ -471,6 +474,7 @@ class VisitDetailViewModelTest {
     fun `onEvent with VisitDateDismissed returns to Idle state`() {
         // Arrange
         val viewModel = createViewModel()
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = null))
         val visit = viewModel.uiState.value.visitList.first()
         viewModel.onEvent(VisitDetailViewModel.UiEvent.VisitDateClicked(visit))
 
@@ -804,6 +808,7 @@ class VisitDetailViewModelTest {
     fun `onEvent with VisitTypeListDismissed collapses visit type list`() {
         // Arrange
         val viewModel = createViewModel()
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = null))
         viewModel.onEvent(
             VisitDetailViewModel.UiEvent.VisitTypeClicked(viewModel.uiState.value.visitList.first())
         )

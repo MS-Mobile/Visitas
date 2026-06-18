@@ -60,9 +60,9 @@ class VisitDetailViewModel
     private val _uiState = MutableStateFlow(
         UiState(
             householder = newHouseholder(),
-            visitList = listOf(newVisit(0)),
-            conversationList = listOf(),
-            visitTypeList = listOf(),
+            visitList = emptyList(),
+            conversationList = emptyList(),
+            visitTypeList = emptyList(),
             eventState = UiEventState.Idle
         )
     )
@@ -1077,6 +1077,7 @@ class VisitDetailViewModel
             } else {
                 newState {
                     copy(
+                        visitList = listOf(newVisit(0)),
                         conversationList = conversationList,
                         visitTypeList = visitTypeList,
                         eventState = UiEventState.Idle,
