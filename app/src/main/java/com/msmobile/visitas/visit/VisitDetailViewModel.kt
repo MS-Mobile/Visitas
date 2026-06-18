@@ -158,7 +158,7 @@ class VisitDetailViewModel
     }
 
     private fun discardChangesAccepted() {
-        discardChanges()
+        dismiss()
     }
 
     private fun snackbarDismissed() {
@@ -661,21 +661,13 @@ class VisitDetailViewModel
     }
 
     private fun cancelClicked() {
-        if (didEditableDataChange) {
-            newState {
-                copy(
-                    eventState = UiEventState.DiscardChangesConfirmation
-                )
-            }
-        } else {
-            discardChanges()
-        }
+        dismiss()
     }
 
-    private fun discardChanges() {
+    private fun dismiss() {
         newState {
             copy(
-                eventState = UiEventState.Canceled
+                eventState = UiEventState.Dismissed
             )
         }
     }
@@ -1458,7 +1450,7 @@ class VisitDetailViewModel
     sealed class UiEventState {
         data object Idle : UiEventState()
         data object NoAddressFound : UiEventState()
-        data object Canceled : UiEventState()
+        data object Dismissed : UiEventState()
         data object Saving : UiEventState()
         data object SaveSucceeded : UiEventState()
         data object ValidationError : UiEventState()

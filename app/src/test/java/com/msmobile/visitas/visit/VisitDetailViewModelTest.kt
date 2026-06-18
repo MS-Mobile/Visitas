@@ -388,7 +388,7 @@ class VisitDetailViewModelTest {
 
         // Assert
         assertEquals(
-            VisitDetailViewModel.UiEventState.Canceled,
+            VisitDetailViewModel.UiEventState.Dismissed,
             viewModel.uiState.value.eventState
         )
     }
@@ -425,7 +425,7 @@ class VisitDetailViewModelTest {
 
         // Assert
         assertEquals(
-            VisitDetailViewModel.UiEventState.Canceled,
+            VisitDetailViewModel.UiEventState.Dismissed,
             viewModel.uiState.value.eventState
         )
     }

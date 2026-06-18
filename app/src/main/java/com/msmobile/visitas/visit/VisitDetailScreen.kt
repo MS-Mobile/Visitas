@@ -880,7 +880,7 @@ private fun StateHandler(
     onEvent: (VisitDetailViewModel.UiEvent) -> Unit
 ) {
     when (val eventState = uiState.eventState) {
-        is VisitDetailViewModel.UiEventState.Canceled,
+        is VisitDetailViewModel.UiEventState.Dismissed,
         is VisitDetailViewModel.UiEventState.SaveSucceeded,
         is VisitDetailViewModel.UiEventState.Deleted -> {
             LaunchedEffect(eventState) {
