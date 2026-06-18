@@ -342,6 +342,48 @@ class VisitListViewModelTest {
     }
 
     @Test
+    fun `draft visit stays visible even when search filter does not match its name`() {
+        // Arrange: a draft visit whose name does not match the search query
+        val draftVisit = VisitHouseholder(
+            visitId = FIRST_VISIT_ID,
+            subject = "Draft subject",
+            date = LocalDateTime.now(),
+            isDone = false,
+            isDraft = true,
+            householderId = FIRST_HOUSEHOLDER_ID,
+            householderName = "Draft Householder",
+            householderAddress = "Address 1",
+            type = VisitType.FIRST_VISIT,
+            householderLatitude = null,
+            householderLongitude = null
+        )
+        val matchingVisit = VisitHouseholder(
+            visitId = SECOND_VISIT_ID,
+            subject = "Subject 2",
+            date = LocalDateTime.now(),
+            isDone = false,
+            householderId = SECOND_HOUSEHOLDER_ID,
+            householderName = "Searchable Name",
+            householderAddress = "Address 2",
+            type = VisitType.RETURN_VISIT,
+            householderLatitude = null,
+            householderLongitude = null
+        )
+        val viewModel = createViewModel(visits = listOf(draftVisit, matchingVisit))
+        viewModel.onEvent(VisitListViewModel.UiEvent.ViewCreated)
+
+        // Act: search for a term that only matches the non-draft visit
+        viewModel.onEvent(VisitListViewModel.UiEvent.SearchChanged("Searchable"))
+
+        // Assert: the draft remains visible despite not matching the search
+        val draft = viewModel.uiState.value.visitList.find { it.visitId == FIRST_VISIT_ID }
+        assertFalse(
+            "Draft visit should stay visible even when it does not match the search filter",
+            draft?.hide ?: true
+        )
+    }
+
+    @Test
     fun `onEvent with ViewCreated loads visitMapEngine from preference`() {
         val viewModel = createViewModel(savedMapEngine = VisitMapEngineOption.Leaflet)
 
@@ -357,7 +399,8 @@ class VisitListViewModelTest {
         locationFlowRef: MockReferenceHolder<MutableStateFlow<UserLocationProvider.UserLocation>>? = null,
         distanceResults: Map<DistanceInput, AddressProvider.AddressDistance> = emptyMap(),
         visitListDateFilterOption: VisitListDateFilterOption = VisitListDateFilterOption.All,
-        savedMapEngine: VisitMapEngineOption = VisitMapEngineOption.MapLibre
+        savedMapEngine: VisitMapEngineOption = VisitMapEngineOption.MapLibre,
+        visits: List<VisitHouseholder> = createVisitHouseholderList()
     ): VisitListViewModel {
         val dispatchers = DispatcherProvider(
             io = mainDispatcherRule.dispatcher
@@ -374,7 +417,7 @@ class VisitListViewModelTest {
             on { hasPermissions(any(), any()) } doReturn hasLocationPermission
         }
         val visitHouseholderRepository = mock<VisitHouseholderRepository> {
-            on { getAll() } doReturn createVisitHouseholderList()
+            on { getAll() } doReturn visits
         }
         visitHouseholderRepositoryRef?.value = visitHouseholderRepository
 
