@@ -663,7 +663,9 @@ constructor(
                 isFilteringByDistance = isFilteringByDistance,
                 householderDistanceAsFilter = householderDistanceAsFilter
             )
-            val show = isSearchEmpty && (matchesDate || matchesDistance)
+            val isDraft = visit.isDraft
+            val show = isDraft
+                    || isSearchEmpty && (matchesDate || matchesDistance)
                     || matchesName
             visit.copy(hide = !show) to matchesDistance
         }.sortedWith(
