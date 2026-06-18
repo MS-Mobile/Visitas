@@ -123,8 +123,6 @@ class VisitDetailViewModel
             is UiEvent.PreferredDayChanged -> preferredDayChanged(uiEvent.value)
             is UiEvent.PreferredTimeChanged -> preferredTimeChanged(uiEvent.value)
 
-            UiEvent.DiscardChangesAccepted -> discardChangesAccepted()
-            UiEvent.DiscardChangesDismissed -> discardChangesDismissed()
             UiEvent.LoadAddressClicked -> loadAddressClicked()
             UiEvent.LookUpAddressFromLatLongClicked -> lookUpAddressFromLatLongClicked()
             UiEvent.CancelClicked -> cancelClicked()
@@ -149,16 +147,6 @@ class VisitDetailViewModel
             UiEvent.CalendarPermissionDialogShown -> handleCalendarPermissionDialogShown()
             UiEvent.CopyVisitDataClicked -> copyVisitDataClicked()
         }
-    }
-
-    private fun discardChangesDismissed() {
-        newState {
-            copy(eventState = UiEventState.Idle)
-        }
-    }
-
-    private fun discardChangesAccepted() {
-        discardChanges()
     }
 
     private fun snackbarDismissed() {
@@ -661,21 +649,13 @@ class VisitDetailViewModel
     }
 
     private fun cancelClicked() {
-        if (didEditableDataChange) {
-            newState {
-                copy(
-                    eventState = UiEventState.DiscardChangesConfirmation
-                )
-            }
-        } else {
-            discardChanges()
-        }
+        dismiss()
     }
 
-    private fun discardChanges() {
+    private fun dismiss() {
         newState {
             copy(
-                eventState = UiEventState.Canceled
+                eventState = UiEventState.Dismissed
             )
         }
     }
@@ -1451,14 +1431,12 @@ class VisitDetailViewModel
         data object CalendarPermissionGranted : UiEvent()
         data object CalendarPermissionDialogShown : UiEvent()
         data object CopyVisitDataClicked : UiEvent()
-        data object DiscardChangesAccepted : UiEvent()
-        data object DiscardChangesDismissed : UiEvent()
     }
 
     sealed class UiEventState {
         data object Idle : UiEventState()
         data object NoAddressFound : UiEventState()
-        data object Canceled : UiEventState()
+        data object Dismissed : UiEventState()
         data object Saving : UiEventState()
         data object SaveSucceeded : UiEventState()
         data object ValidationError : UiEventState()
@@ -1466,7 +1444,6 @@ class VisitDetailViewModel
         data object DeleteConfirmation : UiEventState()
         data object Deleting : UiEventState()
         data object Deleted : UiEventState()
-        data object DiscardChangesConfirmation : UiEventState()
         data class NextVisitSuggestionShowing(val visit: VisitState) : UiEventState()
         data object CopiedToClipboard : UiEventState()
     }
