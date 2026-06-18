@@ -13,8 +13,6 @@
     <string name="delete">Excluir</string>
     <string name="confirm">Confirmar</string>
     <string name="would_you_like_to_delete_this">Tem certeza que deseja excluir esse registro?</string>
-    <string name="discard_changes_title">Alterações serão perdidas</string>
-    <string name="should_discard_changes">Deseja continuar sem salvar as alterações?</string>
     <string name="delete_title">Excluir registro</string>
     <string name="first_visit">Primeira visita</string>
     <string name="add_conversation">Adicionar conversa</string>
