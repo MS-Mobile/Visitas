@@ -388,44 +388,24 @@ class VisitDetailViewModelTest {
 
         // Assert
         assertEquals(
-            VisitDetailViewModel.UiEventState.Canceled,
+            VisitDetailViewModel.UiEventState.Dismissed,
             viewModel.uiState.value.eventState
         )
     }
 
     @Test
-    fun `onEvent with DiscardChangesDismissed returns to Idle state`() {
-        // Arrange
-        val viewModel = createViewModel()
-        // Make an edit to trigger discard confirmation
-        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = null))
-        viewModel.onEvent(VisitDetailViewModel.UiEvent.HouseholderNameChanged("New Name"))
-        viewModel.onEvent(VisitDetailViewModel.UiEvent.CancelClicked)
-
-        // Act
-        viewModel.onEvent(VisitDetailViewModel.UiEvent.DiscardChangesDismissed)
-
-        // Assert
-        assertEquals(
-            VisitDetailViewModel.UiEventState.Idle,
-            viewModel.uiState.value.eventState
-        )
-    }
-
-    @Test
-    fun `onEvent with DiscardChangesAccepted cancels and discards changes`() {
+    fun `onEvent with CancelClicked discards changes when edits made`() {
         // Arrange
         val viewModel = createViewModel()
         viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = null))
         viewModel.onEvent(VisitDetailViewModel.UiEvent.HouseholderNameChanged("New Name"))
-        viewModel.onEvent(VisitDetailViewModel.UiEvent.CancelClicked)
 
         // Act
-        viewModel.onEvent(VisitDetailViewModel.UiEvent.DiscardChangesAccepted)
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.CancelClicked)
 
         // Assert
         assertEquals(
-            VisitDetailViewModel.UiEventState.Canceled,
+            VisitDetailViewModel.UiEventState.Dismissed,
             viewModel.uiState.value.eventState
         )
     }

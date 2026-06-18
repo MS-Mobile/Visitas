@@ -880,7 +880,7 @@ private fun StateHandler(
     onEvent: (VisitDetailViewModel.UiEvent) -> Unit
 ) {
     when (val eventState = uiState.eventState) {
-        is VisitDetailViewModel.UiEventState.Canceled,
+        is VisitDetailViewModel.UiEventState.Dismissed,
         is VisitDetailViewModel.UiEventState.SaveSucceeded,
         is VisitDetailViewModel.UiEventState.Deleted -> {
             LaunchedEffect(eventState) {
@@ -950,10 +950,6 @@ private fun StateHandler(
             DeleteMessage(onEvent)
         }
 
-        is VisitDetailViewModel.UiEventState.DiscardChangesConfirmation -> {
-            DiscardChangesMessage(onEvent)
-        }
-
         is VisitDetailViewModel.UiEventState.NoAddressFound -> {
             NoAddressFoundSnackbar(
                 modifier = Modifier.snackbarPadding(),
@@ -999,39 +995,6 @@ private fun DeleteMessage(onEvent: (VisitDetailViewModel.UiEvent) -> Unit) {
             TextButton(
                 onClick = {
                     onEvent(VisitDetailViewModel.UiEvent.DeleteDismissed)
-                }
-            ) {
-                Text(stringResource(id = R.string.cancel))
-            }
-        }
-    )
-}
-
-@Composable
-private fun DiscardChangesMessage(onEvent: (VisitDetailViewModel.UiEvent) -> Unit) {
-    AlertDialog(
-        onDismissRequest = {
-            onEvent(VisitDetailViewModel.UiEvent.DiscardChangesDismissed)
-        },
-        title = {
-            Text(text = stringResource(id = R.string.discard_changes_title))
-        },
-        text = {
-            Text(text = stringResource(id = R.string.should_discard_changes))
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    onEvent(VisitDetailViewModel.UiEvent.DiscardChangesAccepted)
-                }
-            ) {
-                Text(stringResource(id = R.string.confirm))
-            }
-        },
-        dismissButton = {
-            TextButton(
-                onClick = {
-                    onEvent(VisitDetailViewModel.UiEvent.DiscardChangesDismissed)
                 }
             ) {
                 Text(stringResource(id = R.string.cancel))
