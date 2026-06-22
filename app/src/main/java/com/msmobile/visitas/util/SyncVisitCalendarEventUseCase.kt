@@ -18,7 +18,10 @@ class SyncVisitCalendarEventUseCase @Inject constructor(
         householderName: String
     ): Long? {
         if (!calendarEventManager.hasCalendarPermission()) return calendarEventId
-        if (visitType == VisitType.FIRST_VISIT) return null
+        if (visitType == VisitType.FIRST_VISIT) {
+            calendarEventId?.let { calendarEventManager.deleteEvent(it) }
+            return null
+        }
         val title = if (subject.isNotBlank()) {
             "$householderName - ${subject.lines().firstOrNull() ?: ""}"
         } else {
