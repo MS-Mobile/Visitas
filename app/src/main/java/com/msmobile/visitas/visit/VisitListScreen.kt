@@ -148,42 +148,31 @@ fun VisitListScreen(
         )
     }
 
-    val mapActionDescription = stringResource(R.string.show_visits_map_content_description)
-    val filterActionDescription = stringResource(R.string.filter_visits_content_description)
+    val topBarActions = visitListTopBarActions(
+        onMapClick = {
+            visitListViewModel.onEvent(VisitListViewModel.UiEvent.VisitMapSheetClicked)
+        },
+        onFilterClick = {
+            onSummaryEvent(
+                SummaryViewModel.UiEvent.SummaryMenuSelected(
+                    option = SummaryViewModel.SummaryMenuOption.ShowDetails
+                )
+            )
+        },
+        filterMenu = {
+            val filterUiState by visitListViewModel.uiState.collectAsStateWithLifecycle()
+            VisitListFilterDropdown(
+                uiState = filterUiState,
+                onEvent = visitListViewModel::onEvent
+            )
+        }
+    )
     val chromeOwner = remember { Any() }
 
     DisposableEffect(Unit) {
         appScaffoldState.setUiState(
             owner = chromeOwner,
-            uiState = AppScaffoldState.UiState(
-                topBarActions = listOf(
-                    TopBarAction(
-                        contentDescription = mapActionDescription,
-                        icon = Icons.Rounded.Map,
-                        onClick = {
-                            visitListViewModel.onEvent(VisitListViewModel.UiEvent.VisitMapSheetClicked)
-                        }
-                    ),
-                    TopBarAction(
-                        contentDescription = filterActionDescription,
-                        icon = Icons.Rounded.CalendarMonth,
-                        onClick = {
-                            onSummaryEvent(
-                                SummaryViewModel.UiEvent.SummaryMenuSelected(
-                                    option = SummaryViewModel.SummaryMenuOption.ShowDetails
-                                )
-                            )
-                        },
-                        menu = {
-                            val filterUiState by visitListViewModel.uiState.collectAsStateWithLifecycle()
-                            VisitListFilterDropdown(
-                                uiState = filterUiState,
-                                onEvent = visitListViewModel::onEvent
-                            )
-                        }
-                    )
-                )
-            )
+            uiState = AppScaffoldState.UiState(topBarActions = topBarActions)
         )
         onDispose { appScaffoldState.clearUiState(chromeOwner) }
     }
@@ -203,6 +192,30 @@ fun VisitListScreen(
         onMapError = onMapError
     )
 }
+
+/**
+ * Single, state-hoisted source of truth for the [VisitListScreen] top bar actions so the real
+ * screen and its preview share one implementation. Callers supply the behaviour; this only wires
+ * up the icons and content descriptions.
+ */
+@Composable
+internal fun visitListTopBarActions(
+    onMapClick: () -> Unit,
+    onFilterClick: () -> Unit,
+    filterMenu: (@Composable () -> Unit)? = null,
+): List<TopBarAction> = listOf(
+    TopBarAction(
+        contentDescription = stringResource(R.string.show_visits_map_content_description),
+        icon = Icons.Rounded.Map,
+        onClick = onMapClick
+    ),
+    TopBarAction(
+        contentDescription = stringResource(R.string.filter_visits_content_description),
+        icon = Icons.Rounded.CalendarMonth,
+        onClick = onFilterClick,
+        menu = filterMenu
+    )
+)
 
 @Composable
 private fun VisitListScreenContent(
@@ -1014,17 +1027,15 @@ internal fun VisitListScreenPreview(
             onEvent = {},
             onNavigateToTab = {},
             onNavigate = {},
-            topBarActions = listOf(
-                TopBarAction(
-                    contentDescription = stringResource(R.string.show_visits_map_content_description),
-                    icon = Icons.Rounded.Map,
-                    onClick = {}
-                ),
-                TopBarAction(
-                    contentDescription = stringResource(R.string.filter_visits_content_description),
-                    icon = Icons.Rounded.CalendarMonth,
-                    onClick = {}
-                )
+            topBarActions = visitListTopBarActions(
+                onMapClick = {},
+                onFilterClick = {},
+                filterMenu = {
+                    VisitListFilterDropdown(
+                        uiState = config.visitListUiState,
+                        onEvent = {}
+                    )
+                }
             )
         ) {
             VisitListScreenContent(
