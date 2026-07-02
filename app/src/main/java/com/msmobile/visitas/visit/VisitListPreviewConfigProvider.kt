@@ -92,7 +92,7 @@ private val previewSummaryUiState = SummaryViewModel.UiState(
     summaryFilterOptions = listOf()
 )
 
-private val previewVisitListUiState = VisitListViewModel.UiState(
+internal val previewVisitListUiState = VisitListViewModel.UiState(
     visitList = listOf(
         VisitListViewModel.VisitHouseholderState(
             householderId = UUID.randomUUID(),

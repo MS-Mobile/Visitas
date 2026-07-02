@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -50,6 +52,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
@@ -117,6 +120,10 @@ import java.util.UUID
 
 private const val LOADING_VISITS_COUNT = 5
 private const val VISIT_MAP_ANIMATION_DURATION = 300
+
+// DropdownMenu container values mirrored so the filter-menu preview matches the real popup.
+private val FILTER_MENU_ELEVATION = 3.dp
+private val FILTER_MENU_VERTICAL_PADDING = 8.dp
 
 @Destination<RootGraph>(style = ListScreenStyle::class, start = true)
 @Composable
@@ -605,52 +612,99 @@ private fun VisitListFilterDropdown(
         onDismissRequest = {
             onEvent(VisitListViewModel.UiEvent.VisitsFilterMenuDismissed)
         }) {
+        VisitListFilterDropdownContent(uiState = uiState, onEvent = onEvent)
+    }
+}
 
-        // Date filter
+/**
+ * Inline content of the visit filter dropdown, extracted from the [DropdownMenu] popup so it can be
+ * shared with the preview below. Layoutlib does not paint [androidx.compose.ui.window.Popup]
+ * content, so previews/screenshots render this same content inside a plain [androidx.compose.material3.Surface] instead.
+ */
+@Composable
+private fun VisitListFilterDropdownContent(
+    uiState: VisitListViewModel.UiState,
+    onEvent: (VisitListViewModel.UiEvent) -> Unit
+) {
+    // Date filter
+    Text(
+        modifier = Modifier.padding(borderPadding),
+        text = stringResource(id = R.string.filter_visits)
+    )
+    HorizontalDivider()
+    uiState.visitsFilterOptions.map { option ->
+        val visitFilterOption = stringResource(id = option.description.textResId)
+        DropdownMenuItem(text = {
+            Text(text = visitFilterOption)
+        }, trailingIcon = {
+            if (uiState.selectedVisitFilterOption == option) {
+                Icon(
+                    imageVector = Icons.Rounded.Check,
+                    contentDescription = visitFilterOption
+                )
+            }
+        }, onClick = {
+            onEvent(VisitListViewModel.UiEvent.VisitsFilterOptionSelected(option = option))
+        })
+    }
+
+    // Distance filter
+    HorizontalDivider()
+    Text(
+        modifier = Modifier.padding(borderPadding),
+        text = stringResource(id = R.string.visit_distance)
+    )
+    HorizontalDivider()
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                onEvent(VisitListViewModel.UiEvent.ShowNearbyVisitsToggled(!uiState.showNearbyVisits))
+            },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
         Text(
             modifier = Modifier.padding(borderPadding),
-            text = stringResource(id = R.string.filter_visits)
+            text = stringResource(id = R.string.nearby_visits)
         )
-        HorizontalDivider()
-        uiState.visitsFilterOptions.map { option ->
-            val visitFilterOption = stringResource(id = option.description.textResId)
-            DropdownMenuItem(text = {
-                Text(text = visitFilterOption)
-            }, trailingIcon = {
-                if (uiState.selectedVisitFilterOption == option) {
-                    Icon(
-                        imageVector = Icons.Rounded.Check,
-                        contentDescription = visitFilterOption
+        Checkbox(checked = uiState.showNearbyVisits, onCheckedChange = {
+            onEvent(VisitListViewModel.UiEvent.ShowNearbyVisitsToggled(it))
+        })
+    }
+}
+
+/**
+ * Preview/screenshot-friendly rendering of [VisitListFilterDropdownContent]. Because a [DropdownMenu]
+ * is a [androidx.compose.ui.window.Popup] whose content Layoutlib cannot capture, this reproduces the
+ * menu container with a plain [androidx.compose.material3.Surface] that mirrors the [DropdownMenu]
+ * surface (shape, container color, elevation, intrinsic width). Only the popup positioning is not
+ * reproduced, which is irrelevant for a component screenshot.
+ */
+@VisibleForTesting
+@PreviewPhone
+@Composable
+internal fun VisitListFilterDropdownContentPreview() {
+    VisitasTheme {
+        Surface {
+            Surface(
+                shape = MaterialTheme.shapes.extraSmall,
+                color = MaterialTheme.colorScheme.surfaceContainer,
+                tonalElevation = FILTER_MENU_ELEVATION,
+                shadowElevation = FILTER_MENU_ELEVATION,
+                modifier = Modifier.padding(borderPadding)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .width(IntrinsicSize.Max)
+                        .padding(vertical = FILTER_MENU_VERTICAL_PADDING)
+                ) {
+                    VisitListFilterDropdownContent(
+                        uiState = previewVisitListUiState,
+                        onEvent = {}
                     )
                 }
-            }, onClick = {
-                onEvent(VisitListViewModel.UiEvent.VisitsFilterOptionSelected(option = option))
-            })
-        }
-
-        // Distance filter
-        HorizontalDivider()
-        Text(
-            modifier = Modifier.padding(borderPadding),
-            text = stringResource(id = R.string.visit_distance)
-        )
-        HorizontalDivider()
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable {
-                    onEvent(VisitListViewModel.UiEvent.ShowNearbyVisitsToggled(!uiState.showNearbyVisits))
-                },
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                modifier = Modifier.padding(borderPadding),
-                text = stringResource(id = R.string.nearby_visits)
-            )
-            Checkbox(checked = uiState.showNearbyVisits, onCheckedChange = {
-                onEvent(VisitListViewModel.UiEvent.ShowNearbyVisitsToggled(it))
-            })
+            }
         }
     }
 }
