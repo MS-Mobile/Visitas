@@ -3,6 +3,7 @@ package com.msmobile.visitas.ui.views
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -10,7 +11,11 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
@@ -18,12 +23,22 @@ import androidx.compose.ui.window.PopupProperties
 // Mirrors the private DropdownMenuVerticalPadding the real menu popup applies around its content.
 private val DROPDOWN_MENU_VERTICAL_PADDING = 8.dp
 
+// Where the preview overlay paints a menu: below the top app bar, inset from the end edge, mirroring
+// a dropdown opened from a top-bar action. Placement is fixed rather than anchored to the trigger
+// because the screenshot renderer does not settle the post-layout measurement a real anchor needs.
+private val PREVIEW_MENU_TOP = 112.dp
+private val PREVIEW_MENU_END_MARGIN = 8.dp
+
 /**
  * Drop-in replacement for [androidx.compose.material3.DropdownMenu].
  *
  * In production it delegates to the real [DropdownMenu], so behaviour is unchanged for users. Under
- * [LocalInspectionMode] it renders the same [content] inline. Only shows content when [expanded] is
- * true, matching [DropdownMenu]; drive it from the same state.
+ * [LocalInspectionMode] the real menu can't be used because layoutlib does not paint
+ * [androidx.compose.ui.window.Popup] content, so the same [content] is registered with the nearest
+ * [PreviewMenuHost] and painted there — above all other content, below the top app bar — so
+ * previews/screenshots show the full menu instead of a slice clipped by the app bar or a card.
+ *
+ * Only shows content when [expanded] is true, matching [DropdownMenu]; drive it from the same state.
  */
 @Composable
 fun PreviewableDropdownMenu(
@@ -75,15 +90,16 @@ private object RealDropdownMenu : DropdownMenuRenderer {
             expanded = expanded,
             onDismissRequest = onDismissRequest,
             modifier = modifier,
+            properties = properties,
             content = content,
         )
     }
 }
 
 /**
- * Preview renderer: layoutlib does not paint [androidx.compose.ui.window.Popup] content, so the same
- * content is rendered inline inside a plain [Surface]. Styling mirrors the real menu so
- * previews/screenshots stay visually faithful.
+ * Preview renderer: registers the menu with the enclosing [PreviewMenuHost] instead of drawing
+ * inline, so the host can paint it above the app bar / card that would otherwise clip it. Falls back
+ * to an inline [Surface] when no host is present.
  */
 private object PreviewDropdownMenu : DropdownMenuRenderer {
     @Composable
@@ -94,21 +110,105 @@ private object PreviewDropdownMenu : DropdownMenuRenderer {
         properties: PopupProperties,
         content: @Composable ColumnScope.() -> Unit,
     ) {
+        val host = LocalPreviewMenuHost.current
+
+        if (host == null) {
+            // No overlay in the tree: best-effort inline render so the menu isn't missing entirely.
+            if (expanded) {
+                DropdownMenuSurface(modifier = modifier, content = content)
+            }
+            return
+        }
+
         if (!expanded) return
-        Surface(
-            modifier = modifier,
-            shape = MenuDefaults.shape,
-            color = MenuDefaults.containerColor,
-            tonalElevation = MenuDefaults.TonalElevation,
-            shadowElevation = MenuDefaults.ShadowElevation,
-        ) {
-            Column(
-                modifier = Modifier
-                    .wrapContentHeight()
-                    .width(IntrinsicSize.Max)
-                    .padding(vertical = DROPDOWN_MENU_VERTICAL_PADDING),
-                content = content,
-            )
+
+        // Register during composition. The host measures the app content before subcomposing the
+        // overlay, so by the time it reads this map the (lazily-composed) app bar has registered.
+        val id = remember { Any() }
+        if (id !in host.entries) {
+            host.entries[id] = PreviewMenuHostState.Entry(content)
         }
     }
 }
+
+/** Content of a preview dropdown, styled to mirror the real [DropdownMenu] surface. */
+@Composable
+private fun DropdownMenuSurface(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Surface(
+        modifier = modifier,
+        shape = MenuDefaults.shape,
+        color = MenuDefaults.containerColor,
+        tonalElevation = MenuDefaults.TonalElevation,
+        shadowElevation = MenuDefaults.ShadowElevation,
+    ) {
+        Column(
+            modifier = Modifier
+                .wrapContentHeight()
+                .width(IntrinsicSize.Max)
+                .padding(vertical = DROPDOWN_MENU_VERTICAL_PADDING),
+            content = content,
+        )
+    }
+}
+
+/**
+ * Registry of currently-expanded preview menus to paint. Deliberately a plain (non-snapshot) map:
+ * the screenshot renderer does not propagate snapshot writes made during composition to sibling
+ * reads, so entries are collected during the single composition pass and read back in that same
+ * pass. The host is remembered fresh per preview and keys are stable, so no clearing is needed.
+ */
+class PreviewMenuHostState {
+    internal val entries = LinkedHashMap<Any, Entry>()
+
+    internal data class Entry(
+        val content: @Composable ColumnScope.() -> Unit,
+    )
+}
+
+internal val LocalPreviewMenuHost = staticCompositionLocalOf<PreviewMenuHostState?> { null }
+
+/**
+ * Full-screen overlay that paints [PreviewableDropdownMenu]s above everything else so
+ * previews/screenshots show complete menus. Outside [LocalInspectionMode] it is a transparent
+ * pass-through with no cost or behavioural change — wrap the app root with it once.
+ *
+ * It is a [SubcomposeLayout] rather than a plain overlay for ordering: the app content is measured
+ * first, which drives Scaffold's lazily-composed top bar so the expanded menus register themselves,
+ * and only then are the menus subcomposed from the now-populated registry — all in one layout pass,
+ * with no reliance on a follow-up recomposition (which this renderer does not settle).
+ */
+@Composable
+fun PreviewMenuHost(content: @Composable () -> Unit) {
+    if (!LocalInspectionMode.current) {
+        content()
+        return
+    }
+    val host = remember { PreviewMenuHostState() }
+    SubcomposeLayout(Modifier.fillMaxSize()) { constraints ->
+        val contentPlaceables = subcompose(PreviewMenuSlot.Content) {
+            CompositionLocalProvider(LocalPreviewMenuHost provides host) {
+                content()
+            }
+        }.map { it.measure(constraints) }
+
+        val menuConstraints = constraints.copy(minWidth = 0, minHeight = 0, maxHeight = Int.MAX_VALUE)
+        val menuPlaceables = subcompose(PreviewMenuSlot.Menus) {
+            host.entries.values.forEach { entry -> DropdownMenuSurface(content = entry.content) }
+        }.map { it.measure(menuConstraints) }
+
+        val top = PREVIEW_MENU_TOP.roundToPx()
+        val endMargin = PREVIEW_MENU_END_MARGIN.roundToPx()
+        layout(constraints.maxWidth, constraints.maxHeight) {
+            contentPlaceables.forEach { it.place(0, 0) }
+            menuPlaceables.forEach { placeable ->
+                val x = (constraints.maxWidth - placeable.width - endMargin).coerceAtLeast(0)
+                placeable.place(x, top)
+            }
+        }
+    }
+}
+
+private enum class PreviewMenuSlot { Content, Menus }
