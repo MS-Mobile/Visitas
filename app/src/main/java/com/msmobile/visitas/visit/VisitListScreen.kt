@@ -615,6 +615,29 @@ private fun VisitListFilterDropdown(
             })
         }
 
+        // Type filter
+        HorizontalDivider()
+        Text(
+            modifier = Modifier.padding(borderPadding),
+            text = stringResource(id = R.string.visit_type_filter)
+        )
+        HorizontalDivider()
+        uiState.typeFilterOptions.map { option ->
+            val typeFilterOption = stringResource(id = option.description.textResId)
+            DropdownMenuItem(text = {
+                Text(text = typeFilterOption)
+            }, trailingIcon = {
+                if (uiState.selectedVisitTypeFilterOption == option) {
+                    Icon(
+                        imageVector = Icons.Rounded.Check,
+                        contentDescription = typeFilterOption
+                    )
+                }
+            }, onClick = {
+                onEvent(VisitListViewModel.UiEvent.VisitsTypeFilterOptionSelected(option = option))
+            })
+        }
+
         // Distance filter
         HorizontalDivider()
         Text(

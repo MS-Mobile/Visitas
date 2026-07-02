@@ -67,6 +67,7 @@
     <string name="placeholder_long_string">123456789 12345</string>
     <string name="placeholder_very_long_string">123456789 123456789 123456789</string>
     <string name="visit_distance">Distancia</string>
+    <string name="visit_type_filter">Tipo</string>
     <string name="nearby_visits">Visitas cercanas</string>
     <string name="nearby_visit">(Cercana)</string>
     <string name="colon">: </string>

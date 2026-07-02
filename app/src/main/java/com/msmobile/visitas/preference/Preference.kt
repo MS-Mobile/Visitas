@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.msmobile.visitas.visit.VisitListDateFilterOption
 import com.msmobile.visitas.visit.VisitListDistanceFilterOption
+import com.msmobile.visitas.visit.VisitListTypeFilterOption
 import com.msmobile.visitas.visit.VisitMapEngineOption
 import java.util.UUID
 
@@ -13,5 +14,6 @@ data class Preference(
     val id: UUID = UUID.randomUUID(),
     val visitListDateFilterOption: VisitListDateFilterOption,
     val visitListDistanceFilterOption: VisitListDistanceFilterOption,
-    val visitMapEngineOption: VisitMapEngineOption = VisitMapEngineOption.MapLibre
+    val visitMapEngineOption: VisitMapEngineOption = VisitMapEngineOption.MapLibre,
+    val visitListTypeFilterOption: VisitListTypeFilterOption = VisitListTypeFilterOption.All
 )

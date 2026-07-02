@@ -59,13 +59,16 @@ constructor(
             filter = VisitFilter(
                 search = "",
                 dateFilter = VisitDateFilter.All,
-                distanceFilter = VisitDistanceFilter.All
+                distanceFilter = VisitDistanceFilter.All,
+                typeFilter = VisitTypeFilter.All
             ),
             selectedDate = dateTimeProvider.nowLocalDateTime(),
             isVisitsFilterMenuExpanded = false,
             selectedTabIndex = 0,
             visitsFilterOptions = listOf(),
             selectedVisitFilterOption = VisitListDateFilterOption.All,
+            typeFilterOptions = listOf(),
+            selectedVisitTypeFilterOption = VisitListTypeFilterOption.All,
             showLocationRationale = false,
             showLocationPermissionDialog = false,
             isLoadingVisits = false,
@@ -122,6 +125,7 @@ constructor(
             is UiEvent.VisitsFilterButtonClicked -> visitsFilterButtonClicked()
             is UiEvent.VisitsFilterMenuDismissed -> visitsFilterMenuDismissed()
             is UiEvent.VisitsFilterOptionSelected -> visitsFilterOptionSelected(uiEvent.option)
+            is UiEvent.VisitsTypeFilterOptionSelected -> visitsTypeFilterOptionSelected(uiEvent.option)
 
             is UiEvent.VisitMapEventTriggered -> visitMapEventTriggered(uiEvent.visitMapEvent)
 
@@ -185,6 +189,16 @@ constructor(
         }
         newState {
             copy(selectedVisitFilterOption = option).applyFilters()
+        }
+    }
+
+    private fun visitsTypeFilterOptionSelected(option: VisitListTypeFilterOption) {
+        viewModelScope.launch(dispatchers.io) {
+            val preference = preferenceRepository.get().copy(visitListTypeFilterOption = option)
+            preferenceRepository.save(preference = preference)
+        }
+        newState {
+            copy(selectedVisitTypeFilterOption = option).applyFilters()
         }
     }
 
@@ -309,11 +323,13 @@ constructor(
             val preference = preferenceRepository.get()
             val selectedVisitFilterOption = preference.visitListDateFilterOption
             val selectedVisitDistanceFilterOption = preference.visitListDistanceFilterOption
+            val selectedVisitTypeFilterOption = preference.visitListTypeFilterOption
             val visitMapEngine = preference.visitMapEngineOption
             val visitList = visitHouseholderRepository.getAll().map { visitHouseholder ->
                 visitHouseholder.asState
             }.filterBy(_uiState.value.filter)
             val visitsFilterOptions = VisitListDateFilterOption.entries
+            val typeFilterOptions = VisitListTypeFilterOption.entries
             val showNearbyVisits =
                 selectedVisitDistanceFilterOption == VisitListDistanceFilterOption.Nearby
             val userLocation = userLocationProvider.location.value
@@ -322,6 +338,8 @@ constructor(
                     visitList = visitList,
                     visitsFilterOptions = visitsFilterOptions,
                     selectedVisitFilterOption = selectedVisitFilterOption,
+                    typeFilterOptions = typeFilterOptions,
+                    selectedVisitTypeFilterOption = selectedVisitTypeFilterOption,
                     isLoadingVisits = false,
                     showNearbyVisits = showNearbyVisits,
                     visitMapEngine = visitMapEngine
@@ -634,7 +652,8 @@ constructor(
         }
         val filter = filter.copy(
             dateFilter = selectedVisitFilterOption.asDateFilter,
-            distanceFilter = distanceFilter
+            distanceFilter = distanceFilter,
+            typeFilter = selectedVisitTypeFilterOption.asTypeFilter
         )
         val visitList = visitList.filterBy(filter)
         return copy(
@@ -646,7 +665,7 @@ constructor(
     private fun List<VisitHouseholderState>.filterBy(filter: VisitFilter): List<VisitHouseholderState> {
         val today = dateTimeProvider.nowLocalDate()
         return map { visit ->
-            val (search, dateFilter, distanceFilter) = filter
+            val (search, dateFilter, distanceFilter, typeFilter) = filter
             val householderDistance = visit.householderAddressDistance
             val householderDistanceAsFilter = householderDistance.asDistanceFilter
             val visitDate = visit.date.toLocalDate()
@@ -663,10 +682,13 @@ constructor(
                 isFilteringByDistance = isFilteringByDistance,
                 householderDistanceAsFilter = householderDistanceAsFilter
             )
+            val matchesType = typeFilter.matchesType(visit.type)
             val isDraft = visit.isDraft
-            val show = isDraft
-                    || isSearchEmpty && (matchesDate || matchesDistance)
-                    || matchesName
+            val show = matchesType && (
+                    isDraft
+                            || isSearchEmpty && (matchesDate || matchesDistance)
+                            || matchesName
+                    )
             visit.copy(hide = !show) to matchesDistance
         }.sortedWith(
             compareByDescending<Pair<VisitHouseholderState, Boolean>> { (visit, _) -> visit.isDraft }
@@ -699,6 +721,16 @@ constructor(
                 VisitListDateFilterOption.Done -> VisitDateFilter.Done
             }
             return dateFilter
+        }
+
+    private val VisitListTypeFilterOption.asTypeFilter: VisitTypeFilter
+        get() {
+            return when (this) {
+                VisitListTypeFilterOption.All -> VisitTypeFilter.All
+                VisitListTypeFilterOption.FirstVisit -> VisitTypeFilter.Specific(VisitType.FIRST_VISIT)
+                VisitListTypeFilterOption.ReturnVisit -> VisitTypeFilter.Specific(VisitType.RETURN_VISIT)
+                VisitListTypeFilterOption.BibleStudy -> VisitTypeFilter.Specific(VisitType.BIBLE_STUDY)
+            }
         }
 
     private val VisitHouseholder.asState: VisitHouseholderState
@@ -745,6 +777,13 @@ constructor(
                 && this == householderDistanceAsFilter
     }
 
+    private fun VisitTypeFilter.matchesType(type: VisitType): Boolean {
+        return when (this) {
+            is VisitTypeFilter.All -> true
+            is VisitTypeFilter.Specific -> this.type == type
+        }
+    }
+
     private val UserLocationProvider.UserLocation.latitudeOrDefault: Double
         get() = when (this) {
             is UserLocationProvider.UserLocation.Available -> latitude
@@ -781,6 +820,7 @@ constructor(
         data object VisitMapSheetDismissed : UiEvent()
 
         data class VisitsFilterOptionSelected(val option: VisitListDateFilterOption) : UiEvent()
+        data class VisitsTypeFilterOptionSelected(val option: VisitListTypeFilterOption) : UiEvent()
 
         data class VisitMapEventTriggered(val visitMapEvent: VisitsMapEvent) : UiEvent()
 
@@ -801,7 +841,8 @@ constructor(
     data class VisitFilter(
         val search: String,
         val dateFilter: VisitDateFilter,
-        val distanceFilter: VisitDistanceFilter
+        val distanceFilter: VisitDistanceFilter,
+        val typeFilter: VisitTypeFilter
     )
 
     sealed class VisitDateFilter {
@@ -815,6 +856,11 @@ constructor(
     sealed class VisitDistanceFilter {
         data object All : VisitDistanceFilter()
         data object Nearby : VisitDistanceFilter()
+    }
+
+    sealed class VisitTypeFilter {
+        data object All : VisitTypeFilter()
+        data class Specific(val type: VisitType) : VisitTypeFilter()
     }
 
     data class VisitHouseholderState(
@@ -849,6 +895,8 @@ constructor(
         val selectedTabIndex: Int,
         val visitsFilterOptions: List<VisitListDateFilterOption>,
         val selectedVisitFilterOption: VisitListDateFilterOption,
+        val typeFilterOptions: List<VisitListTypeFilterOption>,
+        val selectedVisitTypeFilterOption: VisitListTypeFilterOption,
         val showLocationRationale: Boolean,
         val showLocationPermissionDialog: Boolean,
         val isLoadingVisits: Boolean,
