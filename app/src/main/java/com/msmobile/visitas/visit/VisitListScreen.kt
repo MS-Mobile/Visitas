@@ -94,6 +94,7 @@ import com.msmobile.visitas.ui.views.LazyColumnWithScrollbar
 import com.msmobile.visitas.ui.views.MonthNavigator
 import com.msmobile.visitas.ui.views.MonthNavigatorEvent
 import com.msmobile.visitas.ui.views.PermissionRationaleSheet
+import com.msmobile.visitas.ui.views.PreviewableDropdownMenu
 import com.msmobile.visitas.ui.views.RestoreBackupDialog
 import com.msmobile.visitas.ui.views.SimpleSearchBar
 import com.msmobile.visitas.util.AddressProvider
@@ -607,7 +608,7 @@ private fun VisitListFilterDropdown(
     uiState: VisitListViewModel.UiState,
     onEvent: (VisitListViewModel.UiEvent) -> Unit
 ) {
-    DropdownMenu(
+    PreviewableDropdownMenu(
         expanded = uiState.isVisitsFilterMenuExpanded,
         onDismissRequest = {
             onEvent(VisitListViewModel.UiEvent.VisitsFilterMenuDismissed)
@@ -814,7 +815,7 @@ private fun PendingVisitMenu(
     visit: VisitListViewModel.VisitHouseholderState,
     onEvent: (VisitListViewModel.UiEvent) -> Unit
 ) {
-    DropdownMenu(
+    PreviewableDropdownMenu(
         expanded = visit.isPendingVisitMenuExpanded,
         onDismissRequest = {
             onEvent(VisitListViewModel.UiEvent.PendingVisitMenuClicked(visit))

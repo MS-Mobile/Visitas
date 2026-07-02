@@ -100,6 +100,7 @@ import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.ui.views.DateTimePicker
 import com.msmobile.visitas.ui.views.LazyColumnWithScrollbar
 import com.msmobile.visitas.ui.views.PermissionRationaleSheet
+import com.msmobile.visitas.ui.views.PreviewableDropdownMenu
 import com.msmobile.visitas.ui.views.TextFieldClearButton
 import com.msmobile.visitas.ui.views.TextFieldExpandButton
 import com.msmobile.visitas.util.DetailScreenStyle
@@ -500,7 +501,7 @@ private fun PreferredDayDropdown(
             colors = ReadOnlyTextFieldColors,
             shape = MaterialTheme.shapes.sharp
         )
-        DropdownMenu(
+        PreviewableDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
@@ -563,7 +564,7 @@ private fun PreferredTimeDropdown(
             colors = ReadOnlyTextFieldColors,
             shape = MaterialTheme.shapes.sharp
         )
-        DropdownMenu(
+        PreviewableDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
@@ -774,7 +775,7 @@ private fun LazyItemScope.VisitSubjectDropdownList(
                     )
                 )
             })
-        DropdownMenu(
+        PreviewableDropdownMenu(
             modifier = Modifier
                 .heightIn(max = 300.dp)
                 .fillParentMaxWidth(),
@@ -839,7 +840,7 @@ private fun LazyItemScope.VisitTypeDropdownList(
                 )
             }
         )
-        DropdownMenu(
+        PreviewableDropdownMenu(
             modifier = Modifier
                 .heightIn(max = 300.dp)
                 .fillParentMaxWidth(),

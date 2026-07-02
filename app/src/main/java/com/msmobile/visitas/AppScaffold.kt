@@ -41,6 +41,7 @@ import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.ui.views.BottomNavigation
 import com.msmobile.visitas.ui.views.DetailFooter
+import com.msmobile.visitas.ui.views.PreviewableDropdownMenu
 import com.ramcosta.composedestinations.generated.destinations.ConversationDetailScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.ConversationListScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.SettingsScreenDestination
@@ -147,7 +148,7 @@ fun AppScaffold(
                                     contentDescription = stringResource(id = R.string.more_options)
                                 )
                             }
-                            DropdownMenu(
+                            PreviewableDropdownMenu(
                                 expanded = menuExpanded,
                                 onDismissRequest = { menuExpanded = false }
                             ) {
