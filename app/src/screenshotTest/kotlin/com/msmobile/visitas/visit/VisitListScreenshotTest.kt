@@ -15,11 +15,4 @@ class VisitListScreenshotTest {
     ) {
         VisitListScreenPreview(config)
     }
-
-    @PreviewTest
-    @PreviewPhone
-    @Composable
-    internal fun VisitListFilterDropdownContentPreviewTest() {
-        VisitListFilterDropdownContentPreview()
-    }
 }
