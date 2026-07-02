@@ -32,8 +32,6 @@ import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Explore
 import androidx.compose.material.icons.rounded.FilterList
 import androidx.compose.material.icons.rounded.FindInPage
-import androidx.compose.material.icons.rounded.KeyboardArrowDown
-import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.Map
 import androidx.compose.material.icons.rounded.CalendarMonth
@@ -76,7 +74,6 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.AppScaffold
 import com.msmobile.visitas.AppScaffoldState
-import com.msmobile.visitas.MainActivityViewModel
 import com.msmobile.visitas.OnIntentStateHandled
 import com.msmobile.visitas.R
 import com.msmobile.visitas.TopBarAction
@@ -156,6 +153,8 @@ fun VisitListScreen(
     }
 
     val topBarActions = visitListTopBarActions(
+        visitListUiState = visitListUiState,
+        onVisitListEvent = visitListViewModel::onEvent,
         onMapClick = {
             visitListViewModel.onEvent(VisitListViewModel.UiEvent.VisitMapSheetClicked)
         },
@@ -166,13 +165,6 @@ fun VisitListScreen(
                 )
             )
         },
-        filterMenu = {
-            val filterUiState by visitListViewModel.uiState.collectAsStateWithLifecycle()
-            VisitListFilterDropdown(
-                uiState = filterUiState,
-                onEvent = visitListViewModel::onEvent
-            )
-        }
     )
     val chromeOwner = remember { Any() }
 
@@ -206,23 +198,31 @@ fun VisitListScreen(
  * up the icons and content descriptions.
  */
 @Composable
-internal fun visitListTopBarActions(
+private fun visitListTopBarActions(
+    visitListUiState: VisitListViewModel.UiState,
+    onVisitListEvent: (VisitListViewModel.UiEvent) -> Unit,
     onMapClick: () -> Unit,
     onFilterClick: () -> Unit,
-    filterMenu: (@Composable () -> Unit)? = null,
-): List<TopBarAction> = listOf(
-    TopBarAction(
-        contentDescription = stringResource(R.string.show_visits_map_content_description),
-        icon = Icons.Rounded.Map,
-        onClick = onMapClick
-    ),
-    TopBarAction(
-        contentDescription = stringResource(R.string.filter_visits_content_description),
-        icon = Icons.Rounded.CalendarMonth,
-        onClick = onFilterClick,
-        menu = filterMenu
+): List<TopBarAction> {
+    return listOf(
+        TopBarAction(
+            contentDescription = stringResource(R.string.show_visits_map_content_description),
+            icon = Icons.Rounded.Map,
+            onClick = onMapClick
+        ),
+        TopBarAction(
+            contentDescription = stringResource(R.string.filter_visits_content_description),
+            icon = Icons.Rounded.CalendarMonth,
+            onClick = onFilterClick,
+            menu = @Composable {
+                VisitListFilterDropdown(
+                    uiState = visitListUiState,
+                    onEvent = onVisitListEvent
+                )
+            }
+        )
     )
-)
+}
 
 @Composable
 private fun VisitListScreenContent(
@@ -611,9 +611,11 @@ private fun VisitListFilterDropdown(
         expanded = uiState.isVisitsFilterMenuExpanded,
         onDismissRequest = {
             onEvent(VisitListViewModel.UiEvent.VisitsFilterMenuDismissed)
-        }) {
-        VisitListFilterDropdownContent(uiState = uiState, onEvent = onEvent)
-    }
+        },
+        content = {
+            VisitListFilterDropdownContent(uiState = uiState, onEvent = onEvent)
+        }
+    )
 }
 
 /**
@@ -671,41 +673,6 @@ private fun VisitListFilterDropdownContent(
         Checkbox(checked = uiState.showNearbyVisits, onCheckedChange = {
             onEvent(VisitListViewModel.UiEvent.ShowNearbyVisitsToggled(it))
         })
-    }
-}
-
-/**
- * Preview/screenshot-friendly rendering of [VisitListFilterDropdownContent]. Because a [DropdownMenu]
- * is a [androidx.compose.ui.window.Popup] whose content Layoutlib cannot capture, this reproduces the
- * menu container with a plain [androidx.compose.material3.Surface] that mirrors the [DropdownMenu]
- * surface (shape, container color, elevation, intrinsic width). Only the popup positioning is not
- * reproduced, which is irrelevant for a component screenshot.
- */
-@VisibleForTesting
-@PreviewPhone
-@Composable
-internal fun VisitListFilterDropdownContentPreview() {
-    VisitasTheme {
-        Surface {
-            Surface(
-                shape = MaterialTheme.shapes.extraSmall,
-                color = MaterialTheme.colorScheme.surfaceContainer,
-                tonalElevation = FILTER_MENU_ELEVATION,
-                shadowElevation = FILTER_MENU_ELEVATION,
-                modifier = Modifier.padding(borderPadding)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .width(IntrinsicSize.Max)
-                        .padding(vertical = FILTER_MENU_VERTICAL_PADDING)
-                ) {
-                    VisitListFilterDropdownContent(
-                        uiState = previewVisitListUiState,
-                        onEvent = {}
-                    )
-                }
-            }
-        }
     }
 }
 
@@ -1082,14 +1049,10 @@ internal fun VisitListScreenPreview(
             onNavigateToTab = {},
             onNavigate = {},
             topBarActions = visitListTopBarActions(
+                visitListUiState = config.visitListUiState,
+                onVisitListEvent = {},
                 onMapClick = {},
-                onFilterClick = {},
-                filterMenu = {
-                    VisitListFilterDropdown(
-                        uiState = config.visitListUiState,
-                        onEvent = {}
-                    )
-                }
+                onFilterClick = {}
             )
         ) {
             VisitListScreenContent(

@@ -62,6 +62,18 @@ internal class VisitListPreviewConfigProvider : PreviewParameterProvider<VisitLi
                     previewVisitListUiState.visitList[2],
                 )
             )
+        ),
+        VisitListPreviewConfig(
+            configName = "With draft visit",
+            mainActivityUiState = previewMainActivityUiState,
+            summaryUiState = previewSummaryUiState,
+            visitListUiState = previewVisitListUiState.copy(
+                visitList = listOf(
+                    previewVisitListUiState.visitList[0].copy(isDraft = true),
+                    previewVisitListUiState.visitList[1],
+                    previewVisitListUiState.visitList[2],
+                )
+            )
         )
     )
 
