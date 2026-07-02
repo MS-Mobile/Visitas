@@ -794,14 +794,44 @@ class VisitDetailViewModel
         autoSaveJob = _uiState
             .debounce(250)
             .onEach { state ->
-                val snapshot = state.getEditableDataSnapshot()
-                if (initialEditableData != null && snapshot != initialEditableData) {
-                    saveDraftSilently(state)
-                    initialEditableData = snapshot
+                val baseline = initialEditableData ?: return@onEach
+
+                if (state.getEditableDataSnapshot() == baseline) {
+                    return@onEach
                 }
+
+                updateUiStateChangedVisitsAsDraft(baseline)
+
+                val updatedState = _uiState.value
+                saveDraftSilently(updatedState)
+                // Rebase from the marked state so the draft flags we just set
+                // don't count as a fresh change on the next emission.
+                initialEditableData = updatedState.getEditableDataSnapshot()
             }
             .flowOn(dispatchers.io)
             .launchIn(viewModelScope)
+    }
+
+    /**
+     * Marks every visit that was added or edited relative to [baseline] as a draft, so the UI
+     * can surface a "draft" indicator and the silent save persists the flag.
+     *
+     * A visit is considered a draft when it has no counterpart in the baseline (added) or when its
+     * editable data differs from the baseline counterpart (changed). Visits are matched by id.
+     */
+    private fun updateUiStateChangedVisitsAsDraft(baseline: EditableDataSnapshot) {
+        newState {
+            val updatedList = visitList.map { visit ->
+                val baselineEditable = baseline.visits[visit.id]
+                val isNewOrChanged = baselineEditable == null || baselineEditable != visit.editable
+                if (isNewOrChanged && !visit.isDraft) {
+                    visit.copy(editable = visit.editable.copy(isDraft = true))
+                } else {
+                    visit
+                }
+            }
+            copy(visitList = updatedList)
+        }
     }
 
     private suspend fun saveDraftSilently(state: UiState) {
@@ -1265,7 +1295,7 @@ class VisitDetailViewModel
     private fun UiState.getEditableDataSnapshot(): EditableDataSnapshot {
         return EditableDataSnapshot(
             householder = householder.editable,
-            visits = visitList.map { visit -> visit.editable }
+            visits = visitList.associate { visit -> visit.id to visit.editable }
         )
     }
 
@@ -1363,7 +1393,7 @@ class VisitDetailViewModel
 
     private data class EditableDataSnapshot(
         val householder: EditableHouseholderData,
-        val visits: List<EditableVisitData>
+        val visits: Map<UUID, EditableVisitData>
     )
 
     sealed class UiEvent {
