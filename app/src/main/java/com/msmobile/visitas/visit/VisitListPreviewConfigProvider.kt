@@ -166,10 +166,13 @@ private val previewVisitListUiState = VisitListViewModel.UiState(
     filter = VisitListViewModel.VisitFilter(
         search = "",
         dateFilter = VisitListViewModel.VisitDateFilter.All,
-        distanceFilter = VisitListViewModel.VisitDistanceFilter.All
+        distanceFilter = VisitListViewModel.VisitDistanceFilter.All,
+        typeFilter = VisitListViewModel.VisitTypeFilter.All
     ),
     visitsFilterOptions = VisitListDateFilterOption.entries,
     selectedVisitFilterOption = VisitListDateFilterOption.ScheduledForNextDays,
+    typeFilterOptions = VisitListTypeFilterOption.entries,
+    selectedVisitTypeFilterOption = VisitListTypeFilterOption.All,
     isVisitsFilterMenuExpanded = false,
     selectedDate = previewDate1,
     showLocationRationale = false,

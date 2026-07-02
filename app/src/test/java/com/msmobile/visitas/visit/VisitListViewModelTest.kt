@@ -140,6 +140,48 @@ class VisitListViewModelTest {
     }
 
     @Test
+    fun `onEvent with VisitsTypeFilterOptionSelected updates selected type filter option`() {
+        // Arrange
+        val viewModel = createViewModel()
+
+        // Act
+        viewModel.onEvent(
+            VisitListViewModel.UiEvent.VisitsTypeFilterOptionSelected(VisitListTypeFilterOption.BibleStudy)
+        )
+
+        // Assert
+        assertEquals(
+            VisitListTypeFilterOption.BibleStudy,
+            viewModel.uiState.value.selectedVisitTypeFilterOption
+        )
+    }
+
+    @Test
+    fun `filtering by visit type hides visits of other types`() {
+        // Arrange: list has a FIRST_VISIT and a RETURN_VISIT visit
+        val viewModel = createViewModel()
+        viewModel.onEvent(VisitListViewModel.UiEvent.ViewCreated)
+
+        // Act: filter by Return visit only
+        viewModel.onEvent(
+            VisitListViewModel.UiEvent.VisitsTypeFilterOptionSelected(VisitListTypeFilterOption.ReturnVisit)
+        )
+
+        // Assert
+        val visits = viewModel.uiState.value.visitList
+        val firstVisit = visits.find { it.type == VisitType.FIRST_VISIT }
+        val returnVisit = visits.find { it.type == VisitType.RETURN_VISIT }
+        assertTrue(
+            "First visit should be hidden when filtering by Return visit",
+            firstVisit?.hide ?: false
+        )
+        assertFalse(
+            "Return visit should stay visible when filtering by Return visit",
+            returnVisit?.hide ?: true
+        )
+    }
+
+    @Test
     fun `onEvent with BackupButtonClicked shows backup sheet`() {
         // Arrange
         val viewModel = createViewModel()
@@ -399,6 +441,7 @@ class VisitListViewModelTest {
         locationFlowRef: MockReferenceHolder<MutableStateFlow<UserLocationProvider.UserLocation>>? = null,
         distanceResults: Map<DistanceInput, AddressProvider.AddressDistance> = emptyMap(),
         visitListDateFilterOption: VisitListDateFilterOption = VisitListDateFilterOption.All,
+        visitListTypeFilterOption: VisitListTypeFilterOption = VisitListTypeFilterOption.All,
         savedMapEngine: VisitMapEngineOption = VisitMapEngineOption.MapLibre,
         visits: List<VisitHouseholder> = createVisitHouseholderList()
     ): VisitListViewModel {
@@ -426,7 +469,8 @@ class VisitListViewModelTest {
             on { get() } doReturn Preference(
                 visitListDateFilterOption = visitListDateFilterOption,
                 visitListDistanceFilterOption = VisitListDistanceFilterOption.All,
-                visitMapEngineOption = savedMapEngine
+                visitMapEngineOption = savedMapEngine,
+                visitListTypeFilterOption = visitListTypeFilterOption
             )
         }
         val actualAddressProvider = mock<AddressProvider> {
