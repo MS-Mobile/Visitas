@@ -29,7 +29,9 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyBlocking
 import java.time.LocalDateTime
 import java.util.UUID
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class VisitDetailViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
@@ -91,6 +93,37 @@ class VisitDetailViewModelTest {
         assertEquals("Test Name", state.householder.name)
         assertEquals("Test Address", state.householder.address)
         assertTrue(state.showDeleteButton)
+    }
+
+    @Test
+    fun `auto save marks an edited existing visit as draft`() {
+        // Arrange
+        val viewModel = createViewModel()
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+        val visit = viewModel.uiState.value.visitList.first()
+        assertFalse(visit.isDraft)
+
+        // Act — edit the existing visit, then let the debounced auto-save run
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.VisitDoneChanged(value = true, visit = visit))
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert
+        assertTrue(viewModel.uiState.value.visitList.first().isDraft)
+    }
+
+    @Test
+    fun `auto save does not mark an unchanged visit as draft when only householder changes`() {
+        // Arrange
+        val viewModel = createViewModel()
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+        assertFalse(viewModel.uiState.value.visitList.first().isDraft)
+
+        // Act — change only the householder, then let the debounced auto-save run
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.HouseholderNameChanged("Changed Name"))
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert
+        assertFalse(viewModel.uiState.value.visitList.first().isDraft)
     }
 
     @Test

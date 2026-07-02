@@ -13,7 +13,8 @@ private val previewDate1 = LocalDateTime.of(2024, 1, 15, 10, 12)
 private val previewDate2 = previewDate1.plusWeeks(1)
 
 @VisibleForTesting
-internal class VisitDetailPreviewConfigProvider : PreviewParameterProvider<VisitDetailPreviewConfig> {
+internal class VisitDetailPreviewConfigProvider :
+    PreviewParameterProvider<VisitDetailPreviewConfig> {
 
     override val values: Sequence<VisitDetailPreviewConfig> = sequenceOf(
         VisitDetailPreviewConfig(
@@ -219,7 +220,6 @@ private val previewNewVisitUiState = VisitDetailViewModel.VisitState(
         subject = "",
         date = previewDate1,
         isDone = false,
-        isDraft = true,
         orderIndex = 0,
         visitType = VisitDetailViewModel.VisitTypeState(
             type = VisitType.FIRST_VISIT,
@@ -237,7 +237,8 @@ private val previewNewVisitUiState = VisitDetailViewModel.VisitState(
     showNextVisitSuggestion = false,
     showClearSubject = false,
     wasRemoved = false,
-    caretPosition = 0
+    caretPosition = 0,
+    isDraft = true,
 )
 
 private val previewFirstVisitUiState = VisitDetailViewModel.VisitState(
@@ -246,7 +247,6 @@ private val previewFirstVisitUiState = VisitDetailViewModel.VisitState(
         subject = "What is God's Kingdom?",
         date = previewDate1,
         isDone = true,
-        isDraft = false,
         orderIndex = 0,
         visitType = VisitDetailViewModel.VisitTypeState(
             type = VisitType.FIRST_VISIT,
@@ -264,7 +264,8 @@ private val previewFirstVisitUiState = VisitDetailViewModel.VisitState(
     showNextVisitSuggestion = false,
     showClearSubject = false,
     wasRemoved = false,
-    caretPosition = 0
+    caretPosition = 0,
+    isDraft = false,
 )
 
 private val previewReturnVisit = VisitDetailViewModel.VisitState(
@@ -273,7 +274,6 @@ private val previewReturnVisit = VisitDetailViewModel.VisitState(
         subject = "Who is the King of God's Kingdom?",
         date = previewDate2,
         isDone = false,
-        isDraft = false,
         orderIndex = 0,
         visitType = VisitDetailViewModel.VisitTypeState(
             type = VisitType.RETURN_VISIT,
@@ -291,7 +291,8 @@ private val previewReturnVisit = VisitDetailViewModel.VisitState(
     showNextVisitSuggestion = false,
     showClearSubject = false,
     wasRemoved = false,
-    caretPosition = 0
+    caretPosition = 0,
+    isDraft = false,
 )
 
 private val previewConversationSuggestion = VisitDetailViewModel.ConversationState(
