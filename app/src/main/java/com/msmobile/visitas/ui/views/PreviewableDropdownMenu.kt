@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Surface
@@ -103,6 +104,7 @@ private object PreviewDropdownMenu : DropdownMenuRenderer {
         ) {
             Column(
                 modifier = Modifier
+                    .wrapContentHeight()
                     .width(IntrinsicSize.Max)
                     .padding(vertical = DROPDOWN_MENU_VERTICAL_PADDING),
                 content = content,
