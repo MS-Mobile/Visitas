@@ -825,7 +825,7 @@ class VisitDetailViewModel
                 val baselineEditable = baseline.visits[visit.id]
                 val isNewOrChanged = baselineEditable == null || baselineEditable != visit.editable
                 if (isNewOrChanged && !visit.isDraft) {
-                    visit.copy(editable = visit.editable.copy(isDraft = true))
+                    visit.copy(isDraft = true)
                 } else {
                     visit
                 }
@@ -1028,7 +1028,6 @@ class VisitDetailViewModel
                 subject = "",
                 date = dateTimeProvider.nowLocalDateTime(),
                 isDone = false,
-                isDraft = true,
                 orderIndex = orderIndex,
                 visitType = VisitType.FIRST_VISIT.asState
             ),
@@ -1040,7 +1039,8 @@ class VisitDetailViewModel
             showNextVisitSuggestion = false,
             showClearSubject = false,
             wasRemoved = false,
-            caretPosition = 0
+            caretPosition = 0,
+            isDraft = true,
         )
     }
 
@@ -1141,7 +1141,6 @@ class VisitDetailViewModel
                 subject = subject,
                 date = date,
                 isDone = isDone,
-                isDraft = isDraft,
                 orderIndex = orderIndex,
                 visitType = visitType.asState
             ),
@@ -1154,7 +1153,8 @@ class VisitDetailViewModel
             showClearSubject = false,
             wasRemoved = false,
             caretPosition = subject.length,
-            calendarEventId = calendarEventId
+            calendarEventId = calendarEventId,
+            isDraft = isDraft,
         )
     }
 
@@ -1227,7 +1227,7 @@ class VisitDetailViewModel
             )
         }
 
-    private fun VisitState.finalized() = copy(editable = editable.copy(isDraft = false))
+    private fun VisitState.finalized() = copy(isDraft = false)
 
     private fun VisitState.asModel(householderId: UUID): Visit {
         return Visit(
@@ -1320,12 +1320,12 @@ class VisitDetailViewModel
         val wasRemoved: Boolean,
         val caretPosition: Int,
         val calendarEventId: Long? = null,
-        val hasVisitTimeError: Boolean = false
+        val hasVisitTimeError: Boolean = false,
+        val isDraft: Boolean,
     ) {
         val subject get() = editable.subject
         val date get() = editable.date
         val isDone get() = editable.isDone
-        val isDraft get() = editable.isDraft
         val orderIndex get() = editable.orderIndex
         val visitType get() = editable.visitType
     }
@@ -1386,7 +1386,6 @@ class VisitDetailViewModel
         val subject: String,
         val date: LocalDateTime,
         val isDone: Boolean,
-        val isDraft: Boolean,
         val orderIndex: Int,
         val visitType: VisitTypeState
     )
