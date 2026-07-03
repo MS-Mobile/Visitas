@@ -39,7 +39,7 @@ private val PREVIEW_MENU_END_MARGIN = 8.dp
  * [Host] and painted there — above all other content, below the top app bar — so previews/screenshots
  * show the full menu instead of a slice clipped by the app bar or a card.
  */
-object PreviewableDropdownMenu {
+object PreviewCompatDropdownMenu {
 
     /**
      * Renders the dropdown. Only shows content when [expanded] is true, matching [DropdownMenu];
@@ -64,7 +64,7 @@ object PreviewableDropdownMenu {
     }
 
     /**
-     * Full-screen overlay that paints expanded [PreviewableDropdownMenu]s above everything else so
+     * Full-screen overlay that paints expanded [PreviewCompatDropdownMenu]s above everything else so
      * previews/screenshots show complete menus, escaping the app bar / card that would otherwise
      * clip them. Wrap a preview's root (above the app bar) with it — it is a preview-only helper
      * and a transparent pass-through outside [LocalInspectionMode], so it must not appear in
@@ -111,7 +111,7 @@ object PreviewableDropdownMenu {
 /**
  * Contract shared by the production and preview dropdown renderers. Because both implementations
  * override the same [Render] signature, they are forced to expose identical params and can't drift
- * apart. [PreviewableDropdownMenu] picks the implementation based on [LocalInspectionMode].
+ * apart. [PreviewCompatDropdownMenu] picks the implementation based on [LocalInspectionMode].
  */
 private interface DropdownMenuRenderer {
     @Composable
@@ -147,7 +147,7 @@ private object MaterialDropdownMenu : DropdownMenuRenderer {
 }
 
 /**
- * Preview renderer: registers the menu with the enclosing [PreviewableDropdownMenu.Host] instead of
+ * Preview renderer: registers the menu with the enclosing [PreviewCompatDropdownMenu.Host] instead of
  * drawing inline, so the host can paint it above the app bar / card that would otherwise clip it.
  * Falls back to an inline [Surface] when no host is present.
  */

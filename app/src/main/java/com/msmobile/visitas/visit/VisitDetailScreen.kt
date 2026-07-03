@@ -39,7 +39,6 @@ import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.TravelExplore
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -100,7 +99,7 @@ import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.ui.views.DateTimePicker
 import com.msmobile.visitas.ui.views.LazyColumnWithScrollbar
 import com.msmobile.visitas.ui.views.PermissionRationaleSheet
-import com.msmobile.visitas.ui.views.PreviewableDropdownMenu
+import com.msmobile.visitas.ui.views.PreviewCompatDropdownMenu
 import com.msmobile.visitas.ui.views.TextFieldClearButton
 import com.msmobile.visitas.ui.views.TextFieldExpandButton
 import com.msmobile.visitas.util.DetailScreenStyle
@@ -501,7 +500,7 @@ private fun PreferredDayDropdown(
             colors = ReadOnlyTextFieldColors,
             shape = MaterialTheme.shapes.sharp
         )
-        PreviewableDropdownMenu(
+        PreviewCompatDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
@@ -564,7 +563,7 @@ private fun PreferredTimeDropdown(
             colors = ReadOnlyTextFieldColors,
             shape = MaterialTheme.shapes.sharp
         )
-        PreviewableDropdownMenu(
+        PreviewCompatDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
@@ -775,7 +774,7 @@ private fun LazyItemScope.VisitSubjectDropdownList(
                     )
                 )
             })
-        PreviewableDropdownMenu(
+        PreviewCompatDropdownMenu(
             modifier = Modifier
                 .heightIn(max = 300.dp)
                 .fillParentMaxWidth(),
@@ -840,7 +839,7 @@ private fun LazyItemScope.VisitTypeDropdownList(
                 )
             }
         )
-        PreviewableDropdownMenu(
+        PreviewCompatDropdownMenu(
             modifier = Modifier
                 .heightIn(max = 300.dp)
                 .fillParentMaxWidth(),

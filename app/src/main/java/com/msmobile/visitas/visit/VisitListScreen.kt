@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -21,7 +20,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -50,7 +48,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
@@ -94,7 +91,7 @@ import com.msmobile.visitas.ui.views.LazyColumnWithScrollbar
 import com.msmobile.visitas.ui.views.MonthNavigator
 import com.msmobile.visitas.ui.views.MonthNavigatorEvent
 import com.msmobile.visitas.ui.views.PermissionRationaleSheet
-import com.msmobile.visitas.ui.views.PreviewableDropdownMenu
+import com.msmobile.visitas.ui.views.PreviewCompatDropdownMenu
 import com.msmobile.visitas.ui.views.RestoreBackupDialog
 import com.msmobile.visitas.ui.views.SimpleSearchBar
 import com.msmobile.visitas.util.AddressProvider
@@ -608,7 +605,7 @@ private fun VisitListFilterDropdown(
     uiState: VisitListViewModel.UiState,
     onEvent: (VisitListViewModel.UiEvent) -> Unit
 ) {
-    PreviewableDropdownMenu(
+    PreviewCompatDropdownMenu(
         expanded = uiState.isVisitsFilterMenuExpanded,
         onDismissRequest = {
             onEvent(VisitListViewModel.UiEvent.VisitsFilterMenuDismissed)
@@ -815,7 +812,7 @@ private fun PendingVisitMenu(
     visit: VisitListViewModel.VisitHouseholderState,
     onEvent: (VisitListViewModel.UiEvent) -> Unit
 ) {
-    PreviewableDropdownMenu(
+    PreviewCompatDropdownMenu(
         expanded = visit.isPendingVisitMenuExpanded,
         onDismissRequest = {
             onEvent(VisitListViewModel.UiEvent.PendingVisitMenuClicked(visit))
@@ -1045,7 +1042,7 @@ internal fun VisitListScreenPreview(
     VisitasTheme {
         // Preview-only: hosts the expanded filter menu above the app bar, which would otherwise clip
         // it in screenshots. No-op / absent in production (see PreviewableDropdownMenu.Host).
-        PreviewableDropdownMenu.Host {
+        PreviewCompatDropdownMenu.Host {
             AppScaffold(
                 uiState = config.mainActivityUiState,
                 currentDestination = VisitListScreenDestination,
