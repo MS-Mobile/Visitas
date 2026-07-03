@@ -41,7 +41,6 @@ import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.ui.views.BottomNavigation
 import com.msmobile.visitas.ui.views.DetailFooter
-import com.msmobile.visitas.ui.views.PreviewMenuHost
 import com.msmobile.visitas.ui.views.PreviewableDropdownMenu
 import com.ramcosta.composedestinations.generated.destinations.ConversationDetailScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.ConversationListScreenDestination
@@ -97,7 +96,6 @@ fun AppScaffold(
 
         else -> stringResource(id = R.string.app_name)
     }
-    PreviewMenuHost {
     Scaffold(
         topBar = {
             if (showTopBar) {
@@ -228,7 +226,6 @@ fun AppScaffold(
             }
         }
     )
-    }
 }
 
 @Composable
