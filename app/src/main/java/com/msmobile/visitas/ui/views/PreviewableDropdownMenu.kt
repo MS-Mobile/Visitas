@@ -48,7 +48,7 @@ fun PreviewableDropdownMenu(
     onDismissRequest: () -> Unit,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val renderer = if (LocalInspectionMode.current) PreviewDropdownMenu else RealDropdownMenu
+    val renderer = if (LocalInspectionMode.current) PreviewDropdownMenu else MaterialDropdownMenu
     renderer.Render(
         modifier = modifier,
         expanded = expanded,
@@ -63,7 +63,7 @@ fun PreviewableDropdownMenu(
  * override the same [Render] signature, they are forced to expose identical params and can't drift
  * apart. [PreviewableDropdownMenu] picks the implementation based on [LocalInspectionMode].
  */
-interface DropdownMenuRenderer {
+private interface DropdownMenuRenderer {
     @Composable
     fun Render(
         modifier: Modifier,
@@ -77,7 +77,7 @@ interface DropdownMenuRenderer {
 /**
  * Production renderer: the real Material 3 [DropdownMenu], shown in a [androidx.compose.ui.window.Popup].
  */
-private object RealDropdownMenu : DropdownMenuRenderer {
+private object MaterialDropdownMenu : DropdownMenuRenderer {
     @Composable
     override fun Render(
         modifier: Modifier,
@@ -181,7 +181,7 @@ internal val LocalPreviewMenuHost = staticCompositionLocalOf<PreviewMenuHostStat
  * with no reliance on a follow-up recomposition (which this renderer does not settle).
  */
 @Composable
-fun PreviewMenuHost(content: @Composable () -> Unit) {
+private fun PreviewMenuHost(content: @Composable () -> Unit) {
     if (!LocalInspectionMode.current) {
         content()
         return
