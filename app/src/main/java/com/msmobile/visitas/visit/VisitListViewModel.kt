@@ -636,7 +636,6 @@ constructor(
         }
     }
 
-
     private fun newState(block: UiState.() -> UiState) {
         _uiState.update(block)
     }
@@ -697,11 +696,9 @@ constructor(
             )
             val matchesType = typeFilter.matchesType(visit.type)
             val isDraft = visit.isDraft
-            val show = matchesType && (
-                    isDraft
-                            || isSearchEmpty && (matchesDate || matchesDistance)
-                            || matchesName
-                    )
+            val show = isDraft
+                    || matchesName
+                    || matchesType && isSearchEmpty && (matchesDate || matchesDistance)
             visit.copy(hide = !show) to matchesDistance
         }.sortedWith(
             compareByDescending<Pair<VisitHouseholderState, Boolean>> { (visit, _) -> visit.isDraft }
