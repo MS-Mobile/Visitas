@@ -1043,32 +1043,36 @@ internal fun VisitListScreenPreview(
     @PreviewParameter(VisitListPreviewConfigProvider::class) config: VisitListPreviewConfig
 ) {
     VisitasTheme {
-        AppScaffold(
-            uiState = config.mainActivityUiState,
-            currentDestination = VisitListScreenDestination,
-            onEvent = {},
-            onNavigateToTab = {},
-            onNavigate = {},
-            topBarActions = visitListTopBarActions(
-                visitListUiState = config.visitListUiState,
-                onVisitListEvent = {},
-                onMapClick = {},
-                onFilterClick = {}
-            )
-        ) {
-            VisitListScreenContent(
-                summaryUiState = config.summaryUiState,
-                visitListUiState = config.visitListUiState,
-                backupUiState = BackupViewModel.UiState(),
-                intentState = IntentState.None,
-                onSummaryEvent = {},
-                onVisitListEvent = {},
-                onBackupSheetEvent = {},
-                onMonthPickerEvent = {},
+        // Preview-only: hosts the expanded filter menu above the app bar, which would otherwise clip
+        // it in screenshots. No-op / absent in production (see PreviewableDropdownMenu.Host).
+        PreviewableDropdownMenu.Host {
+            AppScaffold(
+                uiState = config.mainActivityUiState,
+                currentDestination = VisitListScreenDestination,
+                onEvent = {},
+                onNavigateToTab = {},
                 onNavigate = {},
-                onIntentStateHandled = {},
-                onMapError = {}
-            )
+                topBarActions = visitListTopBarActions(
+                    visitListUiState = config.visitListUiState,
+                    onVisitListEvent = {},
+                    onMapClick = {},
+                    onFilterClick = {}
+                )
+            ) {
+                VisitListScreenContent(
+                    summaryUiState = config.summaryUiState,
+                    visitListUiState = config.visitListUiState,
+                    backupUiState = BackupViewModel.UiState(),
+                    intentState = IntentState.None,
+                    onSummaryEvent = {},
+                    onVisitListEvent = {},
+                    onBackupSheetEvent = {},
+                    onMonthPickerEvent = {},
+                    onNavigate = {},
+                    onIntentStateHandled = {},
+                    onMapError = {}
+                )
+            }
         }
     }
 }

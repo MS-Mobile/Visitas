@@ -30,32 +30,82 @@ private val PREVIEW_MENU_TOP = 112.dp
 private val PREVIEW_MENU_END_MARGIN = 8.dp
 
 /**
- * Drop-in replacement for [androidx.compose.material3.DropdownMenu].
+ * Drop-in replacement for [androidx.compose.material3.DropdownMenu], invoked with the same call
+ * syntax via [invoke].
  *
  * In production it delegates to the real [DropdownMenu], so behaviour is unchanged for users. Under
  * [LocalInspectionMode] the real menu can't be used because layoutlib does not paint
- * [androidx.compose.ui.window.Popup] content, so the same [content] is registered with the nearest
- * [PreviewMenuHost] and painted there — above all other content, below the top app bar — so
- * previews/screenshots show the full menu instead of a slice clipped by the app bar or a card.
- *
- * Only shows content when [expanded] is true, matching [DropdownMenu]; drive it from the same state.
+ * [androidx.compose.ui.window.Popup] content, so the same content is registered with the nearest
+ * [Host] and painted there — above all other content, below the top app bar — so previews/screenshots
+ * show the full menu instead of a slice clipped by the app bar or a card.
  */
-@Composable
-fun PreviewableDropdownMenu(
-    modifier: Modifier = Modifier,
-    expanded: Boolean,
-    properties: PopupProperties = PopupProperties(),
-    onDismissRequest: () -> Unit,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    val renderer = if (LocalInspectionMode.current) PreviewDropdownMenu else MaterialDropdownMenu
-    renderer.Render(
-        modifier = modifier,
-        expanded = expanded,
-        properties = properties,
-        onDismissRequest = onDismissRequest,
-        content = content,
-    )
+object PreviewableDropdownMenu {
+
+    /**
+     * Renders the dropdown. Only shows content when [expanded] is true, matching [DropdownMenu];
+     * drive it from the same state.
+     */
+    @Composable
+    operator fun invoke(
+        modifier: Modifier = Modifier,
+        expanded: Boolean,
+        properties: PopupProperties = PopupProperties(),
+        onDismissRequest: () -> Unit,
+        content: @Composable ColumnScope.() -> Unit,
+    ) {
+        val renderer = if (LocalInspectionMode.current) PreviewDropdownMenu else MaterialDropdownMenu
+        renderer.Render(
+            modifier = modifier,
+            expanded = expanded,
+            properties = properties,
+            onDismissRequest = onDismissRequest,
+            content = content,
+        )
+    }
+
+    /**
+     * Full-screen overlay that paints expanded [PreviewableDropdownMenu]s above everything else so
+     * previews/screenshots show complete menus, escaping the app bar / card that would otherwise
+     * clip them. Wrap a preview's root (above the app bar) with it — it is a preview-only helper
+     * and a transparent pass-through outside [LocalInspectionMode], so it must not appear in
+     * production chrome.
+     *
+     * It is a [SubcomposeLayout] rather than a plain overlay for ordering: the app content is
+     * measured first, which drives Scaffold's lazily-composed top bar so the expanded menus
+     * register themselves, and only then are the menus subcomposed from the now-populated registry
+     * — all in one layout pass, with no reliance on a follow-up recomposition (which the screenshot
+     * renderer does not settle).
+     */
+    @Composable
+    fun Host(content: @Composable () -> Unit) {
+        if (!LocalInspectionMode.current) {
+            content()
+            return
+        }
+        val host = remember { PreviewMenuHostState() }
+        SubcomposeLayout(Modifier.fillMaxSize()) { constraints ->
+            val contentPlaceables = subcompose(PreviewMenuSlot.Content) {
+                CompositionLocalProvider(LocalPreviewMenuHost provides host) {
+                    content()
+                }
+            }.map { it.measure(constraints) }
+
+            val menuConstraints = constraints.copy(minWidth = 0, minHeight = 0, maxHeight = Int.MAX_VALUE)
+            val menuPlaceables = subcompose(PreviewMenuSlot.Menus) {
+                host.entries.values.forEach { entry -> DropdownMenuSurface(content = entry.content) }
+            }.map { it.measure(menuConstraints) }
+
+            val top = PREVIEW_MENU_TOP.roundToPx()
+            val endMargin = PREVIEW_MENU_END_MARGIN.roundToPx()
+            layout(constraints.maxWidth, constraints.maxHeight) {
+                contentPlaceables.forEach { it.place(0, 0) }
+                menuPlaceables.forEach { placeable ->
+                    val x = (constraints.maxWidth - placeable.width - endMargin).coerceAtLeast(0)
+                    placeable.place(x, top)
+                }
+            }
+        }
+    }
 }
 
 /**
@@ -97,9 +147,9 @@ private object MaterialDropdownMenu : DropdownMenuRenderer {
 }
 
 /**
- * Preview renderer: registers the menu with the enclosing [PreviewMenuHost] instead of drawing
- * inline, so the host can paint it above the app bar / card that would otherwise clip it. Falls back
- * to an inline [Surface] when no host is present.
+ * Preview renderer: registers the menu with the enclosing [PreviewableDropdownMenu.Host] instead of
+ * drawing inline, so the host can paint it above the app bar / card that would otherwise clip it.
+ * Falls back to an inline [Surface] when no host is present.
  */
 private object PreviewDropdownMenu : DropdownMenuRenderer {
     @Composable
@@ -160,55 +210,14 @@ private fun DropdownMenuSurface(
  * reads, so entries are collected during the single composition pass and read back in that same
  * pass. The host is remembered fresh per preview and keys are stable, so no clearing is needed.
  */
-class PreviewMenuHostState {
-    internal val entries = LinkedHashMap<Any, Entry>()
+private class PreviewMenuHostState {
+    val entries = LinkedHashMap<Any, Entry>()
 
-    internal data class Entry(
+    data class Entry(
         val content: @Composable ColumnScope.() -> Unit,
     )
 }
 
-internal val LocalPreviewMenuHost = staticCompositionLocalOf<PreviewMenuHostState?> { null }
-
-/**
- * Full-screen overlay that paints [PreviewableDropdownMenu]s above everything else so
- * previews/screenshots show complete menus. Outside [LocalInspectionMode] it is a transparent
- * pass-through with no cost or behavioural change — wrap the app root with it once.
- *
- * It is a [SubcomposeLayout] rather than a plain overlay for ordering: the app content is measured
- * first, which drives Scaffold's lazily-composed top bar so the expanded menus register themselves,
- * and only then are the menus subcomposed from the now-populated registry — all in one layout pass,
- * with no reliance on a follow-up recomposition (which this renderer does not settle).
- */
-@Composable
-private fun PreviewMenuHost(content: @Composable () -> Unit) {
-    if (!LocalInspectionMode.current) {
-        content()
-        return
-    }
-    val host = remember { PreviewMenuHostState() }
-    SubcomposeLayout(Modifier.fillMaxSize()) { constraints ->
-        val contentPlaceables = subcompose(PreviewMenuSlot.Content) {
-            CompositionLocalProvider(LocalPreviewMenuHost provides host) {
-                content()
-            }
-        }.map { it.measure(constraints) }
-
-        val menuConstraints = constraints.copy(minWidth = 0, minHeight = 0, maxHeight = Int.MAX_VALUE)
-        val menuPlaceables = subcompose(PreviewMenuSlot.Menus) {
-            host.entries.values.forEach { entry -> DropdownMenuSurface(content = entry.content) }
-        }.map { it.measure(menuConstraints) }
-
-        val top = PREVIEW_MENU_TOP.roundToPx()
-        val endMargin = PREVIEW_MENU_END_MARGIN.roundToPx()
-        layout(constraints.maxWidth, constraints.maxHeight) {
-            contentPlaceables.forEach { it.place(0, 0) }
-            menuPlaceables.forEach { placeable ->
-                val x = (constraints.maxWidth - placeable.width - endMargin).coerceAtLeast(0)
-                placeable.place(x, top)
-            }
-        }
-    }
-}
+private val LocalPreviewMenuHost = staticCompositionLocalOf<PreviewMenuHostState?> { null }
 
 private enum class PreviewMenuSlot { Content, Menus }
