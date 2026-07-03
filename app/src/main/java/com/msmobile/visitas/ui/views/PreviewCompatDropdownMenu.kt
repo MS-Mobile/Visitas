@@ -53,7 +53,7 @@ object PreviewCompatDropdownMenu {
         onDismissRequest: () -> Unit,
         content: @Composable ColumnScope.() -> Unit,
     ) {
-        val renderer = if (LocalInspectionMode.current) PreviewDropdownMenu else MaterialDropdownMenu
+        val renderer = if (LocalInspectionMode.current) PreviewDropdownMenuRenderer else MaterialDropdownMenuRenderer
         renderer.Render(
             modifier = modifier,
             expanded = expanded,
@@ -127,7 +127,7 @@ private interface DropdownMenuRenderer {
 /**
  * Production renderer: the real Material 3 [DropdownMenu], shown in a [androidx.compose.ui.window.Popup].
  */
-private object MaterialDropdownMenu : DropdownMenuRenderer {
+private object MaterialDropdownMenuRenderer : DropdownMenuRenderer {
     @Composable
     override fun Render(
         modifier: Modifier,
@@ -151,7 +151,7 @@ private object MaterialDropdownMenu : DropdownMenuRenderer {
  * drawing inline, so the host can paint it above the app bar / card that would otherwise clip it.
  * Falls back to an inline [Surface] when no host is present.
  */
-private object PreviewDropdownMenu : DropdownMenuRenderer {
+private object PreviewDropdownMenuRenderer : DropdownMenuRenderer {
     @Composable
     override fun Render(
         modifier: Modifier,
