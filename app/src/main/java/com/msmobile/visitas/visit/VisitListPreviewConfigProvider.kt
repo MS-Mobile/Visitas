@@ -29,6 +29,17 @@ internal class VisitListPreviewConfigProvider : PreviewParameterProvider<VisitLi
             visitListUiState = previewVisitListUiState
         ),
         VisitListPreviewConfig(
+            configName = "Bible students sheet expanded",
+            mainActivityUiState = previewMainActivityUiState,
+            summaryUiState = previewSummaryUiState.copy(
+                shouldShowSummaryDetails = true,
+                bibleStudyCount = "2",
+                bibleStudentNames = listOf("Mary Magdalene", "Nicodemus"),
+                isBibleStudentsSheetVisible = true
+            ),
+            visitListUiState = previewVisitListUiState
+        ),
+        VisitListPreviewConfig(
             configName = "Summary menu expanded",
             mainActivityUiState = previewMainActivityUiState,
             summaryUiState = previewSummaryUiState.copy(isSummaryMenuExpanded = true),
@@ -105,6 +116,8 @@ private val previewMainActivityUiState = MainActivityViewModel.UiState(
 private val previewSummaryUiState = SummaryViewModel.UiState(
     returnVisitCount = "0",
     bibleStudyCount = "0",
+    bibleStudentNames = listOf(),
+    isBibleStudentsSheetVisible = false,
     selectedMonth = previewDate1,
     shouldShowSummaryDetails = false,
     isSummaryMenuExpanded = false,

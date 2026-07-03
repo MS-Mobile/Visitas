@@ -32,6 +32,7 @@ import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Explore
 import androidx.compose.material.icons.rounded.FilterList
 import androidx.compose.material.icons.rounded.FindInPage
+import androidx.compose.material.icons.rounded.Group
 import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.Map
 import androidx.compose.material.icons.rounded.CalendarMonth
@@ -50,8 +51,10 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -267,6 +270,13 @@ private fun VisitListScreenContent(
             },
             onMapError = onMapError
         )
+        BibleStudentsSheet(
+            isVisible = summaryUiState.isBibleStudentsSheetVisible,
+            bibleStudentNames = summaryUiState.bibleStudentNames,
+            onDismiss = {
+                onSummaryEvent(SummaryViewModel.UiEvent.BibleStudentsSheetDismissed)
+            }
+        )
         PermissionRationaleSheet(
             isVisible = visitListUiState.showLocationRationale,
             message = stringResource(R.string.location_permission_message),
@@ -435,6 +445,7 @@ private fun SummaryCardContent(
             bibleStudyCount = bibleStudyCount,
             currentMonth = currentMonth,
             shouldShowSummaryDetails = shouldShowSummaryDetails,
+            onSummaryEvent = onSummaryEvent,
             onMonthPickerEvent = onMonthPickerEvent
         )
     }
@@ -447,6 +458,7 @@ fun ColumnScope.SummaryCardDetails(
     bibleStudyCount: String,
     currentMonth: LocalDateTime,
     shouldShowSummaryDetails: Boolean,
+    onSummaryEvent: (SummaryViewModel.UiEvent) -> Unit,
     onMonthPickerEvent: (MonthNavigatorEvent) -> Unit
 ) {
     AnimatedVisibility(visible = shouldShowSummaryDetails) {
@@ -489,6 +501,16 @@ fun ColumnScope.SummaryCardDetails(
                     )
                     Spacer(modifier = Modifier.padding(4.dp))
                     Text(text = bibleStudyCount, textAlign = TextAlign.End)
+                    IconButton(onClick = {
+                        onSummaryEvent(SummaryViewModel.UiEvent.BibleStudentsButtonClicked)
+                    }) {
+                        Icon(
+                            imageVector = Icons.Rounded.Group,
+                            contentDescription = stringResource(
+                                R.string.view_bible_students_content_description
+                            )
+                        )
+                    }
                 }
             }
             Spacer(modifier = Modifier.padding(vertical = verticalFieldPadding))
@@ -496,6 +518,52 @@ fun ColumnScope.SummaryCardDetails(
                 modifier = Modifier
                     .padding(horizontal = horizontalFieldPadding.times(2))
             )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun BibleStudentsSheet(
+    isVisible: Boolean,
+    bibleStudentNames: List<String>,
+    onDismiss: () -> Unit
+) {
+    AnimatedVisibility(visible = isVisible) {
+        ModalBottomSheet(
+            onDismissRequest = onDismiss,
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(horizontal = borderPadding * 2, vertical = verticalFieldPadding)
+                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(verticalFieldPadding)
+            ) {
+                Text(
+                    text = stringResource(id = R.string.bible_studies),
+                    style = MaterialTheme.typography.titleMedium
+                )
+                if (bibleStudentNames.isEmpty()) {
+                    Text(
+                        text = stringResource(id = R.string.no_bible_studies_this_month),
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                } else {
+                    LazyColumn {
+                        items(bibleStudentNames) { name ->
+                            Text(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = verticalFieldPadding),
+                                text = name,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.padding(vertical = verticalFieldPadding))
+            }
         }
     }
 }
