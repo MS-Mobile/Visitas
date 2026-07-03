@@ -631,7 +631,7 @@ private fun VisitListFilterDropdownContent(
     // Date filter
     Text(
         modifier = Modifier.padding(borderPadding),
-        text = stringResource(id = R.string.filter_visits)
+        text = stringResource(id = R.string.visit_date)
     )
     HorizontalDivider()
     uiState.visitsFilterOptions.map { option ->
