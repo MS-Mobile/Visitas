@@ -29,6 +29,12 @@ internal class VisitListPreviewConfigProvider : PreviewParameterProvider<VisitLi
             visitListUiState = previewVisitListUiState
         ),
         VisitListPreviewConfig(
+            configName = "Summary menu expanded",
+            mainActivityUiState = previewMainActivityUiState,
+            summaryUiState = previewSummaryUiState.copy(isSummaryMenuExpanded = true),
+            visitListUiState = previewVisitListUiState
+        ),
+        VisitListPreviewConfig(
             configName = "Loading visits",
             mainActivityUiState = previewMainActivityUiState,
             summaryUiState = previewSummaryUiState,
