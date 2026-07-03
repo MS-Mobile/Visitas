@@ -29,6 +29,8 @@ class SummaryViewModelTest {
         val state = viewModel.uiState.value
         assertEquals("", state.returnVisitCount)
         assertEquals("", state.bibleStudyCount)
+        assertTrue(state.bibleStudentNames.isEmpty())
+        assertFalse(state.isBibleStudentsSheetVisible)
         assertFalse(state.isSummaryMenuExpanded)
         assertTrue(state.summaryFilterOptions.isEmpty())
         assertFalse(state.shouldShowSummaryDetails)
@@ -49,7 +51,35 @@ class SummaryViewModelTest {
         val state = viewModel.uiState.value
         assertEquals("5", state.returnVisitCount)
         assertEquals("2", state.bibleStudyCount)
+        assertEquals(listOf("Mary Magdalene", "Nicodemus"), state.bibleStudentNames)
         assertEquals(SummaryViewModel.SummaryMenuOption.entries, state.summaryFilterOptions)
+    }
+
+    @Test
+    fun `onEvent with BibleStudentsButtonClicked shows bible students sheet`() {
+        // Arrange
+        val viewModel = createViewModel()
+        assertFalse(viewModel.uiState.value.isBibleStudentsSheetVisible)
+
+        // Act
+        viewModel.onEvent(SummaryViewModel.UiEvent.BibleStudentsButtonClicked)
+
+        // Assert
+        assertTrue(viewModel.uiState.value.isBibleStudentsSheetVisible)
+    }
+
+    @Test
+    fun `onEvent with BibleStudentsSheetDismissed hides bible students sheet`() {
+        // Arrange
+        val viewModel = createViewModel()
+        viewModel.onEvent(SummaryViewModel.UiEvent.BibleStudentsButtonClicked)
+        assertTrue(viewModel.uiState.value.isBibleStudentsSheetVisible)
+
+        // Act
+        viewModel.onEvent(SummaryViewModel.UiEvent.BibleStudentsSheetDismissed)
+
+        // Assert
+        assertFalse(viewModel.uiState.value.isBibleStudentsSheetVisible)
     }
 
     @Test
@@ -175,7 +205,7 @@ class SummaryViewModelTest {
     private fun createSummaryResult(): SummaryResult {
         return SummaryResult(
             returnVisitCount = 5,
-            bibleStudyCount = 2
+            bibleStudentNames = listOf("Mary Magdalene", "Nicodemus")
         )
     }
 }

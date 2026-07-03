@@ -29,6 +29,8 @@ constructor(
         UiState(
             returnVisitCount = "",
             bibleStudyCount = "",
+            bibleStudentNames = listOf(),
+            isBibleStudentsSheetVisible = false,
             selectedMonth = dateTimeProvider.nowLocalDateTime(),
             isSummaryMenuExpanded = false,
             summaryFilterOptions = listOf(),
@@ -43,6 +45,20 @@ constructor(
             is UiEvent.SummaryFilterButtonClicked -> summaryFilterButtonClicked()
             is UiEvent.SummaryMenuDismissed -> summaryMenuDismissed()
             is UiEvent.SummaryMenuSelected -> summaryMenuSelected(event.option)
+            is UiEvent.BibleStudentsButtonClicked -> bibleStudentsButtonClicked()
+            is UiEvent.BibleStudentsSheetDismissed -> bibleStudentsSheetDismissed()
+        }
+    }
+
+    private fun bibleStudentsButtonClicked() {
+        newState {
+            copy(isBibleStudentsSheetVisible = true)
+        }
+    }
+
+    private fun bibleStudentsSheetDismissed() {
+        newState {
+            copy(isBibleStudentsSheetVisible = false)
         }
     }
 
@@ -121,12 +137,14 @@ constructor(
             }
             val summary = summaryRepository.getSummary(start, end)
             val returnVisitCount = summary.returnVisitCount.toString()
-            val bibleStudyCount = summary.bibleStudyCount.toString()
+            val bibleStudentNames = summary.bibleStudentNames
+            val bibleStudyCount = bibleStudentNames.size.toString()
 
             newState {
                 copy(
                     returnVisitCount = returnVisitCount,
                     bibleStudyCount = bibleStudyCount,
+                    bibleStudentNames = bibleStudentNames,
                 )
             }
         }
@@ -146,11 +164,15 @@ constructor(
         data object SummaryMenuDismissed : UiEvent()
         data object ViewCreated : UiEvent()
         data class SummaryMenuSelected(val option: SummaryMenuOption) : UiEvent()
+        data object BibleStudentsButtonClicked : UiEvent()
+        data object BibleStudentsSheetDismissed : UiEvent()
     }
 
     data class UiState(
         val returnVisitCount: String,
         val bibleStudyCount: String,
+        val bibleStudentNames: List<String>,
+        val isBibleStudentsSheetVisible: Boolean,
         val selectedMonth: LocalDateTime,
         val isSummaryMenuExpanded: Boolean,
         val summaryFilterOptions: List<SummaryMenuOption>,

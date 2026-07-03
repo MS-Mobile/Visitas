@@ -58,6 +58,8 @@
     <string name="past_due_visits">Atrasadas</string>
     <string name="go_current_month_summary">Ir para mês atual</string>
     <string name="show_summary_details">Mostrar detalhes</string>
+    <string name="view_bible_students_content_description">Ver estudos bíblicos</string>
+    <string name="no_bible_studies_this_month">Nenhum estudo bíblico este mês</string>
     <string name="houlseholder_no_address_found">Nenhum endereço encontrado</string>
     <string name="no_visits_found">Por aqui não encontrei nada!</string>
     <string name="grant_permissions">Permitir</string>
