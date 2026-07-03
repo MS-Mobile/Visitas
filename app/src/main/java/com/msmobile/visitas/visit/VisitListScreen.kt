@@ -26,6 +26,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.outlined.Analytics
 import androidx.compose.material.icons.rounded.Analytics
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Explore
@@ -211,7 +212,7 @@ private fun visitListTopBarActions(
         ),
         TopBarAction(
             contentDescription = stringResource(R.string.show_summary_details),
-            icon = Icons.Rounded.Analytics,
+            icon = Icons.Outlined.Analytics,
             onClick = onFilterClick,
             menu = @Composable {
                 VisitListFilterDropdown(
