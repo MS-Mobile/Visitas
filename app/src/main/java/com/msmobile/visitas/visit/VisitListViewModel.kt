@@ -32,9 +32,11 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.temporal.TemporalAdjusters.next
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 @HiltViewModel
@@ -80,6 +82,7 @@ constructor(
             previewBackupFileState = PreviewBackupFileState.None
         )
     )
+    private val isLoadingVisits = AtomicBoolean(false)
 
     private var nextRouteCalcJob: Job? = null
     private var nextRouteCalcInterval: Duration = INITIAL_ROUTE_CALC_INTERNAL
@@ -295,17 +298,21 @@ constructor(
     }
 
     private fun viewCreated() {
-        val uiState = _uiState.value
-        if (!uiState.isLoadingVisits) {
-            newState {
-                copy(isLoadingVisits = true)
-            }
+        if (!isLoadingVisits.get()) {
+            isLoadingVisits.set(true)
             refreshVisits()
         }
     }
 
     private fun refreshVisits() {
         viewModelScope.launch(dispatchers.io) {
+            // Debounce loading state update
+            val debouncedLoadingStateJob = launch {
+                delay(LOADING_STATE_UPDATE_DEBOUNCE)
+                newState {
+                    copy(isLoadingVisits = true)
+                }
+            }
             val preference = preferenceRepository.get()
             val selectedVisitFilterOption = preference.visitListDateFilterOption
             val selectedVisitDistanceFilterOption = preference.visitListDistanceFilterOption
@@ -317,6 +324,12 @@ constructor(
             val showNearbyVisits =
                 selectedVisitDistanceFilterOption == VisitListDistanceFilterOption.Nearby
             val userLocation = userLocationProvider.location.value
+
+            // No need to show loading state
+            if (debouncedLoadingStateJob.isActive) {
+                debouncedLoadingStateJob.cancel()
+            }
+
             newState {
                 copy(
                     visitList = visitList,
@@ -866,5 +879,6 @@ constructor(
         private val INITIAL_ROUTE_CALC_INTERNAL = 0.seconds
         private val SUBSEQUENT_ROUTE_CALC_INTERVAL = 2.seconds
         private val ROUTE_CALC_IDLE_THRESHOLD = 30.seconds
+        private val LOADING_STATE_UPDATE_DEBOUNCE = 300.milliseconds
     }
 }
