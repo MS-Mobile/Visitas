@@ -342,6 +342,8 @@ constructor(
                     .calculateDistanceBetweenUserAndHouseholders(userLocation)
                     .applyFilters()
             }
+        }.invokeOnCompletion {
+            isLoadingVisits.set(false)
         }
     }
 
