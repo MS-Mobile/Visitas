@@ -62,6 +62,19 @@ internal class VisitListPreviewConfigProvider : PreviewParameterProvider<VisitLi
                     previewVisitListUiState.visitList[2],
                 )
             )
+        ),
+        VisitListPreviewConfig(
+            configName = "Filter options expanded",
+            mainActivityUiState = previewMainActivityUiState,
+            summaryUiState = previewSummaryUiState,
+            visitListUiState = previewVisitListUiState.copy(
+                visitList = listOf(
+                    previewVisitListUiState.visitList[0],
+                    previewVisitListUiState.visitList[1],
+                    previewVisitListUiState.visitList[2],
+                ),
+                isVisitsFilterMenuExpanded = true
+            )
         )
     )
 

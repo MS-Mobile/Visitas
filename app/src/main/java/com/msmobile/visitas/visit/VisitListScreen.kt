@@ -30,8 +30,6 @@ import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Explore
 import androidx.compose.material.icons.rounded.FilterList
 import androidx.compose.material.icons.rounded.FindInPage
-import androidx.compose.material.icons.rounded.KeyboardArrowDown
-import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.Map
 import androidx.compose.material.icons.rounded.CalendarMonth
@@ -73,7 +71,6 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.AppScaffold
 import com.msmobile.visitas.AppScaffoldState
-import com.msmobile.visitas.MainActivityViewModel
 import com.msmobile.visitas.OnIntentStateHandled
 import com.msmobile.visitas.R
 import com.msmobile.visitas.TopBarAction
@@ -94,6 +91,7 @@ import com.msmobile.visitas.ui.views.LazyColumnWithScrollbar
 import com.msmobile.visitas.ui.views.MonthNavigator
 import com.msmobile.visitas.ui.views.MonthNavigatorEvent
 import com.msmobile.visitas.ui.views.PermissionRationaleSheet
+import com.msmobile.visitas.ui.views.PreviewCompatDropdownMenu
 import com.msmobile.visitas.ui.views.RestoreBackupDialog
 import com.msmobile.visitas.ui.views.SimpleSearchBar
 import com.msmobile.visitas.util.AddressProvider
@@ -117,6 +115,10 @@ import java.util.UUID
 
 private const val LOADING_VISITS_COUNT = 5
 private const val VISIT_MAP_ANIMATION_DURATION = 300
+
+// DropdownMenu container values mirrored so the filter-menu preview matches the real popup.
+private val FILTER_MENU_ELEVATION = 3.dp
+private val FILTER_MENU_VERTICAL_PADDING = 8.dp
 
 @Destination<RootGraph>(style = ListScreenStyle::class, start = true)
 @Composable
@@ -148,42 +150,26 @@ fun VisitListScreen(
         )
     }
 
-    val mapActionDescription = stringResource(R.string.show_visits_map_content_description)
-    val filterActionDescription = stringResource(R.string.filter_visits_content_description)
+    val topBarActions = visitListTopBarActions(
+        visitListUiState = visitListUiState,
+        onVisitListEvent = visitListViewModel::onEvent,
+        onMapClick = {
+            visitListViewModel.onEvent(VisitListViewModel.UiEvent.VisitMapSheetClicked)
+        },
+        onFilterClick = {
+            onSummaryEvent(
+                SummaryViewModel.UiEvent.SummaryMenuSelected(
+                    option = SummaryViewModel.SummaryMenuOption.ShowDetails
+                )
+            )
+        },
+    )
     val chromeOwner = remember { Any() }
 
     DisposableEffect(Unit) {
         appScaffoldState.setUiState(
             owner = chromeOwner,
-            uiState = AppScaffoldState.UiState(
-                topBarActions = listOf(
-                    TopBarAction(
-                        contentDescription = mapActionDescription,
-                        icon = Icons.Rounded.Map,
-                        onClick = {
-                            visitListViewModel.onEvent(VisitListViewModel.UiEvent.VisitMapSheetClicked)
-                        }
-                    ),
-                    TopBarAction(
-                        contentDescription = filterActionDescription,
-                        icon = Icons.Rounded.CalendarMonth,
-                        onClick = {
-                            onSummaryEvent(
-                                SummaryViewModel.UiEvent.SummaryMenuSelected(
-                                    option = SummaryViewModel.SummaryMenuOption.ShowDetails
-                                )
-                            )
-                        },
-                        menu = {
-                            val filterUiState by visitListViewModel.uiState.collectAsStateWithLifecycle()
-                            VisitListFilterDropdown(
-                                uiState = filterUiState,
-                                onEvent = visitListViewModel::onEvent
-                            )
-                        }
-                    )
-                )
-            )
+            uiState = AppScaffoldState.UiState(topBarActions = topBarActions)
         )
         onDispose { appScaffoldState.clearUiState(chromeOwner) }
     }
@@ -201,6 +187,38 @@ fun VisitListScreen(
         onNavigate = onNavigate,
         onIntentStateHandled = onIntentStateHandled,
         onMapError = onMapError
+    )
+}
+
+/**
+ * Single, state-hoisted source of truth for the [VisitListScreen] top bar actions so the real
+ * screen and its preview share one implementation. Callers supply the behaviour; this only wires
+ * up the icons and content descriptions.
+ */
+@Composable
+private fun visitListTopBarActions(
+    visitListUiState: VisitListViewModel.UiState,
+    onVisitListEvent: (VisitListViewModel.UiEvent) -> Unit,
+    onMapClick: () -> Unit,
+    onFilterClick: () -> Unit,
+): List<TopBarAction> {
+    return listOf(
+        TopBarAction(
+            contentDescription = stringResource(R.string.show_visits_map_content_description),
+            icon = Icons.Rounded.Map,
+            onClick = onMapClick
+        ),
+        TopBarAction(
+            contentDescription = stringResource(R.string.filter_visits_content_description),
+            icon = Icons.Rounded.CalendarMonth,
+            onClick = onFilterClick,
+            menu = @Composable {
+                VisitListFilterDropdown(
+                    uiState = visitListUiState,
+                    onEvent = onVisitListEvent
+                )
+            }
+        )
     )
 }
 
@@ -587,58 +605,72 @@ private fun VisitListFilterDropdown(
     uiState: VisitListViewModel.UiState,
     onEvent: (VisitListViewModel.UiEvent) -> Unit
 ) {
-    DropdownMenu(
+    PreviewCompatDropdownMenu(
         expanded = uiState.isVisitsFilterMenuExpanded,
         onDismissRequest = {
             onEvent(VisitListViewModel.UiEvent.VisitsFilterMenuDismissed)
-        }) {
+        },
+        content = {
+            VisitListFilterDropdownContent(uiState = uiState, onEvent = onEvent)
+        }
+    )
+}
 
-        // Date filter
+/**
+ * Inline content of the visit filter dropdown, extracted from the [DropdownMenu] popup so it can be
+ * shared with the preview below. Layoutlib does not paint [androidx.compose.ui.window.Popup]
+ * content, so previews/screenshots render this same content inside a plain [androidx.compose.material3.Surface] instead.
+ */
+@Composable
+private fun VisitListFilterDropdownContent(
+    uiState: VisitListViewModel.UiState,
+    onEvent: (VisitListViewModel.UiEvent) -> Unit
+) {
+    // Date filter
+    Text(
+        modifier = Modifier.padding(borderPadding),
+        text = stringResource(id = R.string.filter_visits)
+    )
+    HorizontalDivider()
+    uiState.visitsFilterOptions.map { option ->
+        val visitFilterOption = stringResource(id = option.description.textResId)
+        DropdownMenuItem(text = {
+            Text(text = visitFilterOption)
+        }, trailingIcon = {
+            if (uiState.selectedVisitFilterOption == option) {
+                Icon(
+                    imageVector = Icons.Rounded.Check,
+                    contentDescription = visitFilterOption
+                )
+            }
+        }, onClick = {
+            onEvent(VisitListViewModel.UiEvent.VisitsFilterOptionSelected(option = option))
+        })
+    }
+
+    // Distance filter
+    HorizontalDivider()
+    Text(
+        modifier = Modifier.padding(borderPadding),
+        text = stringResource(id = R.string.visit_distance)
+    )
+    HorizontalDivider()
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                onEvent(VisitListViewModel.UiEvent.ShowNearbyVisitsToggled(!uiState.showNearbyVisits))
+            },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
         Text(
             modifier = Modifier.padding(borderPadding),
-            text = stringResource(id = R.string.filter_visits)
+            text = stringResource(id = R.string.nearby_visits)
         )
-        HorizontalDivider()
-        uiState.visitsFilterOptions.map { option ->
-            val visitFilterOption = stringResource(id = option.description.textResId)
-            DropdownMenuItem(text = {
-                Text(text = visitFilterOption)
-            }, trailingIcon = {
-                if (uiState.selectedVisitFilterOption == option) {
-                    Icon(
-                        imageVector = Icons.Rounded.Check,
-                        contentDescription = visitFilterOption
-                    )
-                }
-            }, onClick = {
-                onEvent(VisitListViewModel.UiEvent.VisitsFilterOptionSelected(option = option))
-            })
-        }
-
-        // Distance filter
-        HorizontalDivider()
-        Text(
-            modifier = Modifier.padding(borderPadding),
-            text = stringResource(id = R.string.visit_distance)
-        )
-        HorizontalDivider()
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable {
-                    onEvent(VisitListViewModel.UiEvent.ShowNearbyVisitsToggled(!uiState.showNearbyVisits))
-                },
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                modifier = Modifier.padding(borderPadding),
-                text = stringResource(id = R.string.nearby_visits)
-            )
-            Checkbox(checked = uiState.showNearbyVisits, onCheckedChange = {
-                onEvent(VisitListViewModel.UiEvent.ShowNearbyVisitsToggled(it))
-            })
-        }
+        Checkbox(checked = uiState.showNearbyVisits, onCheckedChange = {
+            onEvent(VisitListViewModel.UiEvent.ShowNearbyVisitsToggled(it))
+        })
     }
 }
 
@@ -780,7 +812,7 @@ private fun PendingVisitMenu(
     visit: VisitListViewModel.VisitHouseholderState,
     onEvent: (VisitListViewModel.UiEvent) -> Unit
 ) {
-    DropdownMenu(
+    PreviewCompatDropdownMenu(
         expanded = visit.isPendingVisitMenuExpanded,
         onDismissRequest = {
             onEvent(VisitListViewModel.UiEvent.PendingVisitMenuClicked(visit))
@@ -1008,38 +1040,36 @@ internal fun VisitListScreenPreview(
     @PreviewParameter(VisitListPreviewConfigProvider::class) config: VisitListPreviewConfig
 ) {
     VisitasTheme {
-        AppScaffold(
-            uiState = config.mainActivityUiState,
-            currentDestination = VisitListScreenDestination,
-            onEvent = {},
-            onNavigateToTab = {},
-            onNavigate = {},
-            topBarActions = listOf(
-                TopBarAction(
-                    contentDescription = stringResource(R.string.show_visits_map_content_description),
-                    icon = Icons.Rounded.Map,
-                    onClick = {}
-                ),
-                TopBarAction(
-                    contentDescription = stringResource(R.string.filter_visits_content_description),
-                    icon = Icons.Rounded.CalendarMonth,
-                    onClick = {}
-                )
-            )
-        ) {
-            VisitListScreenContent(
-                summaryUiState = config.summaryUiState,
-                visitListUiState = config.visitListUiState,
-                backupUiState = BackupViewModel.UiState(),
-                intentState = IntentState.None,
-                onSummaryEvent = {},
-                onVisitListEvent = {},
-                onBackupSheetEvent = {},
-                onMonthPickerEvent = {},
+        // Preview-only: hosts the expanded filter menu above the app bar, which would otherwise clip
+        // it in screenshots. No-op / absent in production (see PreviewableDropdownMenu.Host).
+        PreviewCompatDropdownMenu.Host {
+            AppScaffold(
+                uiState = config.mainActivityUiState,
+                currentDestination = VisitListScreenDestination,
+                onEvent = {},
+                onNavigateToTab = {},
                 onNavigate = {},
-                onIntentStateHandled = {},
-                onMapError = {}
-            )
+                topBarActions = visitListTopBarActions(
+                    visitListUiState = config.visitListUiState,
+                    onVisitListEvent = {},
+                    onMapClick = {},
+                    onFilterClick = {}
+                )
+            ) {
+                VisitListScreenContent(
+                    summaryUiState = config.summaryUiState,
+                    visitListUiState = config.visitListUiState,
+                    backupUiState = BackupViewModel.UiState(),
+                    intentState = IntentState.None,
+                    onSummaryEvent = {},
+                    onVisitListEvent = {},
+                    onBackupSheetEvent = {},
+                    onMonthPickerEvent = {},
+                    onNavigate = {},
+                    onIntentStateHandled = {},
+                    onMapError = {}
+                )
+            }
         }
     }
 }
