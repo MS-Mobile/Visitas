@@ -1009,6 +1009,7 @@ private fun VisitMapLoadingState() {
 @Composable
 private fun VisitMapEmptyState() {
     Column(
+        modifier = Modifier.padding(borderPadding),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -1023,6 +1024,7 @@ private fun VisitMapEmptyState() {
 @Composable
 private fun VisitMapErrorState() {
     Column(
+        modifier = Modifier.padding(borderPadding),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
