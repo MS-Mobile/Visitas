@@ -133,10 +133,10 @@ private fun ConversationDetailScreenContent(
                     )
                 ),
                 detailFooterActions = DetailFooterActions(
-                    onBack = { onEvent(ConversationDetailViewModel.UiEvent.CancelClicked) },
                     onSave = { onEvent(ConversationDetailViewModel.UiEvent.SaveClicked) },
                     onAdd = { onEvent(ConversationDetailViewModel.UiEvent.AddClicked) }
-                )
+                ),
+                onBack = { onEvent(ConversationDetailViewModel.UiEvent.CancelClicked) }
             )
         )
         onDispose { appScaffoldState.clearUiState(chromeOwner) }

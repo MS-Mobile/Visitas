@@ -3,7 +3,7 @@ package com.msmobile.visitas.ui.views
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ArrowBackIosNew
+import androidx.compose.material.icons.automirrored.rounded.Undo
 import androidx.compose.material.icons.rounded.DoneOutline
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
@@ -22,7 +22,7 @@ import com.msmobile.visitas.util.borderPadding
 @Composable
 fun DetailFooter(
     modifier: Modifier = Modifier,
-    onBackClicked: () -> Unit,
+    onDiscardClicked: (() -> Unit)?,
     onSaveClickedEvent: () -> Unit,
     onFabClickedEvent: () -> Unit
 ) {
@@ -36,11 +36,13 @@ fun DetailFooter(
                 )
             },
             content = {
-                IconButton(onClick = onBackClicked) {
-                    Icon(
-                        imageVector = Icons.Rounded.ArrowBackIosNew,
-                        contentDescription = stringResource(id = R.string.cancel)
-                    )
+                if (onDiscardClicked != null) {
+                    IconButton(onClick = onDiscardClicked) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Rounded.Undo,
+                            contentDescription = stringResource(id = R.string.discard_draft)
+                        )
+                    }
                 }
                 IconButton(onClick = onSaveClickedEvent) {
                     Icon(
@@ -60,7 +62,7 @@ private fun DetailFooterPreview() {
     VisitasTheme {
         Surface {
             DetailFooter(
-                onBackClicked = {},
+                onDiscardClicked = {},
                 onSaveClickedEvent = {},
                 onFabClickedEvent = {}
             )
@@ -74,7 +76,7 @@ private fun DetailFooterPreview() {
 private fun DetailFooterWithDeletePreview() {
     VisitasTheme {
         DetailFooter(
-            onBackClicked = {},
+            onDiscardClicked = null,
             onSaveClickedEvent = {},
             onFabClickedEvent = {}
         )

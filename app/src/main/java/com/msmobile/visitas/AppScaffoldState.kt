@@ -34,5 +34,8 @@ class AppScaffoldState {
         // Optional accent-styled supporting line shown under the top bar title that any
         // screen can set (e.g. to surface a status like "Draft").
         val subtitle: String? = null,
+        // When set, the top bar shows a navigation (back) icon that invokes this instead of
+        // plain up-navigation, so screens can intercept it (e.g. to dispatch a cancel event).
+        val onBack: (() -> Unit)? = null,
     )
 }

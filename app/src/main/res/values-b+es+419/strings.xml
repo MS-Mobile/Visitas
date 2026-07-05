@@ -25,6 +25,9 @@
     <string name="add_visit">Agregar visita</string>
     <string name="visit_is_done">Visita realizada</string>
     <string name="visit_draft">Borrador</string>
+    <string name="discard_draft">Descartar borrador</string>
+    <string name="discard_draft_title">Descartar borrador</string>
+    <string name="discard_draft_message">¿Está seguro de que desea descartar los cambios y restaurar la última versión guardada?</string>
     <string name="done_visits">Realizadas</string>
     <string name="remove_visit">Eliminar visita</string>
     <string name="previous_month">Mes anterior</string>

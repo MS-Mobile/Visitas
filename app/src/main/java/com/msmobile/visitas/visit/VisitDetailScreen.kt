@@ -159,7 +159,8 @@ private fun VisitDetailScreenContent(
     val draftLabel = stringResource(id = R.string.visit_draft)
     val chromeOwner = remember { Any() }
     val hasDraft = uiState.visitList.filter { !it.wasRemoved }.any { it.isDraft }
-    DisposableEffect(hasDraft) {
+    val canDiscardDraft = uiState.canDiscardDraft
+    DisposableEffect(hasDraft, canDiscardDraft) {
         appScaffoldState.setUiState(
             owner = chromeOwner,
             uiState = AppScaffoldState.UiState(
@@ -176,11 +177,16 @@ private fun VisitDetailScreenContent(
                     )
                 ),
                 detailFooterActions = DetailFooterActions(
-                    onBack = { onEvent(VisitDetailViewModel.UiEvent.CancelClicked) },
                     onSave = { onEvent(VisitDetailViewModel.UiEvent.SaveClicked) },
-                    onAdd = { onEvent(VisitDetailViewModel.UiEvent.AddVisitClicked) }
+                    onAdd = { onEvent(VisitDetailViewModel.UiEvent.AddVisitClicked) },
+                    onDiscard = if (canDiscardDraft) {
+                        { onEvent(VisitDetailViewModel.UiEvent.DiscardClicked) }
+                    } else {
+                        null
+                    }
                 ),
-                subtitle = if (hasDraft) draftLabel else null
+                subtitle = if (hasDraft) draftLabel else null,
+                onBack = { onEvent(VisitDetailViewModel.UiEvent.CancelClicked) }
             )
         )
         onDispose { appScaffoldState.clearUiState(chromeOwner) }
@@ -189,6 +195,9 @@ private fun VisitDetailScreenContent(
         uiState = uiState,
         onEvent = onEvent
     )
+    if (uiState.showDiscardDialog) {
+        DiscardDraftMessage(onEvent)
+    }
     if (uiState.showLocationPermissionDialog) {
         RequestLocationPermission {
             onEvent(VisitDetailViewModel.UiEvent.LocationPermissionDialogShown)
@@ -971,6 +980,39 @@ private fun StateHandler(
 }
 
 @Composable
+private fun DiscardDraftMessage(onEvent: (VisitDetailViewModel.UiEvent) -> Unit) {
+    AlertDialog(
+        onDismissRequest = {
+            onEvent(VisitDetailViewModel.UiEvent.DiscardDismissed)
+        },
+        title = {
+            Text(text = stringResource(id = R.string.discard_draft_title))
+        },
+        text = {
+            Text(text = stringResource(id = R.string.discard_draft_message))
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onEvent(VisitDetailViewModel.UiEvent.DiscardConfirmed)
+                }
+            ) {
+                Text(stringResource(id = R.string.confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = {
+                    onEvent(VisitDetailViewModel.UiEvent.DiscardDismissed)
+                }
+            ) {
+                Text(stringResource(id = R.string.cancel))
+            }
+        }
+    )
+}
+
+@Composable
 private fun DeleteMessage(onEvent: (VisitDetailViewModel.UiEvent) -> Unit) {
     AlertDialog(
         onDismissRequest = {
@@ -1096,11 +1138,16 @@ internal fun VisitDetailScreenPreview(
                 )
             ),
             detailFooterActions = DetailFooterActions(
-                onBack = {},
                 onSave = {},
-                onAdd = {}
+                onAdd = {},
+                onDiscard = if (config.uiState.canDiscardDraft) {
+                    {}
+                } else {
+                    null
+                }
             ),
-            subtitle = if (config.uiState.visitList.filter { !it.wasRemoved }.any { it.isDraft }) stringResource(R.string.visit_draft) else null
+            subtitle = if (config.uiState.visitList.filter { !it.wasRemoved }.any { it.isDraft }) stringResource(R.string.visit_draft) else null,
+            onBack = {}
         ) {
             VisitDetailScreenContent(
                 householderId = config.householderId,

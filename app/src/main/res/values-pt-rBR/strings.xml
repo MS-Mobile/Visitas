@@ -24,6 +24,9 @@
     <string name="add_visit">Adicionar visita</string>
     <string name="visit_is_done">Visita feita</string>
     <string name="visit_draft">Rascunho</string>
+    <string name="discard_draft">Descartar rascunho</string>
+    <string name="discard_draft_title">Descartar rascunho</string>
+    <string name="discard_draft_message">Tem certeza que deseja descartar as alterações e restaurar a última versão salva?</string>
     <string name="done_visits">Feitas</string>
     <string name="remove_visit">Remove visit</string>
     <string name="previous_month">Mês anterior</string>

@@ -26,6 +26,9 @@
     <string name="add_visit">Add visit</string>
     <string name="visit_is_done">Visit done</string>
     <string name="visit_draft">Draft</string>
+    <string name="discard_draft">Discard draft</string>
+    <string name="discard_draft_title">Discard draft</string>
+    <string name="discard_draft_message">Are you sure you want to discard the changes and restore the last saved version?</string>
     <string name="done_visits">Done</string>
     <string name="remove_visit">Remove visit</string>
     <string name="previous_month">Previous month</string>

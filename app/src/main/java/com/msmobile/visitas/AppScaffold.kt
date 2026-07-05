@@ -62,6 +62,7 @@ fun AppScaffold(
     topBarActions: List<TopBarAction> = emptyList(),
     detailFooterActions: DetailFooterActions? = null,
     subtitle: String? = null,
+    onBack: (() -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
     val showFAB = currentDestination in listOf(
@@ -119,8 +120,8 @@ fun AppScaffold(
                         }
                     },
                     navigationIcon = {
-                        if (showBackButton) {
-                            IconButton(onClick = onNavigateUp) {
+                        if (showBackButton || onBack != null) {
+                            IconButton(onClick = onBack ?: onNavigateUp) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                                     contentDescription = stringResource(id = R.string.navigate_back_content_description)
@@ -193,7 +194,7 @@ fun AppScaffold(
                     ) {
                         DetailFooter(
                             modifier = Modifier.offset(y = -FloatingToolbarDefaults.ScreenOffset),
-                            onBackClicked = detailFooterActions.onBack,
+                            onDiscardClicked = detailFooterActions.onDiscard,
                             onSaveClickedEvent = detailFooterActions.onSave,
                             onFabClickedEvent = detailFooterActions.onAdd
                         )

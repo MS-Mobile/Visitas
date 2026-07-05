@@ -17,14 +17,18 @@ import com.msmobile.visitas.migration.MIGRATION_5_6
 import com.msmobile.visitas.migration.MIGRATION_6_7
 import com.msmobile.visitas.migration.MIGRATION_7_8
 import com.msmobile.visitas.migration.MIGRATION_8_9
+import com.msmobile.visitas.migration.MIGRATION_9_10
 import com.msmobile.visitas.preference.Preference
 import com.msmobile.visitas.preference.PreferenceDao
 import com.msmobile.visitas.preference.PreferenceTypeConverters
 import com.msmobile.visitas.summary.SummaryDao
 import com.msmobile.visitas.util.RoomLocalDateTimeConverter
 import com.msmobile.visitas.util.RoomUUIDConverter
+import com.msmobile.visitas.visit.DraftSnapshotDao
+import com.msmobile.visitas.visit.HouseholderSnapshot
 import com.msmobile.visitas.visit.Visit
 import com.msmobile.visitas.visit.VisitDao
+import com.msmobile.visitas.visit.VisitSnapshot
 import com.msmobile.visitas.visit.VisitHouseholder
 import com.msmobile.visitas.visit.VisitHouseholderDao
 import java.io.File
@@ -34,12 +38,14 @@ import java.io.File
         Conversation::class,
         Householder::class,
         Visit::class,
-        Preference::class
+        Preference::class,
+        HouseholderSnapshot::class,
+        VisitSnapshot::class
     ],
     views = [
         VisitHouseholder::class
     ],
-    version = 9
+    version = 10
 )
 @TypeConverters(RoomUUIDConverter::class, RoomLocalDateTimeConverter::class, PreferenceTypeConverters::class)
 abstract class VisitasDatabase : RoomDatabase() {
@@ -47,6 +53,7 @@ abstract class VisitasDatabase : RoomDatabase() {
     abstract fun householderDao(): HouseholderDao
     abstract fun summaryDao(): SummaryDao
     abstract fun visitDao(): VisitDao
+    abstract fun draftSnapshotDao(): DraftSnapshotDao
     abstract fun visitHouseholderDao(): VisitHouseholderDao
     abstract fun preferenceDao(): PreferenceDao
 
@@ -61,7 +68,8 @@ abstract class VisitasDatabase : RoomDatabase() {
             MIGRATION_5_6,
             MIGRATION_6_7,
             MIGRATION_7_8,
-            MIGRATION_8_9
+            MIGRATION_8_9,
+            MIGRATION_9_10
         )
 
         fun build(context: Context): VisitasDatabase {

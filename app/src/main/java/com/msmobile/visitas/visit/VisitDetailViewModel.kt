@@ -41,6 +41,7 @@ class VisitDetailViewModel
     private val dispatchers: DispatcherProvider,
     private val householderRepository: HouseholderRepository,
     private val visitRepository: VisitRepository,
+    private val draftSnapshotRepository: DraftSnapshotRepository,
     private val conversationRepository: ConversationRepository,
     private val addressProvider: AddressProvider,
     private val idProvider: IdProvider,
@@ -68,6 +69,11 @@ class VisitDetailViewModel
     )
     private var visits: List<Visit> = listOf()
     private var conversations: List<Conversation> = listOf()
+
+    // Last-committed householder, i.e. the state the user explicitly saved (or loaded from a
+    // previous save). Null while the householder has never been committed, so the first draft
+    // auto-save knows whether to snapshot the committed rows or mark the draft as new.
+    private var committedHouseholder: Householder? = null
     @Volatile private var initialEditableData: EditableDataSnapshot? = null
     private var loadAddressAfterPermission = false
     private var isUpdatingVisit: Boolean = false
@@ -129,6 +135,9 @@ class VisitDetailViewModel
             UiEvent.DeleteClicked -> deleteClicked()
             UiEvent.DeleteAccepted -> deleteAccepted()
             UiEvent.DeleteDismissed -> deleteDismissed()
+            UiEvent.DiscardClicked -> discardClicked()
+            UiEvent.DiscardConfirmed -> discardConfirmed()
+            UiEvent.DiscardDismissed -> discardDismissed()
             UiEvent.SaveClicked -> saveClicked()
             UiEvent.VisitDateDismissed -> visitDateDismissed()
             UiEvent.AddVisitClicked -> addVisitClicked()
@@ -836,12 +845,46 @@ class VisitDetailViewModel
 
     private suspend fun saveDraftSilently(state: UiState) {
         val householderModel = state.householder.asModel
+        val hasSnapshot =
+            draftSnapshotRepository.getHouseholderSnapshot(householderModel.id) != null
+        val committed = committedHouseholder
+        if (!hasSnapshot && committed != null) {
+            // First draft write over a committed householder: snapshot the committed rows
+            // before overwriting them, so the draft can be discarded. Written first so a crash
+            // in between leaves an extra snapshot of unchanged rows, which is harmless.
+            draftSnapshotRepository.save(
+                householderSnapshot = HouseholderSnapshot(
+                    householder = committed,
+                    isNewDraft = false,
+                    createdAt = dateTimeProvider.nowLocalDateTime()
+                ),
+                visitSnapshots = visits.map { visit -> VisitSnapshot(visit) }
+            )
+        }
         householderRepository.save(householderModel)
+        if (!hasSnapshot && committed == null) {
+            // Never-committed householder (created via the FAB): mark it so discarding deletes
+            // it instead of restoring. Written after the householder row exists to satisfy the
+            // snapshot's foreign key.
+            draftSnapshotRepository.save(
+                householderSnapshot = HouseholderSnapshot(
+                    householder = householderModel,
+                    isNewDraft = true,
+                    createdAt = dateTimeProvider.nowLocalDateTime()
+                ),
+                visitSnapshots = emptyList()
+            )
+        }
         state.visitList
             .filter { !it.wasRemoved }
             .forEach { visitState ->
                 visitRepository.save(visitState.asModel(householderModel.id))
             }
+        if (!hasSnapshot) {
+            newState {
+                copy(canDiscardDraft = true)
+            }
+        }
     }
 
     private fun performSave() {
@@ -861,10 +904,16 @@ class VisitDetailViewModel
                 householderName = householderModel.name,
                 visitList = _uiState.value.visitList.map { it.finalized() }
             )
+            // The saved rows are the new committed state, so the pre-draft snapshot is obsolete:
+            // deleting it is what promotes the draft.
+            draftSnapshotRepository.delete(householderId)
+            committedHouseholder = householderModel
+            visits = visitList.map { it.asModel(householderId) }
             newState {
                 copy(
                     householder = houseHolder,
                     visitList = visitList,
+                    canDiscardDraft = false,
                     eventState = UiEventState.SaveSucceeded
                 )
             }
@@ -1064,26 +1113,7 @@ class VisitDetailViewModel
                 VisitType.FIRST_VISIT.asState
             )
             if (householderId != null) {
-                val householder = householderRepository.getById(householderId).asState
-                visits = visitRepository.getAll(householderId)
-                val visitList = visits.map { visit ->
-                    val conversation = conversationList.firstOrNull { conversation ->
-                        conversation.id == visit.nextConversationId
-                    }
-                    visit.asState(conversation)
-                }
-                    .reindexIfNeeded()
-                    .revalidatePendingVisits(householder)
-                newState {
-                    copy(
-                        householder = householder,
-                        visitList = visitList,
-                        conversationList = conversationList,
-                        visitTypeList = visitTypeList,
-                        eventState = UiEventState.Idle,
-                        showDeleteButton = isUpdatingVisit
-                    )
-                }
+                loadFromDatabase(householderId, conversationList, visitTypeList)
             } else {
                 newState {
                     copy(
@@ -1097,6 +1127,90 @@ class VisitDetailViewModel
             }
             initialEditableData = _uiState.value.getEditableDataSnapshot()
             startAutoSave()
+        }
+    }
+
+    private suspend fun loadFromDatabase(
+        householderId: UUID,
+        conversationList: List<ConversationState>,
+        visitTypeList: List<VisitTypeState>
+    ) {
+        val householderModel = householderRepository.getById(householderId)
+        committedHouseholder = householderModel
+        val householder = householderModel.asState
+        visits = visitRepository.getAll(householderId)
+        val hasSnapshot = draftSnapshotRepository.getHouseholderSnapshot(householderId) != null
+        val visitList = visits.map { visit ->
+            val conversation = conversationList.firstOrNull { conversation ->
+                conversation.id == visit.nextConversationId
+            }
+            visit.asState(conversation)
+        }
+            .reindexIfNeeded()
+            .revalidatePendingVisits(householder)
+        newState {
+            copy(
+                householder = householder,
+                visitList = visitList,
+                conversationList = conversationList,
+                visitTypeList = visitTypeList,
+                canDiscardDraft = hasSnapshot,
+                eventState = UiEventState.Idle,
+                showDeleteButton = isUpdatingVisit
+            )
+        }
+    }
+
+    private fun discardClicked() {
+        newState {
+            copy(showDiscardDialog = true)
+        }
+    }
+
+    private fun discardDismissed() {
+        newState {
+            copy(showDiscardDialog = false)
+        }
+    }
+
+    private fun discardConfirmed() {
+        newState {
+            copy(showDiscardDialog = false)
+        }
+        // Pause the auto-save while the rows are replaced underneath it; the baseline is rebased
+        // once the restored state has been reloaded.
+        initialEditableData = null
+        viewModelScope.launch(dispatchers.io) {
+            val householderId = _uiState.value.householder.id
+            val snapshot = draftSnapshotRepository.getHouseholderSnapshot(householderId)
+            when {
+                snapshot == null -> {
+                    newState {
+                        copy(canDiscardDraft = false)
+                    }
+                }
+
+                snapshot.isNewDraft -> {
+                    // The householder was never committed, so there is nothing to restore:
+                    // deleting it (cascading to visits and snapshots) discards the draft. Draft
+                    // visits never get calendar events, so there is none to clean up.
+                    householderRepository.deleteById(householderId)
+                    newState {
+                        copy(eventState = UiEventState.Deleted)
+                    }
+                    return@launch
+                }
+
+                else -> {
+                    draftSnapshotRepository.restore(householderId)
+                    loadFromDatabase(
+                        householderId = householderId,
+                        conversationList = _uiState.value.conversationList,
+                        visitTypeList = _uiState.value.visitTypeList
+                    )
+                }
+            }
+            initialEditableData = _uiState.value.getEditableDataSnapshot()
         }
     }
 
@@ -1444,6 +1558,9 @@ class VisitDetailViewModel
         data object DeleteClicked : UiEvent()
         data object DeleteAccepted : UiEvent()
         data object DeleteDismissed : UiEvent()
+        data object DiscardClicked : UiEvent()
+        data object DiscardConfirmed : UiEvent()
+        data object DiscardDismissed : UiEvent()
         data object CancelClicked : UiEvent()
         data object SaveClicked : UiEvent()
         data object ClearNameClicked : UiEvent()
@@ -1484,6 +1601,8 @@ class VisitDetailViewModel
         val visitTypeList: List<VisitTypeState>,
         val eventState: UiEventState,
         val showDeleteButton: Boolean = false,
+        val canDiscardDraft: Boolean = false,
+        val showDiscardDialog: Boolean = false,
         val showLocationRationale: Boolean = false,
         val showLocationPermissionDialog: Boolean = false,
         val showCalendarRationale: Boolean = false,
