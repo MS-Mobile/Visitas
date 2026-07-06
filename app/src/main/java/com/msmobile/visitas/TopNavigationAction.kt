@@ -18,7 +18,7 @@ data class TopNavigationAction(
  * description while owning the navigation behaviour.
  */
 @Composable
-fun upNavigationActions(onNavigateUp: () -> Unit): List<TopNavigationAction> = listOf(
+fun topNavigationActions(onNavigateUp: () -> Unit): List<TopNavigationAction> = listOf(
     TopNavigationAction(
         contentDescription = stringResource(id = R.string.navigate_back_content_description),
         icon = Icons.AutoMirrored.Rounded.ArrowBack,

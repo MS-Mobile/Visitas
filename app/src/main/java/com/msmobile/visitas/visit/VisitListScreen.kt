@@ -78,7 +78,7 @@ import com.msmobile.visitas.OnIntentStateHandled
 import com.msmobile.visitas.R
 import com.msmobile.visitas.TopBarAction
 import com.msmobile.visitas.settingsTopMenuActions
-import com.msmobile.visitas.upNavigationActions
+import com.msmobile.visitas.topNavigationActions
 import com.msmobile.visitas.backup.BackupSheet
 import com.msmobile.visitas.backup.BackupViewModel
 import com.msmobile.visitas.extension.OnBackPressed
@@ -169,7 +169,7 @@ fun VisitListScreen(
             )
         },
     )
-    val topNavigationActions = upNavigationActions(onNavigateUp = { navigator.navigateUp() })
+    val topNavigationActions = topNavigationActions(onNavigateUp = { navigator.navigateUp() })
     val topMenuActions = settingsTopMenuActions(
         onNavigateToSettings = { onNavigate(SettingsScreenDestination) }
     )
@@ -1128,7 +1128,7 @@ internal fun VisitListScreenPreview(
                 onEvent = {},
                 onNavigateToTab = {},
                 onNavigate = {},
-                topNavigationActions = upNavigationActions(onNavigateUp = {}),
+                topNavigationActions = topNavigationActions(onNavigateUp = {}),
                 topBarActions = visitListTopBarActions(
                     visitListUiState = config.visitListUiState,
                     onVisitListEvent = {},

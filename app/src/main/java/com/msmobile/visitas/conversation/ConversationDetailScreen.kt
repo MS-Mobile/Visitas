@@ -48,7 +48,7 @@ import com.msmobile.visitas.DetailFooterAction
 import com.msmobile.visitas.FloatingActionButtonAction
 import com.msmobile.visitas.R
 import com.msmobile.visitas.TopBarAction
-import com.msmobile.visitas.upNavigationActions
+import com.msmobile.visitas.topNavigationActions
 import com.msmobile.visitas.conversation.ConversationDetailViewModel.ConversationState
 import com.msmobile.visitas.extension.EditableTextFieldColors
 import com.msmobile.visitas.extension.OnBackPressed
@@ -111,7 +111,7 @@ private fun ConversationDetailScreenContent(
         onEvent(ConversationDetailViewModel.UiEvent.CancelClicked)
     }
     val chromeOwner = remember { Any() }
-    val topNavigationActions = upNavigationActions(onNavigateUp = onNavigateUp)
+    val topNavigationActions = topNavigationActions(onNavigateUp = onNavigateUp)
     val topBarActions = conversationDetailTopBarActions(onEvent = onEvent)
     val detailFooterActions = conversationDetailFooterActions(onEvent = onEvent)
     val floatingActionButtonActions = conversationDetailFloatingActionButtonActions(onEvent = onEvent)
@@ -399,7 +399,7 @@ internal fun ConversationDetailScreenPreview(
                 onEvent = {},
                 onNavigateToTab = {},
                 onNavigate = {},
-                topNavigationActions = upNavigationActions(onNavigateUp = {}),
+                topNavigationActions = topNavigationActions(onNavigateUp = {}),
                 topBarActions = conversationDetailTopBarActions(onEvent = {}),
                 detailFooterActions = conversationDetailFooterActions(onEvent = {}),
                 floatingActionButtonActions = conversationDetailFloatingActionButtonActions(onEvent = {})

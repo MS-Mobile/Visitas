@@ -29,7 +29,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.AppScaffold
 import com.msmobile.visitas.AppScaffoldState
 import com.msmobile.visitas.settingsTopMenuActions
-import com.msmobile.visitas.upNavigationActions
+import com.msmobile.visitas.topNavigationActions
 import com.msmobile.visitas.extension.OnBackPressed
 import com.msmobile.visitas.ui.theme.PreviewFoldable
 import com.msmobile.visitas.ui.theme.PreviewPhone
@@ -64,7 +64,7 @@ fun ConversationListScreen(
         navigator.navigate(direction)
     }
 
-    val topNavigationActions = upNavigationActions(onNavigateUp = { navigator.navigateUp() })
+    val topNavigationActions = topNavigationActions(onNavigateUp = { navigator.navigateUp() })
     val topMenuActions = settingsTopMenuActions(
         onNavigateToSettings = { onNavigate(SettingsScreenDestination) }
     )
@@ -226,7 +226,7 @@ internal fun ConversationListScreenPreview(
                 onEvent = {},
                 onNavigateToTab = {},
                 onNavigate = {},
-                topNavigationActions = upNavigationActions(onNavigateUp = {}),
+                topNavigationActions = topNavigationActions(onNavigateUp = {}),
                 topMenuActions = settingsTopMenuActions(onNavigateToSettings = {})
             ) {
                 ConversationListScreenContent(
