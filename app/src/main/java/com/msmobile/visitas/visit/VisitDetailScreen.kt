@@ -154,27 +154,16 @@ private fun VisitDetailScreenContent(
         onEvent(VisitDetailViewModel.UiEvent.CancelClicked)
     }
 
-    val copyDataDescription = stringResource(id = R.string.copy_data_content_description)
-    val deleteDescription = stringResource(id = R.string.delete)
     val draftLabel = stringResource(id = R.string.visit_draft)
     val chromeOwner = remember { Any() }
     val hasDraft = uiState.visitList.filter { !it.wasRemoved }.any { it.isDraft }
+    val topBarActions = visitDetailTopBarActions(onEvent = onEvent)
+
     DisposableEffect(hasDraft) {
         appScaffoldState.setUiState(
             owner = chromeOwner,
             uiState = AppScaffoldState.UiState(
-                topBarActions = listOf(
-                    TopBarAction(
-                        contentDescription = copyDataDescription,
-                        icon = Icons.Rounded.ContentCopy,
-                        onClick = { onEvent(VisitDetailViewModel.UiEvent.CopyVisitDataClicked) }
-                    ),
-                    TopBarAction(
-                        contentDescription = deleteDescription,
-                        icon = Icons.Rounded.Delete,
-                        onClick = { onEvent(VisitDetailViewModel.UiEvent.DeleteClicked) }
-                    )
-                ),
+                topBarActions = topBarActions,
                 detailFooterActions = DetailFooterActions(
                     onBack = { onEvent(VisitDetailViewModel.UiEvent.CancelClicked) },
                     onSave = { onEvent(VisitDetailViewModel.UiEvent.SaveClicked) },
@@ -399,6 +388,26 @@ private fun HouseholderDetail(
             }
         )
     }
+}
+
+@Composable
+private fun visitDetailTopBarActions(
+    onEvent: (VisitDetailViewModel.UiEvent) -> Unit
+): List<TopBarAction> {
+    val copyDataDescription = stringResource(id = R.string.copy_data_content_description)
+    val deleteDescription = stringResource(id = R.string.delete)
+    return listOf(
+        TopBarAction(
+            contentDescription = copyDataDescription,
+            icon = Icons.Rounded.ContentCopy,
+            onClick = { onEvent(VisitDetailViewModel.UiEvent.CopyVisitDataClicked) }
+        ),
+        TopBarAction(
+            contentDescription = deleteDescription,
+            icon = Icons.Rounded.Delete,
+            onClick = { onEvent(VisitDetailViewModel.UiEvent.DeleteClicked) }
+        )
+    )
 }
 
 @Composable
@@ -1077,24 +1086,14 @@ internal fun VisitDetailScreenPreview(
     @PreviewParameter(VisitDetailPreviewConfigProvider::class) config: VisitDetailPreviewConfig
 ) {
     VisitasTheme {
+        val topBarActions = visitDetailTopBarActions(onEvent = {})
         AppScaffold(
             uiState = config.mainActivityUiState,
             currentDestination = VisitDetailScreenDestination,
             onEvent = {},
             onNavigateToTab = {},
             onNavigate = {},
-            topBarActions = listOf(
-                TopBarAction(
-                    contentDescription = stringResource(id = R.string.copy_data_content_description),
-                    icon = Icons.Rounded.ContentCopy,
-                    onClick = { }
-                ),
-                TopBarAction(
-                    contentDescription = stringResource(id = R.string.delete),
-                    icon = Icons.Rounded.Delete,
-                    onClick = {}
-                )
-            ),
+            topBarActions = topBarActions,
             detailFooterActions = DetailFooterActions(
                 onBack = {},
                 onSave = {},
