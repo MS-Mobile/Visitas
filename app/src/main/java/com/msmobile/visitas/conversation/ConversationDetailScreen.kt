@@ -119,19 +119,13 @@ private fun ConversationDetailScreenContent(
     OnBackPressed {
         onEvent(ConversationDetailViewModel.UiEvent.CancelClicked)
     }
-    val deleteDescription = stringResource(id = R.string.delete)
     val chromeOwner = remember { Any() }
+    val topBarActions = conversationDetailTopBarActions(onEvent = onEvent)
     DisposableEffect(Unit) {
         appScaffoldState.setUiState(
             owner = chromeOwner,
             uiState = AppScaffoldState.UiState(
-                topBarActions = listOf(
-                    TopBarAction(
-                        contentDescription = deleteDescription,
-                        icon = Icons.Rounded.Delete,
-                        onClick = { onEvent(ConversationDetailViewModel.UiEvent.DeleteClicked) }
-                    )
-                ),
+                topBarActions = topBarActions,
                 detailFooterActions = DetailFooterActions(
                     onBack = { onEvent(ConversationDetailViewModel.UiEvent.CancelClicked) },
                     onSave = { onEvent(ConversationDetailViewModel.UiEvent.SaveClicked) },
@@ -146,6 +140,20 @@ private fun ConversationDetailScreenContent(
         onEvent = onEvent
     )
     StateHandler(uiState, onEvent, onNavigateUp)
+}
+
+@Composable
+private fun conversationDetailTopBarActions(
+    onEvent: (ConversationDetailViewModel.UiEvent) -> Unit
+): List<TopBarAction> {
+    val deleteDescription = stringResource(id = R.string.delete)
+    return listOf(
+        TopBarAction(
+            contentDescription = deleteDescription,
+            icon = Icons.Rounded.Delete,
+            onClick = { onEvent(ConversationDetailViewModel.UiEvent.DeleteClicked) }
+        )
+    )
 }
 
 @Composable
@@ -367,7 +375,8 @@ internal fun ConversationDetailScreenPreview(
             currentDestination = ConversationDetailScreenDestination,
             onEvent = {},
             onNavigateToTab = {},
-            onNavigate = {}
+            onNavigate = {},
+            topBarActions = conversationDetailTopBarActions(onEvent = {})
         ) {
             ConversationDetailScreenContent(
                 firstConversationId = null,
