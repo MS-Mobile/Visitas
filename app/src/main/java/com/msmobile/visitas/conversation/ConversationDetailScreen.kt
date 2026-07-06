@@ -67,6 +67,7 @@ import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.ui.views.DetailFooter
 import com.msmobile.visitas.ui.views.LazyColumnWithScrollbar
+import com.msmobile.visitas.ui.views.PreviewCompatDropdownMenu
 import com.msmobile.visitas.ui.views.TextFieldClearButton
 import com.msmobile.visitas.util.DetailScreenStyle
 import com.msmobile.visitas.util.borderPadding
@@ -370,21 +371,23 @@ internal fun ConversationDetailScreenPreview(
     @PreviewParameter(ConversationDetailPreviewConfigProvider::class) config: ConversationDetailPreviewConfig
 ) {
     VisitasTheme {
-        AppScaffold(
-            uiState = config.mainActivityUiState,
-            currentDestination = ConversationDetailScreenDestination,
-            onEvent = {},
-            onNavigateToTab = {},
-            onNavigate = {},
-            topBarActions = conversationDetailTopBarActions(onEvent = {})
-        ) {
-            ConversationDetailScreenContent(
-                firstConversationId = null,
-                uiState = config.uiState,
-                appScaffoldState = remember { AppScaffoldState() }, // TODO: config.appScaffoldState
+        PreviewCompatDropdownMenu.Host {
+            AppScaffold(
+                uiState = config.mainActivityUiState,
+                currentDestination = ConversationDetailScreenDestination,
                 onEvent = {},
-                onNavigateUp = {}
-            )
+                onNavigateToTab = {},
+                onNavigate = {},
+                topBarActions = conversationDetailTopBarActions(onEvent = {})
+            ) {
+                ConversationDetailScreenContent(
+                    firstConversationId = null,
+                    uiState = config.uiState,
+                    appScaffoldState = remember { AppScaffoldState() }, // TODO: config.appScaffoldState
+                    onEvent = {},
+                    onNavigateUp = {}
+                )
+            }
         }
     }
 }
