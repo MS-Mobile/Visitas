@@ -12,7 +12,7 @@ interface SnapshotDao {
     suspend fun saveHouseholderSnapshot(snapshot: HouseholderSnapshot)
 
     @Upsert
-    suspend fun saveVisitSnapshots(snapshots: List<VisitSnapshot>)
+    suspend fun saveVisitSnapshot(snapshot: VisitSnapshot)
 
     @Query("SELECT * FROM householder_snapshot WHERE id = :householderId")
     suspend fun getHouseholderSnapshot(householderId: UUID): HouseholderSnapshot?
