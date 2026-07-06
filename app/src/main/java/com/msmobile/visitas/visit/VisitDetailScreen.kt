@@ -156,7 +156,7 @@ private fun VisitDetailScreenContent(
 
     val chromeOwner = remember { Any() }
     val topBarActions = visitDetailTopBarActions(onEvent = onEvent)
-    val subtitle = visitDetailSubtitleString(uiState.showSubtitle)
+    val subtitle = visitDetailSubtitleString(uiState.hasDrafts)
 
     DisposableEffect(subtitle) {
         appScaffoldState.setUiState(
@@ -1107,7 +1107,7 @@ internal fun VisitDetailScreenPreview(
                     onSave = {},
                     onAdd = {}
                 ),
-                subtitle = visitDetailSubtitleString(showSubtitle = config.uiState.showSubtitle)
+                subtitle = visitDetailSubtitleString(showSubtitle = config.uiState.hasDrafts)
             ) {
                 VisitDetailScreenContent(
                     householderId = config.householderId,

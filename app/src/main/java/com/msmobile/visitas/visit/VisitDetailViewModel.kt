@@ -830,8 +830,8 @@ class VisitDetailViewModel
                     visit
                 }
             }
-            val hasDraft = visitList.filter { !it.wasRemoved }.any { it.isDraft }
-            copy(visitList = updatedList, showSubtitle = hasDraft)
+            val hasDrafts = visitList.hasDrafts()
+            copy(visitList = updatedList, hasDrafts = hasDrafts)
         }
     }
 
@@ -1075,6 +1075,7 @@ class VisitDetailViewModel
                 }
                     .reindexIfNeeded()
                     .revalidatePendingVisits(householder)
+                val hasDrafts = visitList.hasDrafts()
                 newState {
                     copy(
                         householder = householder,
@@ -1082,7 +1083,8 @@ class VisitDetailViewModel
                         conversationList = conversationList,
                         visitTypeList = visitTypeList,
                         eventState = UiEventState.Idle,
-                        showDeleteButton = isUpdatingVisit
+                        showDeleteButton = isUpdatingVisit,
+                        hasDrafts = hasDrafts
                     )
                 }
             } else {
@@ -1126,6 +1128,10 @@ class VisitDetailViewModel
             hasFocus -> HouseholderAddressState.ShowClearAddress
             else -> HouseholderAddressState.None
         }
+    }
+
+    private fun List<VisitState>.hasDrafts(): Boolean {
+        return filter { !it.wasRemoved }.any { it.isDraft }
     }
 
     private fun List<ConversationState>.filterBy(filter: String): List<ConversationState> {
@@ -1489,7 +1495,7 @@ class VisitDetailViewModel
         val showLocationPermissionDialog: Boolean = false,
         val showCalendarRationale: Boolean = false,
         val showCalendarPermissionDialog: Boolean = false,
-        val showSubtitle: Boolean = false
+        val hasDrafts: Boolean = false
     )
 
     companion object {
