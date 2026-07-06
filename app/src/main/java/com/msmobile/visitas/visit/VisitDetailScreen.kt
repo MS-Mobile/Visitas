@@ -81,12 +81,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.AppScaffold
-import com.msmobile.visitas.AppScaffoldState
-import com.msmobile.visitas.DetailFooterAction
-import com.msmobile.visitas.FloatingActionButtonAction
+import com.msmobile.visitas.util.scaffold.AppScaffoldState
+import com.msmobile.visitas.util.scaffold.DetailFooterAction
+import com.msmobile.visitas.util.scaffold.FloatingActionButtonAction
 import com.msmobile.visitas.R
-import com.msmobile.visitas.TopBarAction
-import com.msmobile.visitas.topNavigationActions
+import com.msmobile.visitas.util.scaffold.TopBarAction
+import com.msmobile.visitas.util.scaffold.topNavigationActions
 import com.msmobile.visitas.extension.EditableTextFieldColors
 import com.msmobile.visitas.extension.OnBackPressed
 import com.msmobile.visitas.extension.ReadOnlyTextFieldColors

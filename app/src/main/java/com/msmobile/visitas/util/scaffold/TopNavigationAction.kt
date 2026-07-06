@@ -1,10 +1,11 @@
-package com.msmobile.visitas
+package com.msmobile.visitas.util.scaffold
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import com.msmobile.visitas.R
 
 data class TopNavigationAction(
     val contentDescription: String,

@@ -1,4 +1,4 @@
-package com.msmobile.visitas
+package com.msmobile.visitas.util.scaffold
 
 import androidx.compose.ui.graphics.vector.ImageVector
 

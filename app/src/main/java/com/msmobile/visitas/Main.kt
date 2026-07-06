@@ -7,6 +7,7 @@ import androidx.navigation.compose.rememberNavController
 import com.msmobile.visitas.di.navigationDependencies
 import com.msmobile.visitas.extension.currentDestinationWithLifecycle
 import com.msmobile.visitas.ui.theme.VisitasTheme
+import com.msmobile.visitas.util.scaffold.AppScaffoldState
 import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.generated.NavGraphs
 import com.ramcosta.composedestinations.spec.Direction

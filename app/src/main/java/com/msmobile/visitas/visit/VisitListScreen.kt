@@ -73,12 +73,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.AppScaffold
-import com.msmobile.visitas.AppScaffoldState
+import com.msmobile.visitas.util.scaffold.AppScaffoldState
 import com.msmobile.visitas.OnIntentStateHandled
 import com.msmobile.visitas.R
-import com.msmobile.visitas.TopBarAction
-import com.msmobile.visitas.settingsTopMenuActions
-import com.msmobile.visitas.topNavigationActions
+import com.msmobile.visitas.util.scaffold.TopBarAction
+import com.msmobile.visitas.util.scaffold.settingsTopMenuActions
+import com.msmobile.visitas.util.scaffold.topNavigationActions
 import com.msmobile.visitas.backup.BackupSheet
 import com.msmobile.visitas.backup.BackupViewModel
 import com.msmobile.visitas.extension.OnBackPressed

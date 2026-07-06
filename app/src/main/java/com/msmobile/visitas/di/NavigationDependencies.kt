@@ -2,7 +2,7 @@ package com.msmobile.visitas.di
 
 import androidx.compose.runtime.Composable
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.msmobile.visitas.AppScaffoldState
+import com.msmobile.visitas.util.scaffold.AppScaffoldState
 import com.msmobile.visitas.OnIntentStateHandled
 import com.msmobile.visitas.backup.BackupViewModel
 import com.msmobile.visitas.conversation.ConversationDetailViewModel

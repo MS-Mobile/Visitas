@@ -27,9 +27,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.AppScaffold
-import com.msmobile.visitas.AppScaffoldState
-import com.msmobile.visitas.settingsTopMenuActions
-import com.msmobile.visitas.topNavigationActions
+import com.msmobile.visitas.util.scaffold.AppScaffoldState
+import com.msmobile.visitas.util.scaffold.settingsTopMenuActions
+import com.msmobile.visitas.util.scaffold.topNavigationActions
 import com.msmobile.visitas.extension.OnBackPressed
 import com.msmobile.visitas.ui.theme.PreviewFoldable
 import com.msmobile.visitas.ui.theme.PreviewPhone
