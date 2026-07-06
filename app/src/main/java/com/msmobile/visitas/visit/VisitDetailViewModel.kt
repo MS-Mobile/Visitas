@@ -126,6 +126,9 @@ class VisitDetailViewModel
             UiEvent.LoadAddressClicked -> loadAddressClicked()
             UiEvent.LookUpAddressFromLatLongClicked -> lookUpAddressFromLatLongClicked()
             UiEvent.CancelClicked -> cancelClicked()
+            UiEvent.UndoChangesClicked -> undoChangesClicked()
+            UiEvent.UndoChangesConfirmed -> undoChangesConfirmed()
+            UiEvent.UndoChangesConfirmationDismissed -> undoChangesConfirmationDismissed()
             UiEvent.DeleteClicked -> deleteClicked()
             UiEvent.DeleteAccepted -> deleteAccepted()
             UiEvent.DeleteDismissed -> deleteDismissed()
@@ -774,6 +777,25 @@ class VisitDetailViewModel
         }
     }
 
+    private fun undoChangesClicked() {
+        newState {
+            copy(eventState = UiEventState.UndoChangesConfirmation)
+        }
+    }
+
+    private fun undoChangesConfirmationDismissed() {
+        newState {
+            copy(eventState = UiEventState.Idle)
+        }
+    }
+
+    private fun undoChangesConfirmed() {
+        // TODO: Undo changes - read from SnapshotsRepository, update UI state, update database,
+        newState {
+            copy(eventState = UiEventState.Idle)
+        }
+    }
+
     private fun saveClicked() {
         // Check if there are pending visits that need calendar integration
         val hasPendingVisits = _uiState.value.visitList.any { !it.isDone && !it.wasRemoved }
@@ -862,6 +884,9 @@ class VisitDetailViewModel
                 householderName = householderModel.name,
                 visitList = _uiState.value.visitList.map { it.finalized() }
             )
+
+            // TODO: Update snapshots repository
+
             newState {
                 copy(
                     householder = houseHolder,
@@ -1452,6 +1477,9 @@ class VisitDetailViewModel
         data object DeleteAccepted : UiEvent()
         data object DeleteDismissed : UiEvent()
         data object CancelClicked : UiEvent()
+        data object UndoChangesClicked : UiEvent()
+        data object UndoChangesConfirmed : UiEvent()
+        data object UndoChangesConfirmationDismissed : UiEvent()
         data object SaveClicked : UiEvent()
         data object ClearNameClicked : UiEvent()
         data object ClearAddressClicked : UiEvent()
@@ -1478,6 +1506,7 @@ class VisitDetailViewModel
         data object ValidationError : UiEventState()
         data class VisitDateExpanded(val visit: VisitState) : UiEventState()
         data object DeleteConfirmation : UiEventState()
+        data object UndoChangesConfirmation : UiEventState()
         data object Deleting : UiEventState()
         data object Deleted : UiEventState()
         data class NextVisitSuggestionShowing(val visit: VisitState) : UiEventState()

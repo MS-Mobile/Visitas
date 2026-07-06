@@ -27,6 +27,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Undo
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Info
@@ -396,6 +397,39 @@ private fun HouseholderDetail(
 }
 
 @Composable
+private fun DiscardChangesConfirmation(onEvent: (VisitDetailViewModel.UiEvent) -> Unit) {
+    AlertDialog(
+        onDismissRequest = {
+            onEvent(VisitDetailViewModel.UiEvent.UndoChangesConfirmationDismissed)
+        },
+        title = {
+            Text(text = stringResource(id = R.string.discard_changes_title))
+        },
+        text = {
+            Text(text = stringResource(id = R.string.discard_changes_message))
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onEvent(VisitDetailViewModel.UiEvent.UndoChangesConfirmed)
+                }
+            ) {
+                Text(stringResource(id = R.string.confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = {
+                    onEvent(VisitDetailViewModel.UiEvent.UndoChangesConfirmationDismissed)
+                }
+            ) {
+                Text(stringResource(id = R.string.cancel))
+            }
+        }
+    )
+}
+
+@Composable
 private fun visitDetailTopNavigationActions(
     onNavigateUp: () -> Unit
 ): List<TopNavigationAction> = topNavigationActions(onNavigateUp = onNavigateUp)
@@ -426,9 +460,9 @@ private fun visitDetailFooterActions(
 ): List<DetailFooterAction> {
     return listOf(
         DetailFooterAction(
-            contentDescription = stringResource(id = R.string.cancel),
-            icon = Icons.Rounded.ArrowBackIosNew,
-            onClick = { onEvent(VisitDetailViewModel.UiEvent.CancelClicked) }
+            contentDescription = stringResource(id = R.string.undo_changes),
+            icon = Icons.AutoMirrored.Rounded.Undo,
+            onClick = { onEvent(VisitDetailViewModel.UiEvent.UndoChangesClicked) }
         ),
         DetailFooterAction(
             contentDescription = stringResource(id = R.string.save),
@@ -998,6 +1032,10 @@ private fun StateHandler(
 
         is VisitDetailViewModel.UiEventState.DeleteConfirmation -> {
             DeleteMessage(onEvent)
+        }
+
+        is VisitDetailViewModel.UiEventState.UndoChangesConfirmation -> {
+            DiscardChangesConfirmation(onEvent)
         }
 
         is VisitDetailViewModel.UiEventState.NoAddressFound -> {
