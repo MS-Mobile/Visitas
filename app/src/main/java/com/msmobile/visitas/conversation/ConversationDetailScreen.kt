@@ -396,7 +396,9 @@ internal fun ConversationDetailScreenPreview(
                 onEvent = {},
                 onNavigateToTab = {},
                 onNavigate = {},
-                topBarActions = conversationDetailTopBarActions(onEvent = {})
+                topBarActions = conversationDetailTopBarActions(onEvent = {}),
+                detailFooterActions = conversationDetailFooterActions(onEvent = {}),
+                floatingActionButtonActions = conversationDetailFloatingActionButtonActions(onEvent = {})
             ) {
                 ConversationDetailScreenContent(
                     firstConversationId = null,
