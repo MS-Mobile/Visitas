@@ -1088,7 +1088,6 @@ private fun visitDetailSubtitleString(showSubtitle: Boolean): String? {
 
 @VisibleForTesting
 @PreviewPhone
-@PreviewFoldable
 @Composable
 internal fun VisitDetailScreenPreview(
     @PreviewParameter(VisitDetailPreviewConfigProvider::class) config: VisitDetailPreviewConfig
