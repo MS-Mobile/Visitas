@@ -54,6 +54,18 @@ internal class VisitDetailPreviewConfigProvider :
             isDarkMode = false
         ),
         VisitDetailPreviewConfig(
+            configName = "Draft Visit",
+            mainActivityUiState = previewMainActivityUiState,
+            householderId = UUID.randomUUID(),
+            uiState = previewVisitDetailUiState.copy(
+                visitList = listOf(
+                    previewFirstVisitUiState.copy(canBeRemoved = false)
+                ),
+                hasDrafts = true
+            ),
+            isDarkMode = false
+        ),
+        VisitDetailPreviewConfig(
             configName = "Loading Address",
             mainActivityUiState = previewMainActivityUiState,
             householderId = null,
@@ -238,7 +250,7 @@ private val previewNewVisitUiState = VisitDetailViewModel.VisitState(
     showClearSubject = false,
     wasRemoved = false,
     caretPosition = 0,
-    isDraft = true,
+    isDraft = false,
 )
 
 private val previewFirstVisitUiState = VisitDetailViewModel.VisitState(
