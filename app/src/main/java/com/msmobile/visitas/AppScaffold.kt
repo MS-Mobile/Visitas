@@ -76,7 +76,11 @@ fun AppScaffold(
         ConversationDetailScreenDestination,
         SettingsScreenDestination
     )
-    val showBackButton = currentDestination == SettingsScreenDestination
+    val showBackButton = currentDestination in listOf(
+        VisitDetailScreenDestination,
+        ConversationDetailScreenDestination,
+        SettingsScreenDestination,
+    )
     val showBottomNavigation = currentDestination in listOf(
         VisitListScreenDestination,
         ConversationListScreenDestination
@@ -120,7 +124,7 @@ fun AppScaffold(
                         }
                     },
                     navigationIcon = {
-                        if (showBackButton || onBack != null) {
+                        if (showBackButton) {
                             IconButton(onClick = onBack ?: onNavigateUp) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
