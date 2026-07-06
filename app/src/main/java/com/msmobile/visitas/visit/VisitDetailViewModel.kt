@@ -22,6 +22,7 @@ import com.msmobile.visitas.util.PermissionChecker
 import com.msmobile.visitas.util.StringResource
 import com.msmobile.visitas.util.VisitDataFormatter
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -34,7 +35,9 @@ import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import java.util.UUID
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 
+@OptIn(FlowPreview::class)
 @HiltViewModel
 class VisitDetailViewModel
 @Inject constructor(
@@ -801,7 +804,7 @@ class VisitDetailViewModel
     private fun startAutoSave() {
         if (autoSaveJob != null) return
         autoSaveJob = _uiState
-            .debounce(250)
+            .debounce(AUTO_SAVE_DEBOUNCE_INTERVAL)
             .onEach { state ->
                 val baseline = initialEditableData ?: return@onEach
 
@@ -1610,5 +1613,6 @@ class VisitDetailViewModel
 
     companion object {
         private const val DEFAULT_VISIT_INTERVAL_DAYS = 7L
+        private val AUTO_SAVE_DEBOUNCE_INTERVAL = 200.milliseconds
     }
 }
