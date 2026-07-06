@@ -7,6 +7,7 @@ import androidx.navigation.compose.rememberNavController
 import com.msmobile.visitas.di.navigationDependencies
 import com.msmobile.visitas.extension.currentDestinationWithLifecycle
 import com.msmobile.visitas.ui.theme.VisitasTheme
+import com.msmobile.visitas.util.scaffold.AppScaffoldState
 import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.generated.NavGraphs
 import com.ramcosta.composedestinations.spec.Direction
@@ -38,10 +39,6 @@ fun Main(
     val onNavigate = { direction: Direction ->
         destinationsNavigator.navigate(direction)
     }
-    val onNavigateUp = {
-        destinationsNavigator.navigateUp()
-        Unit
-    }
     VisitasTheme {
         AppScaffold(
             uiState = uiState,
@@ -49,9 +46,11 @@ fun Main(
             onEvent = onEvent,
             onNavigateToTab = onNavigateToTab,
             onNavigate = onNavigate,
-            onNavigateUp = onNavigateUp,
+            topNavigationActions = appScaffoldState.uiState.topNavigationActions,
             topBarActions = appScaffoldState.uiState.topBarActions,
+            topMenuActions = appScaffoldState.uiState.topMenuActions,
             detailFooterActions = appScaffoldState.uiState.detailFooterActions,
+            floatingActionButtonActions = appScaffoldState.uiState.floatingActionButtonActions,
             subtitle = appScaffoldState.uiState.subtitle,
             content = {
                 DestinationsNavHost(

@@ -9,52 +9,47 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.rounded.ArrowBackIosNew
 import androidx.compose.material.icons.rounded.Delete
-import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.DoneOutline
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.AppScaffold
-import com.msmobile.visitas.AppScaffoldState
-import com.msmobile.visitas.DetailFooterActions
-import com.msmobile.visitas.MainActivityViewModel
+import com.msmobile.visitas.util.scaffold.AppScaffoldState
+import com.msmobile.visitas.util.scaffold.DetailFooterAction
+import com.msmobile.visitas.util.scaffold.FloatingActionButtonAction
 import com.msmobile.visitas.R
-import com.msmobile.visitas.TopBarAction
+import com.msmobile.visitas.util.scaffold.TopBarAction
+import com.msmobile.visitas.util.scaffold.TopNavigationAction
+import com.msmobile.visitas.util.scaffold.topNavigationActions
 import com.msmobile.visitas.conversation.ConversationDetailViewModel.ConversationState
 import com.msmobile.visitas.extension.EditableTextFieldColors
 import com.msmobile.visitas.extension.OnBackPressed
@@ -62,21 +57,18 @@ import com.msmobile.visitas.extension.ReadOnlyTextFieldColors
 import com.msmobile.visitas.extension.removeBottomCorner
 import com.msmobile.visitas.extension.removeTopCorner
 import com.msmobile.visitas.extension.textField
-import com.msmobile.visitas.ui.theme.PreviewFoldable
 import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
-import com.msmobile.visitas.ui.views.DetailFooter
 import com.msmobile.visitas.ui.views.LazyColumnWithScrollbar
+import com.msmobile.visitas.ui.views.PreviewCompatDropdownMenu
 import com.msmobile.visitas.ui.views.TextFieldClearButton
 import com.msmobile.visitas.util.DetailScreenStyle
 import com.msmobile.visitas.util.borderPadding
 import com.msmobile.visitas.util.floatingBarBottomPadding
 import com.msmobile.visitas.util.verticalFieldPadding
-import com.msmobile.visitas.visit.VisitDetailViewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.ConversationDetailScreenDestination
-import com.ramcosta.composedestinations.generated.destinations.VisitDetailScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import java.util.UUID
 
@@ -119,24 +111,19 @@ private fun ConversationDetailScreenContent(
     OnBackPressed {
         onEvent(ConversationDetailViewModel.UiEvent.CancelClicked)
     }
-    val deleteDescription = stringResource(id = R.string.delete)
     val chromeOwner = remember { Any() }
+    val topNavigationActions = conversationDetailTopNavigationActions(onNavigateUp = onNavigateUp)
+    val topBarActions = conversationDetailTopBarActions(onEvent = onEvent)
+    val detailFooterActions = conversationDetailFooterActions(onEvent = onEvent)
+    val floatingActionButtonActions = conversationDetailFloatingActionButtonActions(onEvent = onEvent)
     DisposableEffect(Unit) {
         appScaffoldState.setUiState(
             owner = chromeOwner,
             uiState = AppScaffoldState.UiState(
-                topBarActions = listOf(
-                    TopBarAction(
-                        contentDescription = deleteDescription,
-                        icon = Icons.Rounded.Delete,
-                        onClick = { onEvent(ConversationDetailViewModel.UiEvent.DeleteClicked) }
-                    )
-                ),
-                detailFooterActions = DetailFooterActions(
-                    onBack = { onEvent(ConversationDetailViewModel.UiEvent.CancelClicked) },
-                    onSave = { onEvent(ConversationDetailViewModel.UiEvent.SaveClicked) },
-                    onAdd = { onEvent(ConversationDetailViewModel.UiEvent.AddClicked) }
-                )
+                topNavigationActions = topNavigationActions,
+                topBarActions = topBarActions,
+                detailFooterActions = detailFooterActions,
+                floatingActionButtonActions = floatingActionButtonActions
             )
         )
         onDispose { appScaffoldState.clearUiState(chromeOwner) }
@@ -146,6 +133,56 @@ private fun ConversationDetailScreenContent(
         onEvent = onEvent
     )
     StateHandler(uiState, onEvent, onNavigateUp)
+}
+
+@Composable
+private fun conversationDetailTopNavigationActions(
+    onNavigateUp: () -> Unit
+): List<TopNavigationAction> = topNavigationActions(onNavigateUp = onNavigateUp)
+
+@Composable
+private fun conversationDetailTopBarActions(
+    onEvent: (ConversationDetailViewModel.UiEvent) -> Unit
+): List<TopBarAction> {
+    val deleteDescription = stringResource(id = R.string.delete)
+    return listOf(
+        TopBarAction(
+            contentDescription = deleteDescription,
+            icon = Icons.Rounded.Delete,
+            onClick = { onEvent(ConversationDetailViewModel.UiEvent.DeleteClicked) }
+        )
+    )
+}
+
+@Composable
+private fun conversationDetailFooterActions(
+    onEvent: (ConversationDetailViewModel.UiEvent) -> Unit
+): List<DetailFooterAction> {
+    return listOf(
+        DetailFooterAction(
+            contentDescription = stringResource(id = R.string.cancel),
+            icon = Icons.Rounded.ArrowBackIosNew,
+            onClick = { onEvent(ConversationDetailViewModel.UiEvent.CancelClicked) }
+        ),
+        DetailFooterAction(
+            contentDescription = stringResource(id = R.string.save),
+            icon = Icons.Rounded.DoneOutline,
+            onClick = { onEvent(ConversationDetailViewModel.UiEvent.SaveClicked) }
+        )
+    )
+}
+
+@Composable
+private fun conversationDetailFloatingActionButtonActions(
+    onEvent: (ConversationDetailViewModel.UiEvent) -> Unit
+): List<FloatingActionButtonAction> {
+    return listOf(
+        FloatingActionButtonAction(
+            contentDescription = stringResource(id = R.string.add_conversation),
+            icon = Icons.Filled.Add,
+            onClick = { onEvent(ConversationDetailViewModel.UiEvent.AddClicked) }
+        )
+    )
 }
 
 @Composable
@@ -356,26 +393,31 @@ private fun StateHandler(
 
 @VisibleForTesting
 @PreviewPhone
-@PreviewFoldable
 @Composable
 internal fun ConversationDetailScreenPreview(
     @PreviewParameter(ConversationDetailPreviewConfigProvider::class) config: ConversationDetailPreviewConfig
 ) {
     VisitasTheme {
-        AppScaffold(
-            uiState = config.mainActivityUiState,
-            currentDestination = ConversationDetailScreenDestination,
-            onEvent = {},
-            onNavigateToTab = {},
-            onNavigate = {}
-        ) {
-            ConversationDetailScreenContent(
-                firstConversationId = null,
-                uiState = config.uiState,
-                appScaffoldState = remember { AppScaffoldState() }, // TODO: config.appScaffoldState
+        PreviewCompatDropdownMenu.HostPreview {
+            AppScaffold(
+                uiState = config.mainActivityUiState,
+                currentDestination = ConversationDetailScreenDestination,
                 onEvent = {},
-                onNavigateUp = {}
-            )
+                onNavigateToTab = {},
+                onNavigate = {},
+                topNavigationActions = conversationDetailTopNavigationActions(onNavigateUp = {}),
+                topBarActions = conversationDetailTopBarActions(onEvent = {}),
+                detailFooterActions = conversationDetailFooterActions(onEvent = {}),
+                floatingActionButtonActions = conversationDetailFloatingActionButtonActions(onEvent = {})
+            ) {
+                ConversationDetailScreenContent(
+                    firstConversationId = null,
+                    uiState = config.uiState,
+                    appScaffoldState = remember { AppScaffoldState() }, // TODO: config.appScaffoldState
+                    onEvent = {},
+                    onNavigateUp = {}
+                )
+            }
         }
     }
 }

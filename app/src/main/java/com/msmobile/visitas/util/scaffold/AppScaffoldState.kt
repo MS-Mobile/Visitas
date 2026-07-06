@@ -1,4 +1,4 @@
-package com.msmobile.visitas
+package com.msmobile.visitas.util.scaffold
 
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -29,8 +29,11 @@ class AppScaffoldState {
     }
 
     data class UiState(
+        val topNavigationActions: List<TopNavigationAction> = emptyList(),
         val topBarActions: List<TopBarAction> = emptyList(),
-        val detailFooterActions: DetailFooterActions? = null,
+        val topMenuActions: List<TopMenuAction> = emptyList(),
+        val detailFooterActions: List<DetailFooterAction> = emptyList(),
+        val floatingActionButtonActions: List<FloatingActionButtonAction> = emptyList(),
         // Optional accent-styled supporting line shown under the top bar title that any
         // screen can set (e.g. to surface a status like "Draft").
         val subtitle: String? = null,

@@ -36,7 +36,7 @@ private val PREVIEW_MENU_END_MARGIN = 8.dp
  * In production it delegates to the real [DropdownMenu], so behaviour is unchanged for users. Under
  * [LocalInspectionMode] the real menu can't be used because layoutlib does not paint
  * [androidx.compose.ui.window.Popup] content, so the same content is registered with the nearest
- * [Host] and painted there — above all other content, below the top app bar — so previews/screenshots
+ * [HostPreview] and painted there — above all other content, below the top app bar — so previews/screenshots
  * show the full menu instead of a slice clipped by the app bar or a card.
  */
 object PreviewCompatDropdownMenu {
@@ -77,7 +77,7 @@ object PreviewCompatDropdownMenu {
      * renderer does not settle).
      */
     @Composable
-    fun Host(content: @Composable () -> Unit) {
+    fun HostPreview(content: @Composable () -> Unit) {
         if (!LocalInspectionMode.current) {
             content()
             return
@@ -147,7 +147,7 @@ private object MaterialDropdownMenuRenderer : DropdownMenuRenderer {
 }
 
 /**
- * Preview renderer: registers the menu with the enclosing [PreviewCompatDropdownMenu.Host] instead of
+ * Preview renderer: registers the menu with the enclosing [PreviewCompatDropdownMenu.HostPreview] instead of
  * drawing inline, so the host can paint it above the app bar / card that would otherwise clip it.
  * Falls back to an inline [Surface] when no host is present.
  */

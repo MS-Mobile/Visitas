@@ -27,7 +27,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.Analytics
-import androidx.compose.material.icons.rounded.Analytics
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Explore
 import androidx.compose.material.icons.rounded.FilterList
@@ -35,7 +34,6 @@ import androidx.compose.material.icons.rounded.FindInPage
 import androidx.compose.material.icons.rounded.Group
 import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.Map
-import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Update
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Card
@@ -75,10 +73,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.AppScaffold
-import com.msmobile.visitas.AppScaffoldState
+import com.msmobile.visitas.util.scaffold.AppScaffoldState
 import com.msmobile.visitas.OnIntentStateHandled
 import com.msmobile.visitas.R
-import com.msmobile.visitas.TopBarAction
+import com.msmobile.visitas.util.scaffold.TopBarAction
+import com.msmobile.visitas.util.scaffold.TopNavigationAction
+import com.msmobile.visitas.util.scaffold.settingsTopMenuActions
 import com.msmobile.visitas.backup.BackupSheet
 import com.msmobile.visitas.backup.BackupViewModel
 import com.msmobile.visitas.extension.OnBackPressed
@@ -89,7 +89,6 @@ import com.msmobile.visitas.extension.textShimmer
 import com.msmobile.visitas.extension.toString
 import com.msmobile.visitas.extension.tonalButtonColors
 import com.msmobile.visitas.summary.SummaryViewModel
-import com.msmobile.visitas.ui.theme.PreviewFoldable
 import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.ui.views.LazyColumnWithScrollbar
@@ -109,6 +108,7 @@ import com.msmobile.visitas.util.horizontalFieldPadding
 import com.msmobile.visitas.util.verticalFieldPadding
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.SettingsScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.VisitDetailScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.VisitListScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -169,12 +169,20 @@ fun VisitListScreen(
             )
         },
     )
+    val topNavigationActions = visitListTopNavigationActions()
+    val topMenuActions = settingsTopMenuActions(
+        onNavigateToSettings = { onNavigate(SettingsScreenDestination) }
+    )
     val chromeOwner = remember { Any() }
 
     DisposableEffect(Unit) {
         appScaffoldState.setUiState(
             owner = chromeOwner,
-            uiState = AppScaffoldState.UiState(topBarActions = topBarActions)
+            uiState = AppScaffoldState.UiState(
+                topNavigationActions = topNavigationActions,
+                topBarActions = topBarActions,
+                topMenuActions = topMenuActions
+            )
         )
         onDispose { appScaffoldState.clearUiState(chromeOwner) }
     }
@@ -200,6 +208,12 @@ fun VisitListScreen(
  * screen and its preview share one implementation. Callers supply the behaviour; this only wires
  * up the icons and content descriptions.
  */
+/**
+ * The visit list is a start/tab destination, so it publishes no up navigation action and the app
+ * bar renders without a back arrow.
+ */
+private fun visitListTopNavigationActions(): List<TopNavigationAction> = emptyList()
+
 @Composable
 private fun visitListTopBarActions(
     visitListUiState: VisitListViewModel.UiState,
@@ -1106,7 +1120,6 @@ private fun VisitMapErrorState() {
 
 @VisibleForTesting
 @PreviewPhone
-@PreviewFoldable
 @Composable
 internal fun VisitListScreenPreview(
     @PreviewParameter(VisitListPreviewConfigProvider::class) config: VisitListPreviewConfig
@@ -1114,19 +1127,21 @@ internal fun VisitListScreenPreview(
     VisitasTheme {
         // Preview-only: hosts the expanded filter menu above the app bar, which would otherwise clip
         // it in screenshots. No-op / absent in production (see PreviewableDropdownMenu.Host).
-        PreviewCompatDropdownMenu.Host {
+        PreviewCompatDropdownMenu.HostPreview {
             AppScaffold(
                 uiState = config.mainActivityUiState,
                 currentDestination = VisitListScreenDestination,
                 onEvent = {},
                 onNavigateToTab = {},
                 onNavigate = {},
+                topNavigationActions = visitListTopNavigationActions(),
                 topBarActions = visitListTopBarActions(
                     visitListUiState = config.visitListUiState,
                     onVisitListEvent = {},
                     onMapClick = {},
                     onFilterClick = {}
-                )
+                ),
+                topMenuActions = settingsTopMenuActions(onNavigateToSettings = {})
             ) {
                 VisitListScreenContent(
                     summaryUiState = config.summaryUiState,

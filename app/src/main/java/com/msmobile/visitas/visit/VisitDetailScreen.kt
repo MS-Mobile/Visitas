@@ -27,13 +27,16 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.rounded.ArrowBackIosNew
 import androidx.compose.material.icons.rounded.ArrowDropDown
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.DoneOutline
 import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.TravelExplore
@@ -78,10 +81,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.AppScaffold
-import com.msmobile.visitas.AppScaffoldState
-import com.msmobile.visitas.DetailFooterActions
+import com.msmobile.visitas.util.scaffold.AppScaffoldState
+import com.msmobile.visitas.util.scaffold.DetailFooterAction
+import com.msmobile.visitas.util.scaffold.FloatingActionButtonAction
 import com.msmobile.visitas.R
-import com.msmobile.visitas.TopBarAction
+import com.msmobile.visitas.util.scaffold.TopBarAction
+import com.msmobile.visitas.util.scaffold.TopNavigationAction
+import com.msmobile.visitas.util.scaffold.topNavigationActions
 import com.msmobile.visitas.extension.EditableTextFieldColors
 import com.msmobile.visitas.extension.OnBackPressed
 import com.msmobile.visitas.extension.ReadOnlyTextFieldColors
@@ -93,7 +99,6 @@ import com.msmobile.visitas.extension.sharp
 import com.msmobile.visitas.extension.stringResource
 import com.msmobile.visitas.extension.textField
 import com.msmobile.visitas.extension.toString
-import com.msmobile.visitas.ui.theme.PreviewFoldable
 import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.ui.views.DateTimePicker
@@ -154,33 +159,22 @@ private fun VisitDetailScreenContent(
         onEvent(VisitDetailViewModel.UiEvent.CancelClicked)
     }
 
-    val copyDataDescription = stringResource(id = R.string.copy_data_content_description)
-    val deleteDescription = stringResource(id = R.string.delete)
-    val draftLabel = stringResource(id = R.string.visit_draft)
     val chromeOwner = remember { Any() }
-    val hasDraft = uiState.visitList.filter { !it.wasRemoved }.any { it.isDraft }
-    DisposableEffect(hasDraft) {
+    val topNavigationActions = visitDetailTopNavigationActions(onNavigateUp = onNavigateUp)
+    val topBarActions = visitDetailTopBarActions(onEvent = onEvent)
+    val detailFooterActions = visitDetailFooterActions(onEvent = onEvent)
+    val floatingActionButtonActions = visitDetailFloatingActionButtonActions(onEvent = onEvent)
+    val subtitle = visitDetailSubtitleString(uiState.hasDrafts)
+
+    DisposableEffect(subtitle) {
         appScaffoldState.setUiState(
             owner = chromeOwner,
             uiState = AppScaffoldState.UiState(
-                topBarActions = listOf(
-                    TopBarAction(
-                        contentDescription = copyDataDescription,
-                        icon = Icons.Rounded.ContentCopy,
-                        onClick = { onEvent(VisitDetailViewModel.UiEvent.CopyVisitDataClicked) }
-                    ),
-                    TopBarAction(
-                        contentDescription = deleteDescription,
-                        icon = Icons.Rounded.Delete,
-                        onClick = { onEvent(VisitDetailViewModel.UiEvent.DeleteClicked) }
-                    )
-                ),
-                detailFooterActions = DetailFooterActions(
-                    onBack = { onEvent(VisitDetailViewModel.UiEvent.CancelClicked) },
-                    onSave = { onEvent(VisitDetailViewModel.UiEvent.SaveClicked) },
-                    onAdd = { onEvent(VisitDetailViewModel.UiEvent.AddVisitClicked) }
-                ),
-                subtitle = if (hasDraft) draftLabel else null
+                topNavigationActions = topNavigationActions,
+                topBarActions = topBarActions,
+                detailFooterActions = detailFooterActions,
+                floatingActionButtonActions = floatingActionButtonActions,
+                subtitle = subtitle
             )
         )
         onDispose { appScaffoldState.clearUiState(chromeOwner) }
@@ -399,6 +393,62 @@ private fun HouseholderDetail(
             }
         )
     }
+}
+
+@Composable
+private fun visitDetailTopNavigationActions(
+    onNavigateUp: () -> Unit
+): List<TopNavigationAction> = topNavigationActions(onNavigateUp = onNavigateUp)
+
+@Composable
+private fun visitDetailTopBarActions(
+    onEvent: (VisitDetailViewModel.UiEvent) -> Unit
+): List<TopBarAction> {
+    val copyDataDescription = stringResource(id = R.string.copy_data_content_description)
+    val deleteDescription = stringResource(id = R.string.delete)
+    return listOf(
+        TopBarAction(
+            contentDescription = copyDataDescription,
+            icon = Icons.Rounded.ContentCopy,
+            onClick = { onEvent(VisitDetailViewModel.UiEvent.CopyVisitDataClicked) }
+        ),
+        TopBarAction(
+            contentDescription = deleteDescription,
+            icon = Icons.Rounded.Delete,
+            onClick = { onEvent(VisitDetailViewModel.UiEvent.DeleteClicked) }
+        )
+    )
+}
+
+@Composable
+private fun visitDetailFooterActions(
+    onEvent: (VisitDetailViewModel.UiEvent) -> Unit
+): List<DetailFooterAction> {
+    return listOf(
+        DetailFooterAction(
+            contentDescription = stringResource(id = R.string.cancel),
+            icon = Icons.Rounded.ArrowBackIosNew,
+            onClick = { onEvent(VisitDetailViewModel.UiEvent.CancelClicked) }
+        ),
+        DetailFooterAction(
+            contentDescription = stringResource(id = R.string.save),
+            icon = Icons.Rounded.DoneOutline,
+            onClick = { onEvent(VisitDetailViewModel.UiEvent.SaveClicked) }
+        )
+    )
+}
+
+@Composable
+private fun visitDetailFloatingActionButtonActions(
+    onEvent: (VisitDetailViewModel.UiEvent) -> Unit
+): List<FloatingActionButtonAction> {
+    return listOf(
+        FloatingActionButtonAction(
+            contentDescription = stringResource(id = R.string.add_visit),
+            icon = Icons.Filled.Add,
+            onClick = { onEvent(VisitDetailViewModel.UiEvent.AddVisitClicked) }
+        )
+    )
 }
 
 @Composable
@@ -1030,7 +1080,7 @@ private fun NoAddressFoundSnackbar(
 }
 
 @Composable
-fun CopiedToClipboardSnackbar(
+private fun CopiedToClipboardSnackbar(
     modifier: Modifier,
     onSnackbarDismissed: () -> Unit
 ) {
@@ -1069,46 +1119,43 @@ private fun NextVisitSuggestionButton(show: Boolean, onClick: () -> Unit) {
     }
 }
 
+@Composable
+private fun visitDetailSubtitleString(showSubtitle: Boolean): String? {
+    return if (showSubtitle) {
+        stringResource(R.string.visit_draft)
+    } else {
+        null
+    }
+}
+
 @VisibleForTesting
 @PreviewPhone
-@PreviewFoldable
 @Composable
 internal fun VisitDetailScreenPreview(
     @PreviewParameter(VisitDetailPreviewConfigProvider::class) config: VisitDetailPreviewConfig
 ) {
     VisitasTheme {
-        AppScaffold(
-            uiState = config.mainActivityUiState,
-            currentDestination = VisitDetailScreenDestination,
-            onEvent = {},
-            onNavigateToTab = {},
-            onNavigate = {},
-            topBarActions = listOf(
-                TopBarAction(
-                    contentDescription = stringResource(id = R.string.copy_data_content_description),
-                    icon = Icons.Rounded.ContentCopy,
-                    onClick = { }
-                ),
-                TopBarAction(
-                    contentDescription = stringResource(id = R.string.delete),
-                    icon = Icons.Rounded.Delete,
-                    onClick = {}
-                )
-            ),
-            detailFooterActions = DetailFooterActions(
-                onBack = {},
-                onSave = {},
-                onAdd = {}
-            ),
-            subtitle = if (config.uiState.visitList.filter { !it.wasRemoved }.any { it.isDraft }) stringResource(R.string.visit_draft) else null
-        ) {
-            VisitDetailScreenContent(
-                householderId = config.householderId,
-                uiState = config.uiState,
-                appScaffoldState = remember { AppScaffoldState() }, // TODO: config.appScaffoldState
+        PreviewCompatDropdownMenu.HostPreview {
+            AppScaffold(
+                uiState = config.mainActivityUiState,
+                currentDestination = VisitDetailScreenDestination,
                 onEvent = {},
-                onNavigateUp = {},
-            )
+                onNavigateToTab = {},
+                onNavigate = {},
+                topNavigationActions = visitDetailTopNavigationActions(onNavigateUp = {}),
+                topBarActions = visitDetailTopBarActions(onEvent = {}),
+                detailFooterActions = visitDetailFooterActions(onEvent = {}),
+                floatingActionButtonActions = visitDetailFloatingActionButtonActions(onEvent = {}),
+                subtitle = visitDetailSubtitleString(showSubtitle = config.uiState.hasDrafts)
+            ) {
+                VisitDetailScreenContent(
+                    householderId = config.householderId,
+                    uiState = config.uiState,
+                    appScaffoldState = remember { AppScaffoldState() }, // TODO: config.appScaffoldState
+                    onEvent = {},
+                    onNavigateUp = {},
+                )
+            }
         }
     }
 }

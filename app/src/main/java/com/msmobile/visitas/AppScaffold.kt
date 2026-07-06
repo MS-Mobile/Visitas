@@ -12,13 +12,13 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.MoreVert
-import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingToolbarDefaults
+import androidx.compose.material3.FloatingToolbarDefaults.vibrantFloatingToolbarColors
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -35,12 +35,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import com.msmobile.visitas.ui.theme.PreviewFoldable
 import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.ui.views.BottomNavigation
-import com.msmobile.visitas.ui.views.DetailFooter
+import com.msmobile.visitas.ui.views.FloatingBar
 import com.msmobile.visitas.ui.views.PreviewCompatDropdownMenu
+import com.msmobile.visitas.util.borderPadding
+import com.msmobile.visitas.util.scaffold.DetailFooterAction
+import com.msmobile.visitas.util.scaffold.FloatingActionButtonAction
+import com.msmobile.visitas.util.scaffold.TopBarAction
+import com.msmobile.visitas.util.scaffold.TopMenuAction
+import com.msmobile.visitas.util.scaffold.TopNavigationAction
 import com.ramcosta.composedestinations.generated.destinations.ConversationDetailScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.ConversationListScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.SettingsScreenDestination
@@ -58,9 +63,11 @@ fun AppScaffold(
     onEvent: (MainActivityViewModel.UiEvent) -> Unit,
     onNavigateToTab: (DirectionDestinationSpec) -> Unit,
     onNavigate: (Direction) -> Unit,
-    onNavigateUp: () -> Unit = {},
+    topNavigationActions: List<TopNavigationAction> = emptyList(),
     topBarActions: List<TopBarAction> = emptyList(),
-    detailFooterActions: DetailFooterActions? = null,
+    topMenuActions: List<TopMenuAction> = emptyList(),
+    detailFooterActions: List<DetailFooterAction> = emptyList(),
+    floatingActionButtonActions: List<FloatingActionButtonAction> = emptyList(),
     subtitle: String? = null,
     content: @Composable () -> Unit
 ) {
@@ -75,12 +82,7 @@ fun AppScaffold(
         ConversationDetailScreenDestination,
         SettingsScreenDestination
     )
-    val showBackButton = currentDestination == SettingsScreenDestination
     val showBottomNavigation = currentDestination in listOf(
-        VisitListScreenDestination,
-        ConversationListScreenDestination
-    )
-    val showSettingsMenu = currentDestination in listOf(
         VisitListScreenDestination,
         ConversationListScreenDestination
     )
@@ -98,74 +100,16 @@ fun AppScaffold(
     Scaffold(
         topBar = {
             if (showTopBar) {
-                var menuExpanded by remember { mutableStateOf(false) }
-                // Retain the last non-null subtitle so it stays rendered while the
-                // exit animation plays out (subtitle is already null by then).
-                var lastSubtitle by remember { mutableStateOf(subtitle) }
-                LaunchedEffect(subtitle) {
-                    if (subtitle != null) lastSubtitle = subtitle
-                }
                 TopAppBar(
                     title = {
-                        Column {
-                            Text(text = title)
-                            AnimatedVisibility(visible = subtitle != null) {
-                                Text(
-                                    text = lastSubtitle.orEmpty(),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.tertiary
-                                )
-                            }
-                        }
+                        ScaffoldTitle(title = title, subtitle = subtitle)
                     },
                     navigationIcon = {
-                        if (showBackButton) {
-                            IconButton(onClick = onNavigateUp) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                                    contentDescription = stringResource(id = R.string.navigate_back_content_description)
-                                )
-                            }
-                        }
+                        ScaffoldTopNavigation(topNavigationActions = topNavigationActions)
                     },
                     actions = {
-                        topBarActions.forEach { action ->
-                            Box {
-                                IconButton(onClick = action.onClick) {
-                                    Icon(
-                                        imageVector = action.icon,
-                                        contentDescription = action.contentDescription
-                                    )
-                                }
-                                action.menu?.invoke()
-                            }
-                        }
-                        if (showSettingsMenu) {
-                            IconButton(onClick = { menuExpanded = true }) {
-                                Icon(
-                                    imageVector = Icons.Rounded.MoreVert,
-                                    contentDescription = stringResource(id = R.string.more_options)
-                                )
-                            }
-                            PreviewCompatDropdownMenu(
-                                expanded = menuExpanded,
-                                onDismissRequest = { menuExpanded = false }
-                            ) {
-                                DropdownMenuItem(
-                                    leadingIcon = {
-                                        Icon(
-                                            imageVector = Icons.Rounded.Settings,
-                                            contentDescription = null
-                                        )
-                                    },
-                                    text = { Text(stringResource(id = R.string.settings)) },
-                                    onClick = {
-                                        menuExpanded = false
-                                        onNavigate(SettingsScreenDestination)
-                                    }
-                                )
-                            }
-                        }
+                        ScaffoldTopBar(topBarActions = topBarActions)
+                        ScaffoldTopMenu(topMenuActions = topMenuActions)
                     }
                 )
             }
@@ -184,47 +128,178 @@ fun AppScaffold(
         },
         bottomBar = {
             when {
-                detailFooterActions != null -> {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .navigationBarsPadding(),
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        DetailFooter(
-                            modifier = Modifier.offset(y = -FloatingToolbarDefaults.ScreenOffset),
-                            onBackClicked = detailFooterActions.onBack,
-                            onSaveClickedEvent = detailFooterActions.onSave,
-                            onFabClickedEvent = detailFooterActions.onAdd
-                        )
-                    }
+                detailFooterActions.isNotEmpty() || floatingActionButtonActions.isNotEmpty() -> {
+                    ScaffoldDetailFooter(
+                        detailFooterActions = detailFooterActions,
+                        floatingActionButtonActions = floatingActionButtonActions
+                    )
                 }
 
                 showBottomNavigation -> {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .navigationBarsPadding()
-                            .offset(y = -FloatingToolbarDefaults.ScreenOffset),
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        BottomNavigation(
-                            showFAB = showFAB,
-                            onFabClickedEvent = {
-                                onEvent(
-                                    MainActivityViewModel.UiEvent.FabClicked(
-                                        currentDestination = currentDestination
-                                    )
-                                )
-                            },
-                            currentDestination = currentDestination,
-                            onNavigateToTab = onNavigateToTab
-                        )
-                    }
+                    ScaffoldBottomNavigation(
+                        showFAB = showFAB,
+                        currentDestination = currentDestination,
+                        onEvent = onEvent,
+                        onNavigateToTab = onNavigateToTab
+                    )
                 }
             }
         }
     )
+}
+
+@Composable
+private fun ScaffoldTopNavigation(topNavigationActions: List<TopNavigationAction>) {
+    topNavigationActions.forEach { action ->
+        IconButton(onClick = action.onClick) {
+            Icon(
+                imageVector = action.icon,
+                contentDescription = action.contentDescription
+            )
+        }
+    }
+}
+
+@Composable
+private fun ScaffoldTitle(title: String, subtitle: String?) {
+    // Retain the last non-null subtitle so it stays rendered while the
+    // exit animation plays out (subtitle is already null by then).
+    var lastSubtitle by remember { mutableStateOf(subtitle) }
+    LaunchedEffect(subtitle) {
+        if (subtitle != null) lastSubtitle = subtitle
+    }
+    Column {
+        Text(text = title)
+        AnimatedVisibility(visible = subtitle != null) {
+            Text(
+                text = lastSubtitle.orEmpty(),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.tertiary
+            )
+        }
+    }
+}
+
+@Composable
+private fun ScaffoldTopBar(topBarActions: List<TopBarAction>) {
+    topBarActions.forEach { action ->
+        Box {
+            IconButton(onClick = action.onClick) {
+                Icon(
+                    imageVector = action.icon,
+                    contentDescription = action.contentDescription
+                )
+            }
+            action.menu?.invoke()
+        }
+    }
+}
+
+@Composable
+private fun ScaffoldTopMenu(topMenuActions: List<TopMenuAction>) {
+    if (topMenuActions.isEmpty()) return
+    var menuExpanded by remember { mutableStateOf(false) }
+    IconButton(onClick = { menuExpanded = true }) {
+        Icon(
+            imageVector = Icons.Rounded.MoreVert,
+            contentDescription = stringResource(id = R.string.more_options)
+        )
+    }
+    PreviewCompatDropdownMenu(
+        expanded = menuExpanded,
+        onDismissRequest = { menuExpanded = false }
+    ) {
+        topMenuActions.forEach { action ->
+            DropdownMenuItem(
+                leadingIcon = {
+                    Icon(
+                        imageVector = action.icon,
+                        contentDescription = null
+                    )
+                },
+                text = { Text(action.text) },
+                onClick = {
+                    menuExpanded = false
+                    action.onClick()
+                }
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun ScaffoldDetailFooter(
+    detailFooterActions: List<DetailFooterAction>,
+    floatingActionButtonActions: List<FloatingActionButtonAction>
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding(),
+        horizontalArrangement = Arrangement.Center
+    ) {
+        Row(modifier = Modifier.offset(y = -FloatingToolbarDefaults.ScreenOffset)) {
+            FloatingBar(
+                modifier = Modifier.weight(weight = .5f, fill = false),
+                floatingActionButton = {
+                    floatingActionButtonActions.forEach { action ->
+                        FloatingActionButton(
+                            modifier = Modifier.padding(end = borderPadding),
+                            onClick = action.onClick,
+                            containerColor = vibrantFloatingToolbarColors().fabContainerColor,
+                            contentColor = vibrantFloatingToolbarColors().fabContentColor
+                        ) {
+                            Icon(
+                                imageVector = action.icon,
+                                contentDescription = action.contentDescription
+                            )
+                        }
+                    }
+                },
+                content = {
+                    detailFooterActions.forEach { action ->
+                        IconButton(onClick = action.onClick) {
+                            Icon(
+                                imageVector = action.icon,
+                                contentDescription = action.contentDescription
+                            )
+                        }
+                    }
+                }
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun ScaffoldBottomNavigation(
+    showFAB: Boolean,
+    currentDestination: DestinationSpec,
+    onEvent: (MainActivityViewModel.UiEvent) -> Unit,
+    onNavigateToTab: (DirectionDestinationSpec) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .offset(y = -FloatingToolbarDefaults.ScreenOffset),
+        horizontalArrangement = Arrangement.Center
+    ) {
+        BottomNavigation(
+            showFAB = showFAB,
+            onFabClickedEvent = {
+                onEvent(
+                    MainActivityViewModel.UiEvent.FabClicked(
+                        currentDestination = currentDestination
+                    )
+                )
+            },
+            currentDestination = currentDestination,
+            onNavigateToTab = onNavigateToTab
+        )
+    }
 }
 
 @Composable
@@ -245,7 +320,6 @@ private fun StateHandler(
 @VisibleForTesting
 @Composable
 @PreviewPhone
-@PreviewFoldable
 internal fun AppScaffoldPreview(
     @PreviewParameter(AppScaffoldPreviewConfigProvider::class) config: AppScaffoldPreviewConfig
 ) {
