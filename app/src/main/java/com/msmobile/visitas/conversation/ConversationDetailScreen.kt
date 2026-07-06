@@ -365,7 +365,6 @@ private fun StateHandler(
 
 @VisibleForTesting
 @PreviewPhone
-@PreviewFoldable
 @Composable
 internal fun ConversationDetailScreenPreview(
     @PreviewParameter(ConversationDetailPreviewConfigProvider::class) config: ConversationDetailPreviewConfig
