@@ -31,7 +31,6 @@ import androidx.compose.material.icons.automirrored.rounded.Undo
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.rounded.ArrowBackIosNew
 import androidx.compose.material.icons.rounded.ArrowDropDown
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.ContentCopy
@@ -82,13 +81,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.AppScaffold
-import com.msmobile.visitas.util.scaffold.AppScaffoldState
-import com.msmobile.visitas.util.scaffold.DetailFooterAction
-import com.msmobile.visitas.util.scaffold.FloatingActionButtonAction
 import com.msmobile.visitas.R
-import com.msmobile.visitas.util.scaffold.TopBarAction
-import com.msmobile.visitas.util.scaffold.TopNavigationAction
-import com.msmobile.visitas.util.scaffold.topNavigationActions
 import com.msmobile.visitas.extension.EditableTextFieldColors
 import com.msmobile.visitas.extension.OnBackPressed
 import com.msmobile.visitas.extension.ReadOnlyTextFieldColors
@@ -112,6 +105,12 @@ import com.msmobile.visitas.util.DetailScreenStyle
 import com.msmobile.visitas.util.borderPadding
 import com.msmobile.visitas.util.floatingBarBottomPadding
 import com.msmobile.visitas.util.horizontalFieldPadding
+import com.msmobile.visitas.util.scaffold.AppScaffoldState
+import com.msmobile.visitas.util.scaffold.DetailFooterAction
+import com.msmobile.visitas.util.scaffold.FloatingActionButtonAction
+import com.msmobile.visitas.util.scaffold.TopBarAction
+import com.msmobile.visitas.util.scaffold.TopNavigationAction
+import com.msmobile.visitas.util.scaffold.topNavigationActions
 import com.msmobile.visitas.util.snackbarPadding
 import com.msmobile.visitas.util.verticalFieldPadding
 import com.ramcosta.composedestinations.annotation.Destination
