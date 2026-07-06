@@ -273,7 +273,6 @@ private fun StateHandler(
 @VisibleForTesting
 @Composable
 @PreviewPhone
-@PreviewFoldable
 internal fun AppScaffoldPreview(
     @PreviewParameter(AppScaffoldPreviewConfigProvider::class) config: AppScaffoldPreviewConfig
 ) {
