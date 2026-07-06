@@ -154,12 +154,11 @@ private fun VisitDetailScreenContent(
         onEvent(VisitDetailViewModel.UiEvent.CancelClicked)
     }
 
-    val draftLabel = stringResource(id = R.string.visit_draft)
     val chromeOwner = remember { Any() }
-    val hasDraft = uiState.visitList.filter { !it.wasRemoved }.any { it.isDraft }
     val topBarActions = visitDetailTopBarActions(onEvent = onEvent)
+    val subtitle = visitDetailSubtitleString(uiState.showSubtitle)
 
-    DisposableEffect(hasDraft) {
+    DisposableEffect(subtitle) {
         appScaffoldState.setUiState(
             owner = chromeOwner,
             uiState = AppScaffoldState.UiState(
@@ -169,7 +168,7 @@ private fun VisitDetailScreenContent(
                     onSave = { onEvent(VisitDetailViewModel.UiEvent.SaveClicked) },
                     onAdd = { onEvent(VisitDetailViewModel.UiEvent.AddVisitClicked) }
                 ),
-                subtitle = if (hasDraft) draftLabel else null
+                subtitle = subtitle
             )
         )
         onDispose { appScaffoldState.clearUiState(chromeOwner) }
@@ -1039,7 +1038,7 @@ private fun NoAddressFoundSnackbar(
 }
 
 @Composable
-fun CopiedToClipboardSnackbar(
+private fun CopiedToClipboardSnackbar(
     modifier: Modifier,
     onSnackbarDismissed: () -> Unit
 ) {
@@ -1078,6 +1077,15 @@ private fun NextVisitSuggestionButton(show: Boolean, onClick: () -> Unit) {
     }
 }
 
+@Composable
+private fun visitDetailSubtitleString(showSubtitle: Boolean): String? {
+    return if (showSubtitle) {
+        stringResource(R.string.visit_draft)
+    } else {
+        null
+    }
+}
+
 @VisibleForTesting
 @PreviewPhone
 @PreviewFoldable
@@ -1086,28 +1094,29 @@ internal fun VisitDetailScreenPreview(
     @PreviewParameter(VisitDetailPreviewConfigProvider::class) config: VisitDetailPreviewConfig
 ) {
     VisitasTheme {
-        val topBarActions = visitDetailTopBarActions(onEvent = {})
-        AppScaffold(
-            uiState = config.mainActivityUiState,
-            currentDestination = VisitDetailScreenDestination,
-            onEvent = {},
-            onNavigateToTab = {},
-            onNavigate = {},
-            topBarActions = topBarActions,
-            detailFooterActions = DetailFooterActions(
-                onBack = {},
-                onSave = {},
-                onAdd = {}
-            ),
-            subtitle = if (config.uiState.visitList.filter { !it.wasRemoved }.any { it.isDraft }) stringResource(R.string.visit_draft) else null
-        ) {
-            VisitDetailScreenContent(
-                householderId = config.householderId,
-                uiState = config.uiState,
-                appScaffoldState = remember { AppScaffoldState() }, // TODO: config.appScaffoldState
+        PreviewCompatDropdownMenu.Host {
+            AppScaffold(
+                uiState = config.mainActivityUiState,
+                currentDestination = VisitDetailScreenDestination,
                 onEvent = {},
-                onNavigateUp = {},
-            )
+                onNavigateToTab = {},
+                onNavigate = {},
+                topBarActions = visitDetailTopBarActions(onEvent = {}),
+                detailFooterActions = DetailFooterActions(
+                    onBack = {},
+                    onSave = {},
+                    onAdd = {}
+                ),
+                subtitle = visitDetailSubtitleString(showSubtitle = config.uiState.showSubtitle)
+            ) {
+                VisitDetailScreenContent(
+                    householderId = config.householderId,
+                    uiState = config.uiState,
+                    appScaffoldState = remember { AppScaffoldState() }, // TODO: config.appScaffoldState
+                    onEvent = {},
+                    onNavigateUp = {},
+                )
+            }
         }
     }
 }

@@ -830,7 +830,8 @@ class VisitDetailViewModel
                     visit
                 }
             }
-            copy(visitList = updatedList)
+            val hasDraft = visitList.filter { !it.wasRemoved }.any { it.isDraft }
+            copy(visitList = updatedList, showSubtitle = hasDraft)
         }
     }
 
@@ -1487,7 +1488,8 @@ class VisitDetailViewModel
         val showLocationRationale: Boolean = false,
         val showLocationPermissionDialog: Boolean = false,
         val showCalendarRationale: Boolean = false,
-        val showCalendarPermissionDialog: Boolean = false
+        val showCalendarPermissionDialog: Boolean = false,
+        val showSubtitle: Boolean = false
     )
 
     companion object {
