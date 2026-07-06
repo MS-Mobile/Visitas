@@ -102,24 +102,9 @@ fun AppScaffold(
     Scaffold(
         topBar = {
             if (showTopBar) {
-                // Retain the last non-null subtitle so it stays rendered while the
-                // exit animation plays out (subtitle is already null by then).
-                var lastSubtitle by remember { mutableStateOf(subtitle) }
-                LaunchedEffect(subtitle) {
-                    if (subtitle != null) lastSubtitle = subtitle
-                }
                 TopAppBar(
                     title = {
-                        Column {
-                            Text(text = title)
-                            AnimatedVisibility(visible = subtitle != null) {
-                                Text(
-                                    text = lastSubtitle.orEmpty(),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.tertiary
-                                )
-                            }
-                        }
+                        ScaffoldTitle(title = title, subtitle = subtitle)
                     },
                     navigationIcon = {
                         if (showBackButton) {
@@ -172,6 +157,26 @@ fun AppScaffold(
             }
         }
     )
+}
+
+@Composable
+private fun ScaffoldTitle(title: String, subtitle: String?) {
+    // Retain the last non-null subtitle so it stays rendered while the
+    // exit animation plays out (subtitle is already null by then).
+    var lastSubtitle by remember { mutableStateOf(subtitle) }
+    LaunchedEffect(subtitle) {
+        if (subtitle != null) lastSubtitle = subtitle
+    }
+    Column {
+        Text(text = title)
+        AnimatedVisibility(visible = subtitle != null) {
+            Text(
+                text = lastSubtitle.orEmpty(),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.tertiary
+            )
+        }
+    }
 }
 
 @Composable
