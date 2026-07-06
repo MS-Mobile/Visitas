@@ -134,7 +134,8 @@ private fun ConversationDetailScreenContent(
                 ),
                 detailFooterActions = DetailFooterActions(
                     onSave = { onEvent(ConversationDetailViewModel.UiEvent.SaveClicked) },
-                    onAdd = { onEvent(ConversationDetailViewModel.UiEvent.AddClicked) }
+                    onAdd = { onEvent(ConversationDetailViewModel.UiEvent.AddClicked) },
+                    onDiscard = { onEvent(ConversationDetailViewModel.UiEvent.CancelClicked) }
                 ),
                 onBack = { onEvent(ConversationDetailViewModel.UiEvent.CancelClicked) }
             )
