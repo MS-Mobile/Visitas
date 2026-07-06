@@ -179,11 +179,7 @@ private fun VisitDetailScreenContent(
                 detailFooterActions = DetailFooterActions(
                     onSave = { onEvent(VisitDetailViewModel.UiEvent.SaveClicked) },
                     onAdd = { onEvent(VisitDetailViewModel.UiEvent.AddVisitClicked) },
-                    onDiscard = if (canDiscardDraft) {
-                        { onEvent(VisitDetailViewModel.UiEvent.DiscardClicked) }
-                    } else {
-                        null
-                    }
+                    onDiscard = { onEvent(VisitDetailViewModel.UiEvent.DiscardClicked) }
                 ),
                 subtitle = if (hasDraft) draftLabel else null,
                 onBack = { onEvent(VisitDetailViewModel.UiEvent.CancelClicked) }
@@ -1140,11 +1136,7 @@ internal fun VisitDetailScreenPreview(
             detailFooterActions = DetailFooterActions(
                 onSave = {},
                 onAdd = {},
-                onDiscard = if (config.uiState.canDiscardDraft) {
-                    {}
-                } else {
-                    null
-                }
+                onDiscard = {}
             ),
             subtitle = if (config.uiState.visitList.filter { !it.wasRemoved }.any { it.isDraft }) stringResource(R.string.visit_draft) else null,
             onBack = {}

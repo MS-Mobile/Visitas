@@ -22,7 +22,7 @@ import com.msmobile.visitas.util.borderPadding
 @Composable
 fun DetailFooter(
     modifier: Modifier = Modifier,
-    onDiscardClicked: (() -> Unit)?,
+    onDiscardClicked: () -> Unit,
     onSaveClickedEvent: () -> Unit,
     onFabClickedEvent: () -> Unit
 ) {
@@ -36,13 +36,11 @@ fun DetailFooter(
                 )
             },
             content = {
-                if (onDiscardClicked != null) {
-                    IconButton(onClick = onDiscardClicked) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Rounded.Undo,
-                            contentDescription = stringResource(id = R.string.discard_draft)
-                        )
-                    }
+                IconButton(onClick = onDiscardClicked) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Rounded.Undo,
+                        contentDescription = stringResource(id = R.string.discard_draft)
+                    )
                 }
                 IconButton(onClick = onSaveClickedEvent) {
                     Icon(
@@ -76,7 +74,7 @@ private fun DetailFooterPreview() {
 private fun DetailFooterWithDeletePreview() {
     VisitasTheme {
         DetailFooter(
-            onDiscardClicked = null,
+            onDiscardClicked = {},
             onSaveClickedEvent = {},
             onFabClickedEvent = {}
         )
