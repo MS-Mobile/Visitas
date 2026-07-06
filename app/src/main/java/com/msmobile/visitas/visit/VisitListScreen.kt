@@ -1106,7 +1106,6 @@ private fun VisitMapErrorState() {
 
 @VisibleForTesting
 @PreviewPhone
-@PreviewFoldable
 @Composable
 internal fun VisitListScreenPreview(
     @PreviewParameter(VisitListPreviewConfigProvider::class) config: VisitListPreviewConfig
