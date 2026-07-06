@@ -27,6 +27,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,8 +41,10 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.AppScaffold
+import com.msmobile.visitas.AppScaffoldState
 import com.msmobile.visitas.BuildConfig
 import com.msmobile.visitas.R
+import com.msmobile.visitas.upNavigationActions
 import com.msmobile.visitas.extension.showShareIntent
 import com.msmobile.visitas.ui.theme.PreviewFoldable
 import com.msmobile.visitas.ui.theme.PreviewPhone
@@ -54,16 +57,29 @@ import com.msmobile.visitas.visit.VisitMapEngineOption
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.SettingsScreenDestination
+import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
 private const val BACKUP_MIME_TYPE = "application/octet-stream"
 
 @Destination<RootGraph>(style = DetailScreenStyle::class)
 @Composable
 fun SettingsScreen(
-    viewModel: SettingsDetailViewModel
+    navigator: DestinationsNavigator,
+    viewModel: SettingsDetailViewModel,
+    appScaffoldState: AppScaffoldState
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val onEvent = viewModel::onEvent
+
+    val topNavigationActions = upNavigationActions(onNavigateUp = { navigator.navigateUp() })
+    val chromeOwner = remember { Any() }
+    DisposableEffect(Unit) {
+        appScaffoldState.setUiState(
+            owner = chromeOwner,
+            uiState = AppScaffoldState.UiState(topNavigationActions = topNavigationActions)
+        )
+        onDispose { appScaffoldState.clearUiState(chromeOwner) }
+    }
 
     LaunchedEffect(Unit) {
         onEvent(SettingsDetailViewModel.UiEvent.ViewCreated)
@@ -283,7 +299,8 @@ internal fun SettingsScreenPreview(
             currentDestination = SettingsScreenDestination,
             onEvent = {},
             onNavigateToTab = {},
-            onNavigate = {}
+            onNavigate = {},
+            topNavigationActions = upNavigationActions(onNavigateUp = {})
         ) {
             SettingsScreenContent(
                 uiState = config.uiState,

@@ -86,6 +86,7 @@ import com.msmobile.visitas.DetailFooterAction
 import com.msmobile.visitas.FloatingActionButtonAction
 import com.msmobile.visitas.R
 import com.msmobile.visitas.TopBarAction
+import com.msmobile.visitas.upNavigationActions
 import com.msmobile.visitas.extension.EditableTextFieldColors
 import com.msmobile.visitas.extension.OnBackPressed
 import com.msmobile.visitas.extension.ReadOnlyTextFieldColors
@@ -158,6 +159,7 @@ private fun VisitDetailScreenContent(
     }
 
     val chromeOwner = remember { Any() }
+    val topNavigationActions = upNavigationActions(onNavigateUp = onNavigateUp)
     val topBarActions = visitDetailTopBarActions(onEvent = onEvent)
     val detailFooterActions = visitDetailFooterActions(onEvent = onEvent)
     val floatingActionButtonActions = visitDetailFloatingActionButtonActions(onEvent = onEvent)
@@ -167,6 +169,7 @@ private fun VisitDetailScreenContent(
         appScaffoldState.setUiState(
             owner = chromeOwner,
             uiState = AppScaffoldState.UiState(
+                topNavigationActions = topNavigationActions,
                 topBarActions = topBarActions,
                 detailFooterActions = detailFooterActions,
                 floatingActionButtonActions = floatingActionButtonActions,
@@ -1133,6 +1136,7 @@ internal fun VisitDetailScreenPreview(
                 onEvent = {},
                 onNavigateToTab = {},
                 onNavigate = {},
+                topNavigationActions = upNavigationActions(onNavigateUp = {}),
                 topBarActions = visitDetailTopBarActions(onEvent = {}),
                 detailFooterActions = visitDetailFooterActions(onEvent = {}),
                 floatingActionButtonActions = visitDetailFloatingActionButtonActions(onEvent = {}),

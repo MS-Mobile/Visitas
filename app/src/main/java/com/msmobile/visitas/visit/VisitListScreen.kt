@@ -77,6 +77,8 @@ import com.msmobile.visitas.AppScaffoldState
 import com.msmobile.visitas.OnIntentStateHandled
 import com.msmobile.visitas.R
 import com.msmobile.visitas.TopBarAction
+import com.msmobile.visitas.settingsTopMenuActions
+import com.msmobile.visitas.upNavigationActions
 import com.msmobile.visitas.backup.BackupSheet
 import com.msmobile.visitas.backup.BackupViewModel
 import com.msmobile.visitas.extension.OnBackPressed
@@ -106,6 +108,7 @@ import com.msmobile.visitas.util.horizontalFieldPadding
 import com.msmobile.visitas.util.verticalFieldPadding
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.SettingsScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.VisitDetailScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.VisitListScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -166,12 +169,20 @@ fun VisitListScreen(
             )
         },
     )
+    val topNavigationActions = upNavigationActions(onNavigateUp = { navigator.navigateUp() })
+    val topMenuActions = settingsTopMenuActions(
+        onNavigateToSettings = { onNavigate(SettingsScreenDestination) }
+    )
     val chromeOwner = remember { Any() }
 
     DisposableEffect(Unit) {
         appScaffoldState.setUiState(
             owner = chromeOwner,
-            uiState = AppScaffoldState.UiState(topBarActions = topBarActions)
+            uiState = AppScaffoldState.UiState(
+                topNavigationActions = topNavigationActions,
+                topBarActions = topBarActions,
+                topMenuActions = topMenuActions
+            )
         )
         onDispose { appScaffoldState.clearUiState(chromeOwner) }
     }
@@ -1117,12 +1128,14 @@ internal fun VisitListScreenPreview(
                 onEvent = {},
                 onNavigateToTab = {},
                 onNavigate = {},
+                topNavigationActions = upNavigationActions(onNavigateUp = {}),
                 topBarActions = visitListTopBarActions(
                     visitListUiState = config.visitListUiState,
                     onVisitListEvent = {},
                     onMapClick = {},
                     onFilterClick = {}
-                )
+                ),
+                topMenuActions = settingsTopMenuActions(onNavigateToSettings = {})
             ) {
                 VisitListScreenContent(
                     summaryUiState = config.summaryUiState,

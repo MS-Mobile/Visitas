@@ -12,9 +12,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.MoreVert
-import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -61,8 +59,9 @@ fun AppScaffold(
     onEvent: (MainActivityViewModel.UiEvent) -> Unit,
     onNavigateToTab: (DirectionDestinationSpec) -> Unit,
     onNavigate: (Direction) -> Unit,
-    onNavigateUp: () -> Unit = {},
+    topNavigationActions: List<TopNavigationAction> = emptyList(),
     topBarActions: List<TopBarAction> = emptyList(),
+    topMenuActions: List<TopMenuAction> = emptyList(),
     detailFooterActions: List<DetailFooterAction> = emptyList(),
     floatingActionButtonActions: List<FloatingActionButtonAction> = emptyList(),
     subtitle: String? = null,
@@ -79,12 +78,7 @@ fun AppScaffold(
         ConversationDetailScreenDestination,
         SettingsScreenDestination
     )
-    val showBackButton = currentDestination == SettingsScreenDestination
     val showBottomNavigation = currentDestination in listOf(
-        VisitListScreenDestination,
-        ConversationListScreenDestination
-    )
-    val showSettingsMenu = currentDestination in listOf(
         VisitListScreenDestination,
         ConversationListScreenDestination
     )
@@ -107,20 +101,11 @@ fun AppScaffold(
                         ScaffoldTitle(title = title, subtitle = subtitle)
                     },
                     navigationIcon = {
-                        if (showBackButton) {
-                            IconButton(onClick = onNavigateUp) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                                    contentDescription = stringResource(id = R.string.navigate_back_content_description)
-                                )
-                            }
-                        }
+                        ScaffoldTopNavigation(topNavigationActions = topNavigationActions)
                     },
                     actions = {
                         ScaffoldTopBar(topBarActions = topBarActions)
-                        if (showSettingsMenu) {
-                            SettingsMenu(onNavigate = onNavigate)
-                        }
+                        ScaffoldTopMenu(topMenuActions = topMenuActions)
                     }
                 )
             }
@@ -160,6 +145,18 @@ fun AppScaffold(
 }
 
 @Composable
+private fun ScaffoldTopNavigation(topNavigationActions: List<TopNavigationAction>) {
+    topNavigationActions.forEach { action ->
+        IconButton(onClick = action.onClick) {
+            Icon(
+                imageVector = action.icon,
+                contentDescription = action.contentDescription
+            )
+        }
+    }
+}
+
+@Composable
 private fun ScaffoldTitle(title: String, subtitle: String?) {
     // Retain the last non-null subtitle so it stays rendered while the
     // exit animation plays out (subtitle is already null by then).
@@ -195,7 +192,8 @@ private fun ScaffoldTopBar(topBarActions: List<TopBarAction>) {
 }
 
 @Composable
-private fun SettingsMenu(onNavigate: (Direction) -> Unit) {
+private fun ScaffoldTopMenu(topMenuActions: List<TopMenuAction>) {
+    if (topMenuActions.isEmpty()) return
     var menuExpanded by remember { mutableStateOf(false) }
     IconButton(onClick = { menuExpanded = true }) {
         Icon(
@@ -207,19 +205,21 @@ private fun SettingsMenu(onNavigate: (Direction) -> Unit) {
         expanded = menuExpanded,
         onDismissRequest = { menuExpanded = false }
     ) {
-        DropdownMenuItem(
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Rounded.Settings,
-                    contentDescription = null
-                )
-            },
-            text = { Text(stringResource(id = R.string.settings)) },
-            onClick = {
-                menuExpanded = false
-                onNavigate(SettingsScreenDestination)
-            }
-        )
+        topMenuActions.forEach { action ->
+            DropdownMenuItem(
+                leadingIcon = {
+                    Icon(
+                        imageVector = action.icon,
+                        contentDescription = null
+                    )
+                },
+                text = { Text(action.text) },
+                onClick = {
+                    menuExpanded = false
+                    action.onClick()
+                }
+            )
+        }
     }
 }
 

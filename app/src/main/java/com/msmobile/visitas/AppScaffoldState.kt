@@ -29,7 +29,9 @@ class AppScaffoldState {
     }
 
     data class UiState(
+        val topNavigationActions: List<TopNavigationAction> = emptyList(),
         val topBarActions: List<TopBarAction> = emptyList(),
+        val topMenuActions: List<TopMenuAction> = emptyList(),
         val detailFooterActions: List<DetailFooterAction> = emptyList(),
         val floatingActionButtonActions: List<FloatingActionButtonAction> = emptyList(),
         // Optional accent-styled supporting line shown under the top bar title that any
