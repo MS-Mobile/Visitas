@@ -24,7 +24,7 @@ import com.msmobile.visitas.preference.PreferenceTypeConverters
 import com.msmobile.visitas.summary.SummaryDao
 import com.msmobile.visitas.util.RoomLocalDateTimeConverter
 import com.msmobile.visitas.util.RoomUUIDConverter
-import com.msmobile.visitas.visit.DraftSnapshotDao
+import com.msmobile.visitas.visit.SnapshotDao
 import com.msmobile.visitas.visit.HouseholderSnapshot
 import com.msmobile.visitas.visit.Visit
 import com.msmobile.visitas.visit.VisitDao
@@ -53,7 +53,7 @@ abstract class VisitasDatabase : RoomDatabase() {
     abstract fun householderDao(): HouseholderDao
     abstract fun summaryDao(): SummaryDao
     abstract fun visitDao(): VisitDao
-    abstract fun draftSnapshotDao(): DraftSnapshotDao
+    abstract fun draftSnapshotDao(): SnapshotDao
     abstract fun visitHouseholderDao(): VisitHouseholderDao
     abstract fun preferenceDao(): PreferenceDao
 

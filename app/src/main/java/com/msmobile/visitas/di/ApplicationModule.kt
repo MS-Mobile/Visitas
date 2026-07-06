@@ -36,8 +36,8 @@ import com.msmobile.visitas.util.NetworkStatusTracker
 import com.msmobile.visitas.util.PermissionChecker
 import com.msmobile.visitas.util.UserLocationProvider
 import com.msmobile.visitas.util.VisitMapAdapter
-import com.msmobile.visitas.visit.DraftSnapshotDao
-import com.msmobile.visitas.visit.DraftSnapshotRepository
+import com.msmobile.visitas.visit.SnapshotDao
+import com.msmobile.visitas.visit.SnapshotRepository
 import com.msmobile.visitas.visit.VisitDao
 import com.msmobile.visitas.visit.VisitHouseholderDao
 import com.msmobile.visitas.visit.VisitHouseholderRepository
@@ -86,8 +86,8 @@ class ApplicationModule {
 
     @Singleton
     @Provides
-    fun draftSnapshotRepository(draftSnapshotDao: DraftSnapshotDao): DraftSnapshotRepository {
-        return DraftSnapshotRepository(draftSnapshotDao = draftSnapshotDao)
+    fun draftSnapshotRepository(snapshotDao: SnapshotDao): SnapshotRepository {
+        return SnapshotRepository(snapshotDao = snapshotDao)
     }
 
     @Singleton
@@ -317,7 +317,7 @@ class ApplicationModule {
 
     @Singleton
     @Provides
-    fun draftSnapshotDao(roomDatabase: VisitasDatabase): DraftSnapshotDao {
+    fun draftSnapshotDao(roomDatabase: VisitasDatabase): SnapshotDao {
         return roomDatabase.draftSnapshotDao()
     }
 

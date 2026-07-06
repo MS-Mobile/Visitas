@@ -41,7 +41,7 @@ class VisitDetailViewModel
     private val dispatchers: DispatcherProvider,
     private val householderRepository: HouseholderRepository,
     private val visitRepository: VisitRepository,
-    private val draftSnapshotRepository: DraftSnapshotRepository,
+    private val snapshotRepository: SnapshotRepository,
     private val conversationRepository: ConversationRepository,
     private val addressProvider: AddressProvider,
     private val idProvider: IdProvider,
@@ -845,14 +845,13 @@ class VisitDetailViewModel
 
     private suspend fun saveDraftSilently(state: UiState) {
         val householderModel = state.householder.asModel
-        val hasSnapshot =
-            draftSnapshotRepository.getHouseholderSnapshot(householderModel.id) != null
+        val hasSnapshot = snapshotRepository.getHouseholderSnapshot(householderModel.id) != null
         val committed = committedHouseholder
         if (!hasSnapshot && committed != null) {
             // First draft write over a committed householder: snapshot the committed rows
             // before overwriting them, so the draft can be discarded. Written first so a crash
             // in between leaves an extra snapshot of unchanged rows, which is harmless.
-            draftSnapshotRepository.save(
+            snapshotRepository.save(
                 householderSnapshot = HouseholderSnapshot(
                     householder = committed,
                     isNewDraft = false,
@@ -866,7 +865,7 @@ class VisitDetailViewModel
             // Never-committed householder (created via the FAB): mark it so discarding deletes
             // it instead of restoring. Written after the householder row exists to satisfy the
             // snapshot's foreign key.
-            draftSnapshotRepository.save(
+            snapshotRepository.save(
                 householderSnapshot = HouseholderSnapshot(
                     householder = householderModel,
                     isNewDraft = true,
@@ -906,7 +905,7 @@ class VisitDetailViewModel
             )
             // The saved rows are the new committed state, so the pre-draft snapshot is obsolete:
             // deleting it is what promotes the draft.
-            draftSnapshotRepository.delete(householderId)
+            snapshotRepository.delete(householderId)
             committedHouseholder = householderModel
             visits = visitList.map { it.asModel(householderId) }
             newState {
@@ -1139,7 +1138,7 @@ class VisitDetailViewModel
         committedHouseholder = householderModel
         val householder = householderModel.asState
         visits = visitRepository.getAll(householderId)
-        val hasSnapshot = draftSnapshotRepository.getHouseholderSnapshot(householderId) != null
+        val hasSnapshot = snapshotRepository.getHouseholderSnapshot(householderId) != null
         val visitList = visits.map { visit ->
             val conversation = conversationList.firstOrNull { conversation ->
                 conversation.id == visit.nextConversationId
@@ -1182,7 +1181,7 @@ class VisitDetailViewModel
         initialEditableData = null
         viewModelScope.launch(dispatchers.io) {
             val householderId = _uiState.value.householder.id
-            val snapshot = draftSnapshotRepository.getHouseholderSnapshot(householderId)
+            val snapshot = snapshotRepository.getHouseholderSnapshot(householderId)
             when {
                 snapshot == null -> {
                     newState {
@@ -1202,7 +1201,7 @@ class VisitDetailViewModel
                 }
 
                 else -> {
-                    draftSnapshotRepository.restore(householderId)
+                    snapshotRepository.restore(householderId)
                     loadFromDatabase(
                         householderId = householderId,
                         conversationList = _uiState.value.conversationList,

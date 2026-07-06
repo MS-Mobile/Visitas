@@ -129,8 +129,8 @@ class VisitDetailViewModelTest {
     @Test
     fun `first auto save over a committed householder snapshots the committed rows`() {
         // Arrange
-        val draftSnapshotRepositoryRef = MockReferenceHolder<DraftSnapshotRepository>()
-        val viewModel = createViewModel(draftSnapshotRepositoryRef = draftSnapshotRepositoryRef)
+        val snapshotRepositoryRef = MockReferenceHolder<SnapshotRepository>()
+        val viewModel = createViewModel(snapshotRepositoryRef = snapshotRepositoryRef)
         viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
         assertFalse(viewModel.uiState.value.canDiscardDraft)
         val visit = viewModel.uiState.value.visitList.first()
@@ -140,7 +140,7 @@ class VisitDetailViewModelTest {
         mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
 
         // Assert — the snapshot holds the last-committed values, not the edited ones
-        val draftSnapshotRepository = requireNotNull(draftSnapshotRepositoryRef.value)
+        val draftSnapshotRepository = requireNotNull(snapshotRepositoryRef.value)
         val householderCaptor = org.mockito.kotlin.argumentCaptor<HouseholderSnapshot>()
         val visitsCaptor = org.mockito.kotlin.argumentCaptor<List<VisitSnapshot>>()
         verifyBlocking(draftSnapshotRepository) {
@@ -156,9 +156,9 @@ class VisitDetailViewModelTest {
     @Test
     fun `auto save does not overwrite an existing snapshot`() {
         // Arrange — a snapshot from a previous draft session already exists
-        val draftSnapshotRepositoryRef = MockReferenceHolder<DraftSnapshotRepository>()
+        val snapshotRepositoryRef = MockReferenceHolder<SnapshotRepository>()
         val viewModel = createViewModel(
-            draftSnapshotRepositoryRef = draftSnapshotRepositoryRef,
+            snapshotRepositoryRef = snapshotRepositoryRef,
             existingSnapshot = HouseholderSnapshot(
                 householder = createHouseholder(),
                 isNewDraft = false,
@@ -174,7 +174,7 @@ class VisitDetailViewModelTest {
         mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
 
         // Assert
-        val draftSnapshotRepository = requireNotNull(draftSnapshotRepositoryRef.value)
+        val draftSnapshotRepository = requireNotNull(snapshotRepositoryRef.value)
         verifyBlocking(draftSnapshotRepository, org.mockito.kotlin.never()) {
             save(org.mockito.kotlin.any(), org.mockito.kotlin.any())
         }
@@ -183,8 +183,8 @@ class VisitDetailViewModelTest {
     @Test
     fun `first auto save of a never committed householder marks the draft as new`() {
         // Arrange
-        val draftSnapshotRepositoryRef = MockReferenceHolder<DraftSnapshotRepository>()
-        val viewModel = createViewModel(draftSnapshotRepositoryRef = draftSnapshotRepositoryRef)
+        val snapshotRepositoryRef = MockReferenceHolder<SnapshotRepository>()
+        val viewModel = createViewModel(snapshotRepositoryRef = snapshotRepositoryRef)
         viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = null))
 
         // Act
@@ -192,7 +192,7 @@ class VisitDetailViewModelTest {
         mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
 
         // Assert
-        val draftSnapshotRepository = requireNotNull(draftSnapshotRepositoryRef.value)
+        val draftSnapshotRepository = requireNotNull(snapshotRepositoryRef.value)
         val householderCaptor = org.mockito.kotlin.argumentCaptor<HouseholderSnapshot>()
         val visitsCaptor = org.mockito.kotlin.argumentCaptor<List<VisitSnapshot>>()
         verifyBlocking(draftSnapshotRepository) {
@@ -207,9 +207,9 @@ class VisitDetailViewModelTest {
     @Test
     fun `save promotes the draft by deleting the snapshot`() {
         // Arrange
-        val draftSnapshotRepositoryRef = MockReferenceHolder<DraftSnapshotRepository>()
+        val snapshotRepositoryRef = MockReferenceHolder<SnapshotRepository>()
         val viewModel = createViewModel(
-            draftSnapshotRepositoryRef = draftSnapshotRepositoryRef,
+            snapshotRepositoryRef = snapshotRepositoryRef,
             hasCalendarPermission = true
         )
         viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
@@ -223,7 +223,7 @@ class VisitDetailViewModelTest {
         mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
 
         // Assert
-        val draftSnapshotRepository = requireNotNull(draftSnapshotRepositoryRef.value)
+        val draftSnapshotRepository = requireNotNull(snapshotRepositoryRef.value)
         verifyBlocking(draftSnapshotRepository) { delete(HOUSEHOLDER_ID) }
         val state = viewModel.uiState.value
         assertFalse(state.canDiscardDraft)
@@ -233,10 +233,10 @@ class VisitDetailViewModelTest {
     @Test
     fun `discard confirmed restores the snapshot and reloads the committed state`() {
         // Arrange
-        val draftSnapshotRepositoryRef = MockReferenceHolder<DraftSnapshotRepository>()
+        val snapshotRepositoryRef = MockReferenceHolder<SnapshotRepository>()
         val householderRepositoryRef = MockReferenceHolder<HouseholderRepository>()
         val viewModel = createViewModel(
-            draftSnapshotRepositoryRef = draftSnapshotRepositoryRef,
+            snapshotRepositoryRef = snapshotRepositoryRef,
             householderRepositoryRef = householderRepositoryRef,
             existingSnapshot = HouseholderSnapshot(
                 householder = createHouseholder(),
@@ -253,7 +253,7 @@ class VisitDetailViewModelTest {
         mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
 
         // Assert — the rows are restored and the screen state reloaded from the database
-        val draftSnapshotRepository = requireNotNull(draftSnapshotRepositoryRef.value)
+        val draftSnapshotRepository = requireNotNull(snapshotRepositoryRef.value)
         val householderRepository = requireNotNull(householderRepositoryRef.value)
         verifyBlocking(draftSnapshotRepository) { restore(HOUSEHOLDER_ID) }
         verifyBlocking(householderRepository, org.mockito.kotlin.times(2)) { getById(HOUSEHOLDER_ID) }
@@ -998,7 +998,7 @@ class VisitDetailViewModelTest {
         conversationRepositoryRef: MockReferenceHolder<ConversationRepository>? = null,
         householderRepositoryRef: MockReferenceHolder<HouseholderRepository>? = null,
         visitRepositoryRef: MockReferenceHolder<VisitRepository>? = null,
-        draftSnapshotRepositoryRef: MockReferenceHolder<DraftSnapshotRepository>? = null,
+        snapshotRepositoryRef: MockReferenceHolder<SnapshotRepository>? = null,
         clipboardHandlerRef: MockReferenceHolder<ClipboardHandler>? = null,
         existingSnapshot: HouseholderSnapshot? = null,
         hasCalendarPermission: Boolean = false,
@@ -1033,10 +1033,10 @@ class VisitDetailViewModelTest {
         }
         visitRepositoryRef?.value = visitRepository
 
-        val draftSnapshotRepository = mock<DraftSnapshotRepository> {
+        val snapshotRepository = mock<SnapshotRepository> {
             on { getHouseholderSnapshot(any()) } doReturn existingSnapshot
         }
-        draftSnapshotRepositoryRef?.value = draftSnapshotRepository
+        snapshotRepositoryRef?.value = snapshotRepository
 
         val addressProvider = mock<AddressProvider>()
         val idProvider = mock<IdProvider> {
@@ -1064,7 +1064,7 @@ class VisitDetailViewModelTest {
             dispatchers = dispatchers,
             householderRepository = householderRepository,
             visitRepository = visitRepository,
-            draftSnapshotRepository = draftSnapshotRepository,
+            snapshotRepository = snapshotRepository,
             conversationRepository = conversationRepository,
             addressProvider = addressProvider,
             idProvider = idProvider,

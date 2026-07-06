@@ -9,7 +9,7 @@ import com.msmobile.visitas.householder.Householder
 import java.util.UUID
 
 @Dao
-interface DraftSnapshotDao {
+interface SnapshotDao {
     @Upsert
     suspend fun saveHouseholderSnapshot(snapshot: HouseholderSnapshot)
 
