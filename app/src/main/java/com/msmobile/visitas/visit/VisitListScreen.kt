@@ -27,7 +27,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.Analytics
-import androidx.compose.material.icons.rounded.Analytics
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Explore
 import androidx.compose.material.icons.rounded.FilterList
@@ -35,7 +34,6 @@ import androidx.compose.material.icons.rounded.FindInPage
 import androidx.compose.material.icons.rounded.Group
 import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.Map
-import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Update
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Card
@@ -89,7 +87,6 @@ import com.msmobile.visitas.extension.textShimmer
 import com.msmobile.visitas.extension.toString
 import com.msmobile.visitas.extension.tonalButtonColors
 import com.msmobile.visitas.summary.SummaryViewModel
-import com.msmobile.visitas.ui.theme.PreviewFoldable
 import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.ui.views.LazyColumnWithScrollbar
@@ -1113,7 +1110,7 @@ internal fun VisitListScreenPreview(
     VisitasTheme {
         // Preview-only: hosts the expanded filter menu above the app bar, which would otherwise clip
         // it in screenshots. No-op / absent in production (see PreviewableDropdownMenu.Host).
-        PreviewCompatDropdownMenu.Host {
+        PreviewCompatDropdownMenu.HostPreview {
             AppScaffold(
                 uiState = config.mainActivityUiState,
                 currentDestination = VisitListScreenDestination,

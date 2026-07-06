@@ -21,15 +21,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.AppScaffold
-import com.msmobile.visitas.MainActivityViewModel
-import com.msmobile.visitas.R
 import com.msmobile.visitas.extension.OnBackPressed
 import com.msmobile.visitas.ui.theme.PreviewFoldable
 import com.msmobile.visitas.ui.theme.PreviewPhone
@@ -201,7 +196,7 @@ internal fun ConversationListScreenPreview(
     @PreviewParameter(PreviewConfigProvider::class) config: PreviewConfig
 ) {
     VisitasTheme {
-        PreviewCompatDropdownMenu.Host {
+        PreviewCompatDropdownMenu.HostPreview {
             AppScaffold(
                 uiState = config.mainActivityUiState,
                 currentDestination = ConversationListScreenDestination,
