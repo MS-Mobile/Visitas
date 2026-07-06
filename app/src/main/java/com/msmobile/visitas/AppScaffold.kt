@@ -102,7 +102,6 @@ fun AppScaffold(
     Scaffold(
         topBar = {
             if (showTopBar) {
-                var menuExpanded by remember { mutableStateOf(false) }
                 // Retain the last non-null subtitle so it stays rendered while the
                 // exit animation plays out (subtitle is already null by then).
                 var lastSubtitle by remember { mutableStateOf(subtitle) }
@@ -133,42 +132,9 @@ fun AppScaffold(
                         }
                     },
                     actions = {
-                        topBarActions.forEach { action ->
-                            Box {
-                                IconButton(onClick = action.onClick) {
-                                    Icon(
-                                        imageVector = action.icon,
-                                        contentDescription = action.contentDescription
-                                    )
-                                }
-                                action.menu?.invoke()
-                            }
-                        }
+                        ScaffoldTopBar(topBarActions = topBarActions)
                         if (showSettingsMenu) {
-                            IconButton(onClick = { menuExpanded = true }) {
-                                Icon(
-                                    imageVector = Icons.Rounded.MoreVert,
-                                    contentDescription = stringResource(id = R.string.more_options)
-                                )
-                            }
-                            PreviewCompatDropdownMenu(
-                                expanded = menuExpanded,
-                                onDismissRequest = { menuExpanded = false }
-                            ) {
-                                DropdownMenuItem(
-                                    leadingIcon = {
-                                        Icon(
-                                            imageVector = Icons.Rounded.Settings,
-                                            contentDescription = null
-                                        )
-                                    },
-                                    text = { Text(stringResource(id = R.string.settings)) },
-                                    onClick = {
-                                        menuExpanded = false
-                                        onNavigate(SettingsScreenDestination)
-                                    }
-                                )
-                            }
+                            SettingsMenu(onNavigate = onNavigate)
                         }
                     }
                 )
@@ -189,70 +155,142 @@ fun AppScaffold(
         bottomBar = {
             when {
                 detailFooterActions.isNotEmpty() || floatingActionButtonActions.isNotEmpty() -> {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .navigationBarsPadding(),
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Row(modifier = Modifier.offset(y = -FloatingToolbarDefaults.ScreenOffset)) {
-                            FloatingBar(
-                                modifier = Modifier.weight(weight = .5f, fill = false),
-                                floatingActionButton = {
-                                    floatingActionButtonActions.forEach { action ->
-                                        FloatingActionButton(
-                                            modifier = Modifier.padding(end = borderPadding),
-                                            onClick = action.onClick,
-                                            containerColor = vibrantFloatingToolbarColors().fabContainerColor,
-                                            contentColor = vibrantFloatingToolbarColors().fabContentColor
-                                        ) {
-                                            Icon(
-                                                imageVector = action.icon,
-                                                contentDescription = action.contentDescription
-                                            )
-                                        }
-                                    }
-                                },
-                                content = {
-                                    detailFooterActions.forEach { action ->
-                                        IconButton(onClick = action.onClick) {
-                                            Icon(
-                                                imageVector = action.icon,
-                                                contentDescription = action.contentDescription
-                                            )
-                                        }
-                                    }
-                                }
-                            )
-                        }
-                    }
+                    ScaffoldDetailFooter(
+                        detailFooterActions = detailFooterActions,
+                        floatingActionButtonActions = floatingActionButtonActions
+                    )
                 }
 
                 showBottomNavigation -> {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .navigationBarsPadding()
-                            .offset(y = -FloatingToolbarDefaults.ScreenOffset),
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        BottomNavigation(
-                            showFAB = showFAB,
-                            onFabClickedEvent = {
-                                onEvent(
-                                    MainActivityViewModel.UiEvent.FabClicked(
-                                        currentDestination = currentDestination
-                                    )
-                                )
-                            },
-                            currentDestination = currentDestination,
-                            onNavigateToTab = onNavigateToTab
-                        )
-                    }
+                    ScaffoldBottomNavigation(
+                        showFAB = showFAB,
+                        currentDestination = currentDestination,
+                        onEvent = onEvent,
+                        onNavigateToTab = onNavigateToTab
+                    )
                 }
             }
         }
     )
+}
+
+@Composable
+private fun ScaffoldTopBar(topBarActions: List<TopBarAction>) {
+    topBarActions.forEach { action ->
+        Box {
+            IconButton(onClick = action.onClick) {
+                Icon(
+                    imageVector = action.icon,
+                    contentDescription = action.contentDescription
+                )
+            }
+            action.menu?.invoke()
+        }
+    }
+}
+
+@Composable
+private fun SettingsMenu(onNavigate: (Direction) -> Unit) {
+    var menuExpanded by remember { mutableStateOf(false) }
+    IconButton(onClick = { menuExpanded = true }) {
+        Icon(
+            imageVector = Icons.Rounded.MoreVert,
+            contentDescription = stringResource(id = R.string.more_options)
+        )
+    }
+    PreviewCompatDropdownMenu(
+        expanded = menuExpanded,
+        onDismissRequest = { menuExpanded = false }
+    ) {
+        DropdownMenuItem(
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Rounded.Settings,
+                    contentDescription = null
+                )
+            },
+            text = { Text(stringResource(id = R.string.settings)) },
+            onClick = {
+                menuExpanded = false
+                onNavigate(SettingsScreenDestination)
+            }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun ScaffoldDetailFooter(
+    detailFooterActions: List<DetailFooterAction>,
+    floatingActionButtonActions: List<FloatingActionButtonAction>
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding(),
+        horizontalArrangement = Arrangement.Center
+    ) {
+        Row(modifier = Modifier.offset(y = -FloatingToolbarDefaults.ScreenOffset)) {
+            FloatingBar(
+                modifier = Modifier.weight(weight = .5f, fill = false),
+                floatingActionButton = {
+                    floatingActionButtonActions.forEach { action ->
+                        FloatingActionButton(
+                            modifier = Modifier.padding(end = borderPadding),
+                            onClick = action.onClick,
+                            containerColor = vibrantFloatingToolbarColors().fabContainerColor,
+                            contentColor = vibrantFloatingToolbarColors().fabContentColor
+                        ) {
+                            Icon(
+                                imageVector = action.icon,
+                                contentDescription = action.contentDescription
+                            )
+                        }
+                    }
+                },
+                content = {
+                    detailFooterActions.forEach { action ->
+                        IconButton(onClick = action.onClick) {
+                            Icon(
+                                imageVector = action.icon,
+                                contentDescription = action.contentDescription
+                            )
+                        }
+                    }
+                }
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun ScaffoldBottomNavigation(
+    showFAB: Boolean,
+    currentDestination: DestinationSpec,
+    onEvent: (MainActivityViewModel.UiEvent) -> Unit,
+    onNavigateToTab: (DirectionDestinationSpec) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .offset(y = -FloatingToolbarDefaults.ScreenOffset),
+        horizontalArrangement = Arrangement.Center
+    ) {
+        BottomNavigation(
+            showFAB = showFAB,
+            onFabClickedEvent = {
+                onEvent(
+                    MainActivityViewModel.UiEvent.FabClicked(
+                        currentDestination = currentDestination
+                    )
+                )
+            },
+            currentDestination = currentDestination,
+            onNavigateToTab = onNavigateToTab
+        )
+    }
 }
 
 @Composable
