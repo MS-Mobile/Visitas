@@ -77,8 +77,8 @@ import com.msmobile.visitas.util.scaffold.AppScaffoldState
 import com.msmobile.visitas.OnIntentStateHandled
 import com.msmobile.visitas.R
 import com.msmobile.visitas.util.scaffold.TopBarAction
+import com.msmobile.visitas.util.scaffold.TopNavigationAction
 import com.msmobile.visitas.util.scaffold.settingsTopMenuActions
-import com.msmobile.visitas.util.scaffold.topNavigationActions
 import com.msmobile.visitas.backup.BackupSheet
 import com.msmobile.visitas.backup.BackupViewModel
 import com.msmobile.visitas.extension.OnBackPressed
@@ -169,7 +169,7 @@ fun VisitListScreen(
             )
         },
     )
-    val topNavigationActions = topNavigationActions(onNavigateUp = { navigator.navigateUp() })
+    val topNavigationActions = visitListTopNavigationActions()
     val topMenuActions = settingsTopMenuActions(
         onNavigateToSettings = { onNavigate(SettingsScreenDestination) }
     )
@@ -208,6 +208,12 @@ fun VisitListScreen(
  * screen and its preview share one implementation. Callers supply the behaviour; this only wires
  * up the icons and content descriptions.
  */
+/**
+ * The visit list is a start/tab destination, so it publishes no up navigation action and the app
+ * bar renders without a back arrow.
+ */
+private fun visitListTopNavigationActions(): List<TopNavigationAction> = emptyList()
+
 @Composable
 private fun visitListTopBarActions(
     visitListUiState: VisitListViewModel.UiState,
@@ -1128,7 +1134,7 @@ internal fun VisitListScreenPreview(
                 onEvent = {},
                 onNavigateToTab = {},
                 onNavigate = {},
-                topNavigationActions = topNavigationActions(onNavigateUp = {}),
+                topNavigationActions = visitListTopNavigationActions(),
                 topBarActions = visitListTopBarActions(
                     visitListUiState = config.visitListUiState,
                     onVisitListEvent = {},

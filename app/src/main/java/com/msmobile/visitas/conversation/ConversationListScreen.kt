@@ -28,8 +28,8 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.AppScaffold
 import com.msmobile.visitas.util.scaffold.AppScaffoldState
+import com.msmobile.visitas.util.scaffold.TopNavigationAction
 import com.msmobile.visitas.util.scaffold.settingsTopMenuActions
-import com.msmobile.visitas.util.scaffold.topNavigationActions
 import com.msmobile.visitas.extension.OnBackPressed
 import com.msmobile.visitas.ui.theme.PreviewFoldable
 import com.msmobile.visitas.ui.theme.PreviewPhone
@@ -64,7 +64,7 @@ fun ConversationListScreen(
         navigator.navigate(direction)
     }
 
-    val topNavigationActions = topNavigationActions(onNavigateUp = { navigator.navigateUp() })
+    val topNavigationActions = conversationListTopNavigationActions()
     val topMenuActions = settingsTopMenuActions(
         onNavigateToSettings = { onNavigate(SettingsScreenDestination) }
     )
@@ -90,6 +90,12 @@ fun ConversationListScreen(
         onNavigate = onNavigate
     )
 }
+
+/**
+ * The conversation list is a tab destination, so it publishes no up navigation action and the app
+ * bar renders without a back arrow.
+ */
+private fun conversationListTopNavigationActions(): List<TopNavigationAction> = emptyList()
 
 @Composable
 private fun ConversationListScreenContent(
@@ -226,7 +232,7 @@ internal fun ConversationListScreenPreview(
                 onEvent = {},
                 onNavigateToTab = {},
                 onNavigate = {},
-                topNavigationActions = topNavigationActions(onNavigateUp = {}),
+                topNavigationActions = conversationListTopNavigationActions(),
                 topMenuActions = settingsTopMenuActions(onNavigateToSettings = {})
             ) {
                 ConversationListScreenContent(

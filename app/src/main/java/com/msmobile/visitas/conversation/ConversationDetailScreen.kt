@@ -48,6 +48,7 @@ import com.msmobile.visitas.util.scaffold.DetailFooterAction
 import com.msmobile.visitas.util.scaffold.FloatingActionButtonAction
 import com.msmobile.visitas.R
 import com.msmobile.visitas.util.scaffold.TopBarAction
+import com.msmobile.visitas.util.scaffold.TopNavigationAction
 import com.msmobile.visitas.util.scaffold.topNavigationActions
 import com.msmobile.visitas.conversation.ConversationDetailViewModel.ConversationState
 import com.msmobile.visitas.extension.EditableTextFieldColors
@@ -111,7 +112,7 @@ private fun ConversationDetailScreenContent(
         onEvent(ConversationDetailViewModel.UiEvent.CancelClicked)
     }
     val chromeOwner = remember { Any() }
-    val topNavigationActions = topNavigationActions(onNavigateUp = onNavigateUp)
+    val topNavigationActions = conversationDetailTopNavigationActions(onNavigateUp = onNavigateUp)
     val topBarActions = conversationDetailTopBarActions(onEvent = onEvent)
     val detailFooterActions = conversationDetailFooterActions(onEvent = onEvent)
     val floatingActionButtonActions = conversationDetailFloatingActionButtonActions(onEvent = onEvent)
@@ -133,6 +134,11 @@ private fun ConversationDetailScreenContent(
     )
     StateHandler(uiState, onEvent, onNavigateUp)
 }
+
+@Composable
+private fun conversationDetailTopNavigationActions(
+    onNavigateUp: () -> Unit
+): List<TopNavigationAction> = topNavigationActions(onNavigateUp = onNavigateUp)
 
 @Composable
 private fun conversationDetailTopBarActions(
@@ -399,7 +405,7 @@ internal fun ConversationDetailScreenPreview(
                 onEvent = {},
                 onNavigateToTab = {},
                 onNavigate = {},
-                topNavigationActions = topNavigationActions(onNavigateUp = {}),
+                topNavigationActions = conversationDetailTopNavigationActions(onNavigateUp = {}),
                 topBarActions = conversationDetailTopBarActions(onEvent = {}),
                 detailFooterActions = conversationDetailFooterActions(onEvent = {}),
                 floatingActionButtonActions = conversationDetailFloatingActionButtonActions(onEvent = {})

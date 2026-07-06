@@ -86,6 +86,7 @@ import com.msmobile.visitas.util.scaffold.DetailFooterAction
 import com.msmobile.visitas.util.scaffold.FloatingActionButtonAction
 import com.msmobile.visitas.R
 import com.msmobile.visitas.util.scaffold.TopBarAction
+import com.msmobile.visitas.util.scaffold.TopNavigationAction
 import com.msmobile.visitas.util.scaffold.topNavigationActions
 import com.msmobile.visitas.extension.EditableTextFieldColors
 import com.msmobile.visitas.extension.OnBackPressed
@@ -159,7 +160,7 @@ private fun VisitDetailScreenContent(
     }
 
     val chromeOwner = remember { Any() }
-    val topNavigationActions = topNavigationActions(onNavigateUp = onNavigateUp)
+    val topNavigationActions = visitDetailTopNavigationActions(onNavigateUp = onNavigateUp)
     val topBarActions = visitDetailTopBarActions(onEvent = onEvent)
     val detailFooterActions = visitDetailFooterActions(onEvent = onEvent)
     val floatingActionButtonActions = visitDetailFloatingActionButtonActions(onEvent = onEvent)
@@ -393,6 +394,11 @@ private fun HouseholderDetail(
         )
     }
 }
+
+@Composable
+private fun visitDetailTopNavigationActions(
+    onNavigateUp: () -> Unit
+): List<TopNavigationAction> = topNavigationActions(onNavigateUp = onNavigateUp)
 
 @Composable
 private fun visitDetailTopBarActions(
@@ -1136,7 +1142,7 @@ internal fun VisitDetailScreenPreview(
                 onEvent = {},
                 onNavigateToTab = {},
                 onNavigate = {},
-                topNavigationActions = topNavigationActions(onNavigateUp = {}),
+                topNavigationActions = visitDetailTopNavigationActions(onNavigateUp = {}),
                 topBarActions = visitDetailTopBarActions(onEvent = {}),
                 detailFooterActions = visitDetailFooterActions(onEvent = {}),
                 floatingActionButtonActions = visitDetailFloatingActionButtonActions(onEvent = {}),

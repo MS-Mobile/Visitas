@@ -43,6 +43,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.AppScaffold
 import com.msmobile.visitas.util.scaffold.AppScaffoldState
 import com.msmobile.visitas.R
+import com.msmobile.visitas.util.scaffold.TopNavigationAction
 import com.msmobile.visitas.util.scaffold.topNavigationActions
 import com.msmobile.visitas.extension.showShareIntent
 import com.msmobile.visitas.ui.theme.PreviewFoldable
@@ -70,7 +71,7 @@ fun SettingsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val onEvent = viewModel::onEvent
 
-    val topNavigationActions = topNavigationActions(onNavigateUp = { navigator.navigateUp() })
+    val topNavigationActions = settingsTopNavigationActions(onNavigateUp = { navigator.navigateUp() })
     val chromeOwner = remember { Any() }
     DisposableEffect(Unit) {
         appScaffoldState.setUiState(
@@ -89,6 +90,11 @@ fun SettingsScreen(
         onEvent = onEvent
     )
 }
+
+@Composable
+private fun settingsTopNavigationActions(
+    onNavigateUp: () -> Unit
+): List<TopNavigationAction> = topNavigationActions(onNavigateUp = onNavigateUp)
 
 @Composable
 private fun SettingsScreenContent(
@@ -299,7 +305,7 @@ internal fun SettingsScreenPreview(
             onEvent = {},
             onNavigateToTab = {},
             onNavigate = {},
-            topNavigationActions = topNavigationActions(onNavigateUp = {})
+            topNavigationActions = settingsTopNavigationActions(onNavigateUp = {})
         ) {
             SettingsScreenContent(
                 uiState = config.uiState,
