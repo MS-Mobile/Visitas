@@ -812,7 +812,7 @@ class VisitDetailViewModel
                     return@onEach
                 }
 
-                updateUiStateChangedVisitsAsDraft(baseline)
+                updateUiStateIsDraft(baseline)
 
                 val updatedState = _uiState.value
                 saveDraftSilently(updatedState)
@@ -831,7 +831,7 @@ class VisitDetailViewModel
      * A visit is considered a draft when it has no counterpart in the baseline (added) or when its
      * editable data differs from the baseline counterpart (changed). Visits are matched by id.
      */
-    private fun updateUiStateChangedVisitsAsDraft(baseline: EditableDataSnapshot) {
+    private fun updateUiStateIsDraft(baseline: EditableDataSnapshot) {
         newState {
             val updatedList = visitList.map { visit ->
                 val baselineEditable = baseline.visits[visit.id]
