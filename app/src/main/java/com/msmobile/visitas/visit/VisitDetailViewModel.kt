@@ -77,7 +77,8 @@ class VisitDetailViewModel
     // previous save). Null while the householder has never been committed, so the first draft
     // auto-save knows whether to snapshot the committed rows or mark the draft as new.
     private var committedHouseholder: Householder? = null
-    @Volatile private var initialEditableData: EditableDataSnapshot? = null
+    @Volatile
+    private var initialEditableData: EditableDataSnapshot? = null
     private var loadAddressAfterPermission = false
     private var isUpdatingVisit: Boolean = false
     private var isAddressFieldFocused: Boolean = false
@@ -833,6 +834,12 @@ class VisitDetailViewModel
      */
     private fun updateUiStateIsDraft(baseline: EditableDataSnapshot) {
         newState {
+            val didHouseholderEditableDataChange = baseline.householder != householder
+            val updatedHouseholderState = if (didHouseholderEditableDataChange) {
+                householder.copy(isDraft = true)
+            } else {
+                householder
+            }
             val updatedList = visitList.map { visit ->
                 val baselineEditable = baseline.visits[visit.id]
                 val isNewOrChanged = baselineEditable == null || baselineEditable != visit.editable
@@ -842,7 +849,10 @@ class VisitDetailViewModel
                     visit
                 }
             }
-            copy(visitList = updatedList)
+            copy(
+                householder = updatedHouseholderState,
+                visitList = updatedList
+            )
         }
     }
 
@@ -1068,7 +1078,8 @@ class VisitDetailViewModel
             addressState = HouseholderAddressState.LoadLocation,
             showClearNotes = false,
             showCopyData = true,
-            isLoadingAddress = false
+            isLoadingAddress = false,
+            isDraft = false
         )
     }
 
@@ -1310,7 +1321,8 @@ class VisitDetailViewModel
                 addressState = addressState,
                 showClearNotes = false,
                 isNotesExpanded = false, // Notes collapsed by default; user can expand if needed
-                isLoadingAddress = false
+                isLoadingAddress = false,
+                isDraft = isDraft
             )
         }
 
@@ -1475,7 +1487,8 @@ class VisitDetailViewModel
         val addressState: HouseholderAddressState,
         val showClearNotes: Boolean,
         val isLoadingAddress: Boolean,
-        val isNotesExpanded: Boolean
+        val isNotesExpanded: Boolean,
+        val isDraft: Boolean,
     ) {
         val name get() = editable.name
         val address get() = editable.address

@@ -35,6 +35,7 @@ internal class VisitDetailPreviewConfigProvider :
                     showClearNotes = false,
                     isLoadingAddress = false,
                     isNotesExpanded = false,
+                    isDraft = false
                 ),
                 visitList = listOf(
                     previewNewVisitUiState
@@ -318,6 +319,7 @@ private val previewVisitDetailUiState = VisitDetailViewModel.UiState(
         showClearNotes = false,
         isLoadingAddress = false,
         isNotesExpanded = false,
+        isDraft = false
     ),
     visitList = listOf(previewFirstVisitUiState),
     conversationList = listOf(),
