@@ -12,7 +12,7 @@ class SnapshotRepository(private val snapshotDao: SnapshotDao) {
         snapshotDao.saveHouseholderSnapshot(householderSnapshot)
     }
 
-    suspend fun saveVisitSnapshot(visitSnapshots: List<VisitSnapshot>) {
-        snapshotDao.saveVisitSnapshots(visitSnapshots)
+    suspend fun saveVisitSnapshot(visitSnapshot: VisitSnapshot) {
+        snapshotDao.saveVisitSnapshot(visitSnapshot)
     }
 }
