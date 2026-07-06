@@ -18,7 +18,9 @@ import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingToolbarDefaults
+import androidx.compose.material3.FloatingToolbarDefaults.vibrantFloatingToolbarColors
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -39,8 +41,9 @@ import com.msmobile.visitas.ui.theme.PreviewFoldable
 import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.ui.views.BottomNavigation
-import com.msmobile.visitas.ui.views.DetailFooter
+import com.msmobile.visitas.ui.views.FloatingBar
 import com.msmobile.visitas.ui.views.PreviewCompatDropdownMenu
+import com.msmobile.visitas.util.borderPadding
 import com.ramcosta.composedestinations.generated.destinations.ConversationDetailScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.ConversationListScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.SettingsScreenDestination
@@ -60,7 +63,8 @@ fun AppScaffold(
     onNavigate: (Direction) -> Unit,
     onNavigateUp: () -> Unit = {},
     topBarActions: List<TopBarAction> = emptyList(),
-    detailFooterActions: DetailFooterActions? = null,
+    detailFooterActions: List<DetailFooterAction> = emptyList(),
+    floatingActionButtonActions: List<FloatingActionButtonAction> = emptyList(),
     subtitle: String? = null,
     content: @Composable () -> Unit
 ) {
@@ -184,19 +188,43 @@ fun AppScaffold(
         },
         bottomBar = {
             when {
-                detailFooterActions != null -> {
+                detailFooterActions.isNotEmpty() || floatingActionButtonActions.isNotEmpty() -> {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .navigationBarsPadding(),
                         horizontalArrangement = Arrangement.Center
                     ) {
-                        DetailFooter(
-                            modifier = Modifier.offset(y = -FloatingToolbarDefaults.ScreenOffset),
-                            onBackClicked = detailFooterActions.onBack,
-                            onSaveClickedEvent = detailFooterActions.onSave,
-                            onFabClickedEvent = detailFooterActions.onAdd
-                        )
+                        Row(modifier = Modifier.offset(y = -FloatingToolbarDefaults.ScreenOffset)) {
+                            FloatingBar(
+                                modifier = Modifier.weight(weight = .5f, fill = false),
+                                floatingActionButton = {
+                                    floatingActionButtonActions.forEach { action ->
+                                        FloatingActionButton(
+                                            modifier = Modifier.padding(end = borderPadding),
+                                            onClick = action.onClick,
+                                            containerColor = vibrantFloatingToolbarColors().fabContainerColor,
+                                            contentColor = vibrantFloatingToolbarColors().fabContentColor
+                                        ) {
+                                            Icon(
+                                                imageVector = action.icon,
+                                                contentDescription = action.contentDescription
+                                            )
+                                        }
+                                    }
+                                },
+                                content = {
+                                    detailFooterActions.forEach { action ->
+                                        IconButton(onClick = action.onClick) {
+                                            Icon(
+                                                imageVector = action.icon,
+                                                contentDescription = action.contentDescription
+                                            )
+                                        }
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
 

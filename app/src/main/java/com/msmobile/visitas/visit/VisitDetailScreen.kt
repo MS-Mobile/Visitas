@@ -27,13 +27,16 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.rounded.ArrowBackIosNew
 import androidx.compose.material.icons.rounded.ArrowDropDown
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.DoneOutline
 import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.TravelExplore
@@ -79,7 +82,8 @@ import androidx.compose.ui.window.PopupProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.AppScaffold
 import com.msmobile.visitas.AppScaffoldState
-import com.msmobile.visitas.DetailFooterActions
+import com.msmobile.visitas.DetailFooterAction
+import com.msmobile.visitas.FloatingActionButtonAction
 import com.msmobile.visitas.R
 import com.msmobile.visitas.TopBarAction
 import com.msmobile.visitas.extension.EditableTextFieldColors
@@ -155,6 +159,8 @@ private fun VisitDetailScreenContent(
 
     val chromeOwner = remember { Any() }
     val topBarActions = visitDetailTopBarActions(onEvent = onEvent)
+    val detailFooterActions = visitDetailFooterActions(onEvent = onEvent)
+    val floatingActionButtonActions = visitDetailFloatingActionButtonActions(onEvent = onEvent)
     val subtitle = visitDetailSubtitleString(uiState.hasDrafts)
 
     DisposableEffect(subtitle) {
@@ -162,11 +168,8 @@ private fun VisitDetailScreenContent(
             owner = chromeOwner,
             uiState = AppScaffoldState.UiState(
                 topBarActions = topBarActions,
-                detailFooterActions = DetailFooterActions(
-                    onBack = { onEvent(VisitDetailViewModel.UiEvent.CancelClicked) },
-                    onSave = { onEvent(VisitDetailViewModel.UiEvent.SaveClicked) },
-                    onAdd = { onEvent(VisitDetailViewModel.UiEvent.AddVisitClicked) }
-                ),
+                detailFooterActions = detailFooterActions,
+                floatingActionButtonActions = floatingActionButtonActions,
                 subtitle = subtitle
             )
         )
@@ -404,6 +407,37 @@ private fun visitDetailTopBarActions(
             contentDescription = deleteDescription,
             icon = Icons.Rounded.Delete,
             onClick = { onEvent(VisitDetailViewModel.UiEvent.DeleteClicked) }
+        )
+    )
+}
+
+@Composable
+private fun visitDetailFooterActions(
+    onEvent: (VisitDetailViewModel.UiEvent) -> Unit
+): List<DetailFooterAction> {
+    return listOf(
+        DetailFooterAction(
+            contentDescription = stringResource(id = R.string.cancel),
+            icon = Icons.Rounded.ArrowBackIosNew,
+            onClick = { onEvent(VisitDetailViewModel.UiEvent.CancelClicked) }
+        ),
+        DetailFooterAction(
+            contentDescription = stringResource(id = R.string.save),
+            icon = Icons.Rounded.DoneOutline,
+            onClick = { onEvent(VisitDetailViewModel.UiEvent.SaveClicked) }
+        )
+    )
+}
+
+@Composable
+private fun visitDetailFloatingActionButtonActions(
+    onEvent: (VisitDetailViewModel.UiEvent) -> Unit
+): List<FloatingActionButtonAction> {
+    return listOf(
+        FloatingActionButtonAction(
+            contentDescription = stringResource(id = R.string.add_visit),
+            icon = Icons.Filled.Add,
+            onClick = { onEvent(VisitDetailViewModel.UiEvent.AddVisitClicked) }
         )
     )
 }
@@ -1100,11 +1134,8 @@ internal fun VisitDetailScreenPreview(
                 onNavigateToTab = {},
                 onNavigate = {},
                 topBarActions = visitDetailTopBarActions(onEvent = {}),
-                detailFooterActions = DetailFooterActions(
-                    onBack = {},
-                    onSave = {},
-                    onAdd = {}
-                ),
+                detailFooterActions = visitDetailFooterActions(onEvent = {}),
+                floatingActionButtonActions = visitDetailFloatingActionButtonActions(onEvent = {}),
                 subtitle = visitDetailSubtitleString(showSubtitle = config.uiState.hasDrafts)
             ) {
                 VisitDetailScreenContent(

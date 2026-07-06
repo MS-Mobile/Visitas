@@ -30,7 +30,8 @@ class AppScaffoldState {
 
     data class UiState(
         val topBarActions: List<TopBarAction> = emptyList(),
-        val detailFooterActions: DetailFooterActions? = null,
+        val detailFooterActions: List<DetailFooterAction> = emptyList(),
+        val floatingActionButtonActions: List<FloatingActionButtonAction> = emptyList(),
         // Optional accent-styled supporting line shown under the top bar title that any
         // screen can set (e.g. to surface a status like "Draft").
         val subtitle: String? = null,

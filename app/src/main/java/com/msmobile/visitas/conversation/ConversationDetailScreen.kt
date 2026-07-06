@@ -15,8 +15,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.rounded.ArrowBackIosNew
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.DoneOutline
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -41,7 +44,8 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.AppScaffold
 import com.msmobile.visitas.AppScaffoldState
-import com.msmobile.visitas.DetailFooterActions
+import com.msmobile.visitas.DetailFooterAction
+import com.msmobile.visitas.FloatingActionButtonAction
 import com.msmobile.visitas.R
 import com.msmobile.visitas.TopBarAction
 import com.msmobile.visitas.conversation.ConversationDetailViewModel.ConversationState
@@ -107,16 +111,15 @@ private fun ConversationDetailScreenContent(
     }
     val chromeOwner = remember { Any() }
     val topBarActions = conversationDetailTopBarActions(onEvent = onEvent)
+    val detailFooterActions = conversationDetailFooterActions(onEvent = onEvent)
+    val floatingActionButtonActions = conversationDetailFloatingActionButtonActions(onEvent = onEvent)
     DisposableEffect(Unit) {
         appScaffoldState.setUiState(
             owner = chromeOwner,
             uiState = AppScaffoldState.UiState(
                 topBarActions = topBarActions,
-                detailFooterActions = DetailFooterActions(
-                    onBack = { onEvent(ConversationDetailViewModel.UiEvent.CancelClicked) },
-                    onSave = { onEvent(ConversationDetailViewModel.UiEvent.SaveClicked) },
-                    onAdd = { onEvent(ConversationDetailViewModel.UiEvent.AddClicked) }
-                )
+                detailFooterActions = detailFooterActions,
+                floatingActionButtonActions = floatingActionButtonActions
             )
         )
         onDispose { appScaffoldState.clearUiState(chromeOwner) }
@@ -138,6 +141,37 @@ private fun conversationDetailTopBarActions(
             contentDescription = deleteDescription,
             icon = Icons.Rounded.Delete,
             onClick = { onEvent(ConversationDetailViewModel.UiEvent.DeleteClicked) }
+        )
+    )
+}
+
+@Composable
+private fun conversationDetailFooterActions(
+    onEvent: (ConversationDetailViewModel.UiEvent) -> Unit
+): List<DetailFooterAction> {
+    return listOf(
+        DetailFooterAction(
+            contentDescription = stringResource(id = R.string.cancel),
+            icon = Icons.Rounded.ArrowBackIosNew,
+            onClick = { onEvent(ConversationDetailViewModel.UiEvent.CancelClicked) }
+        ),
+        DetailFooterAction(
+            contentDescription = stringResource(id = R.string.save),
+            icon = Icons.Rounded.DoneOutline,
+            onClick = { onEvent(ConversationDetailViewModel.UiEvent.SaveClicked) }
+        )
+    )
+}
+
+@Composable
+private fun conversationDetailFloatingActionButtonActions(
+    onEvent: (ConversationDetailViewModel.UiEvent) -> Unit
+): List<FloatingActionButtonAction> {
+    return listOf(
+        FloatingActionButtonAction(
+            contentDescription = stringResource(id = R.string.add_conversation),
+            icon = Icons.Filled.Add,
+            onClick = { onEvent(ConversationDetailViewModel.UiEvent.AddClicked) }
         )
     )
 }

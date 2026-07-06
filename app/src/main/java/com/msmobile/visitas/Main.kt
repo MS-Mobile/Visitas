@@ -52,6 +52,7 @@ fun Main(
             onNavigateUp = onNavigateUp,
             topBarActions = appScaffoldState.uiState.topBarActions,
             detailFooterActions = appScaffoldState.uiState.detailFooterActions,
+            floatingActionButtonActions = appScaffoldState.uiState.floatingActionButtonActions,
             subtitle = appScaffoldState.uiState.subtitle,
             content = {
                 DestinationsNavHost(
