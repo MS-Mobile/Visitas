@@ -825,7 +825,7 @@ class VisitDetailViewModel
                     return@onEach
                 }
 
-                updateUiStateChangedVisitsAsDraft(baseline)
+                captureSnapshotsAndMarkDrafts(baseline)
 
                 val updatedState = _uiState.value
                 saveDraftSilently(updatedState)
@@ -838,25 +838,62 @@ class VisitDetailViewModel
     }
 
     /**
-     * Marks every visit that was added or edited relative to [baseline] as a draft, so the UI
-     * can surface a "draft" indicator and the silent save persists the flag.
-     *
-     * A visit is considered a draft when it has no counterpart in the baseline (added) or when its
-     * editable data differs from the baseline counterpart (changed). Visits are matched by id.
+     * For each entity dirtied relative to [baseline], snapshots its committed DB row (once) and
+     * marks it a draft. The committed row is read via `getByIdOrNull` so this is robust to a prior
+     * manual save. A brand-new record has no committed row: it is still marked draft (so discard can
+     * detect "never committed") but is not snapshotted.
      */
-    private fun updateUiStateChangedVisitsAsDraft(baseline: EditableDataSnapshot) {
+    private suspend fun captureSnapshotsAndMarkDrafts(baseline: EditableDataSnapshot) {
+        val state = _uiState.value
+
+        // Householder
+        val householder = state.householder
+        if (!householder.isDraft) {
+            val committed = householderRepository.getByIdOrNull(householder.id)
+            val householderChanged = householder.editable != baseline.householder
+            when {
+                committed == null -> markHouseholderDraft()          // new record, nothing to snapshot
+                householderChanged -> {                              // committed householder first dirtied
+                    snapshotRepository.saveHouseholderSnapshot(HouseholderSnapshot(committed))
+                    markHouseholderDraft()
+                }
+                // committed && unchanged -> leave isDraft = false
+            }
+        }
+
+        // Visits
+        state.visitList.forEach { visit ->
+            if (visit.isDraft || visit.wasRemoved) return@forEach
+            val baselineEditable = baseline.visits[visit.id]
+            val isNewOrChanged = baselineEditable == null || baselineEditable != visit.editable
+            if (!isNewOrChanged) return@forEach
+
+            val committed = visitRepository.getByIdOrNull(visit.id)
+            if (committed != null && !committed.isDraft) {
+                snapshotRepository.saveVisitSnapshot(VisitSnapshot(committed))
+            }
+            markVisitDraft(visit.id)
+        }
+    }
+
+    private fun markHouseholderDraft() {
+        newState {
+            copy(
+                householder = householder.copy(isDraft = true),
+                hasDrafts = true
+            )
+        }
+    }
+
+    private fun markVisitDraft(visitId: UUID) {
         newState {
             val updatedList = visitList.map { visit ->
-                val baselineEditable = baseline.visits[visit.id]
-                val isNewOrChanged = baselineEditable == null || baselineEditable != visit.editable
-                if (isNewOrChanged && !visit.isDraft) {
-                    visit.copy(isDraft = true)
-                } else {
-                    visit
-                }
+                if (visit.id == visitId) visit.copy(isDraft = true) else visit
             }
-            val hasDrafts = visitList.hasDrafts()
-            copy(visitList = updatedList, hasDrafts = hasDrafts)
+            copy(
+                visitList = updatedList,
+                hasDrafts = householder.isDraft || updatedList.hasDrafts()
+            )
         }
     }
 

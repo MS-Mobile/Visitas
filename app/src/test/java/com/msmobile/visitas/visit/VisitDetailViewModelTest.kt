@@ -128,6 +128,64 @@ class VisitDetailViewModelTest {
     }
 
     @Test
+    fun `auto save snapshots the committed visit before marking it a draft`() {
+        // Arrange
+        val snapshotRepositoryRef = MockReferenceHolder<SnapshotRepository>()
+        val viewModel = createViewModel(snapshotRepositoryRef = snapshotRepositoryRef)
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+        val visit = viewModel.uiState.value.visitList.first()
+
+        // Act — edit the existing visit, then let the debounced auto-save run
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.VisitDoneChanged(value = true, visit = visit))
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert — the committed visit (isDone = false) was snapshotted
+        val snapshotRepository = requireNotNull(snapshotRepositoryRef.value)
+        val captor = org.mockito.kotlin.argumentCaptor<VisitSnapshot>()
+        verifyBlocking(snapshotRepository) { saveVisitSnapshot(captor.capture()) }
+        assertEquals(FIRST_VISIT_ID, captor.firstValue.visit.id)
+        assertFalse(captor.firstValue.visit.isDone)
+    }
+
+    @Test
+    fun `auto save snapshots the committed householder before marking it a draft`() {
+        // Arrange
+        val snapshotRepositoryRef = MockReferenceHolder<SnapshotRepository>()
+        val viewModel = createViewModel(snapshotRepositoryRef = snapshotRepositoryRef)
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.HouseholderNameChanged("Changed Name"))
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert — the committed householder ("Test Name") was snapshotted
+        val snapshotRepository = requireNotNull(snapshotRepositoryRef.value)
+        val captor = org.mockito.kotlin.argumentCaptor<HouseholderSnapshot>()
+        verifyBlocking(snapshotRepository) { saveHouseholderSnapshot(captor.capture()) }
+        assertEquals("Test Name", captor.firstValue.householder.name)
+    }
+
+    @Test
+    fun `auto save on a brand-new record marks householder draft without snapshotting`() {
+        // Arrange — a new record has no committed rows in the DB
+        val snapshotRepositoryRef = MockReferenceHolder<SnapshotRepository>()
+        val viewModel = createViewModel(
+            snapshotRepositoryRef = snapshotRepositoryRef,
+            committedRowsExist = false
+        )
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = null))
+
+        // Act — edit only a householder field
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.HouseholderNameChanged("New Name"))
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert — marked draft, but no snapshot written
+        assertTrue(viewModel.uiState.value.householder.isDraft)
+        val snapshotRepository = requireNotNull(snapshotRepositoryRef.value)
+        verifyBlocking(snapshotRepository, org.mockito.kotlin.never()) { saveHouseholderSnapshot(any()) }
+    }
+
+    @Test
     fun `onEvent with HouseholderNameChanged updates householder name`() {
         // Arrange
         val viewModel = createViewModel()
