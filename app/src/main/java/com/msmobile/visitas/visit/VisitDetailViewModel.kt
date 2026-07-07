@@ -793,10 +793,73 @@ class VisitDetailViewModel
     }
 
     private fun undoChangesConfirmed() {
-        // TODO: Undo changes - read from SnapshotsRepository, update UI state, update database,
-        newState {
-            copy(eventState = UiEventState.Idle)
+        val householderId = _uiState.value.householder.id
+        val householderIsDraft = _uiState.value.householder.isDraft
+        newState { copy(eventState = UiEventState.Idle) }
+        viewModelScope.launch(dispatchers.io) {
+            val householderSnapshot = snapshotRepository.getHouseholderSnapshot(householderId)
+
+            if (householderIsDraft && householderSnapshot == null) {
+                // Never committed -> nothing to restore to. Delete the draft (cascades visits +
+                // snapshots) and reset to a fresh empty form (Decision 4: reset, do not dismiss).
+                householderRepository.deleteById(householderId)
+                reinitializeEmptyForm()
+                return@launch
+            }
+
+            // Committed record: restore from snapshots.
+            householderSnapshot?.let { householderRepository.save(it.householder) }
+
+            val visitSnapshots = snapshotRepository.getVisitSnapshots(householderId)
+            val committedVisitIds = visitSnapshots.map { it.visit.id }.toSet()
+            // Delete ONLY visits added this session: draft in the DB and with no snapshot.
+            // Untouched committed visits (not draft, no snapshot) must be preserved.
+            val liveVisits = visitRepository.getAll(householderId)
+            val addedVisitIds = liveVisits
+                .filter { it.isDraft && it.id !in committedVisitIds }
+                .map { it.id }
+            visitRepository.deleteBulk(addedVisitIds)
+            visitSnapshots.forEach { visitRepository.save(it.visit) }
+
+            snapshotRepository.deleteHouseholderSnapshot(householderId)
+            snapshotRepository.deleteVisitSnapshots(householderId)
+
+            rebuildUiFromDb(householderId)
         }
+    }
+
+    private fun reinitializeEmptyForm() {
+        newState {
+            copy(
+                householder = newHouseholder(),
+                visitList = listOf(newVisit(0)),
+                eventState = UiEventState.Idle,
+                hasDrafts = false
+            )
+        }
+        initialEditableData = _uiState.value.getEditableDataSnapshot()
+    }
+
+    private suspend fun rebuildUiFromDb(householderId: UUID) {
+        val householder = householderRepository.getById(householderId).asState
+        val restoredVisits = visitRepository.getAll(householderId)
+        val visitList = restoredVisits.map { visit ->
+            val conversation = _uiState.value.conversationList.firstOrNull { conversation ->
+                conversation.id == visit.nextConversationId
+            }
+            visit.asState(conversation)
+        }
+            .reindexIfNeeded()
+            .revalidatePendingVisits(householder)
+        newState {
+            copy(
+                householder = householder,
+                visitList = visitList,
+                eventState = UiEventState.Idle,
+                hasDrafts = householder.isDraft || visitList.hasDrafts()
+            )
+        }
+        initialEditableData = _uiState.value.getEditableDataSnapshot()
     }
 
     private fun saveClicked() {

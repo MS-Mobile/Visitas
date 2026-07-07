@@ -933,6 +933,73 @@ class VisitDetailViewModelTest {
         assertTrue(viewModel.uiState.value.hasDrafts)
     }
 
+    @Test
+    fun `undo changes confirmed restores committed householder and visits from snapshot`() {
+        // Arrange — a committed householder snapshot exists (name "Test Name").
+        val committedSnapshot = HouseholderSnapshot(
+            Householder(
+                id = HOUSEHOLDER_ID,
+                name = "Test Name",
+                address = "Test Address",
+                notes = "Test Notes"
+            )
+        )
+        val snapshotRepositoryRef = MockReferenceHolder<SnapshotRepository>()
+        val householderRepositoryRef = MockReferenceHolder<HouseholderRepository>()
+        val viewModel = createViewModel(
+            snapshotRepositoryRef = snapshotRepositoryRef,
+            householderRepositoryRef = householderRepositoryRef,
+            householderSnapshot = committedSnapshot
+        )
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+
+        // Dirty the householder so it is a draft -> restore (not delete) branch on discard.
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.HouseholderNameChanged("Edited Name"))
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.UndoChangesConfirmed)
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert — snapshot restored to the live table, snapshots consumed, UI reset
+        val householderRepository = requireNotNull(householderRepositoryRef.value)
+        val snapshotRepository = requireNotNull(snapshotRepositoryRef.value)
+        val captor = org.mockito.kotlin.argumentCaptor<Householder>()
+        // save() is called by both the draft autosave and the restore, so capture all calls.
+        verifyBlocking(householderRepository, org.mockito.kotlin.atLeastOnce()) { save(captor.capture()) }
+        assertTrue(captor.allValues.any { it.name == "Test Name" && !it.isDraft })
+        verifyBlocking(snapshotRepository) { deleteHouseholderSnapshot(HOUSEHOLDER_ID) }
+        verifyBlocking(snapshotRepository) { deleteVisitSnapshots(HOUSEHOLDER_ID) }
+        assertFalse(viewModel.uiState.value.hasDrafts)
+        assertEquals(VisitDetailViewModel.UiEventState.Idle, viewModel.uiState.value.eventState)
+    }
+
+    @Test
+    fun `undo changes confirmed on a brand-new record deletes it and resets to empty form`() {
+        // Arrange — new record: no committed rows (committedRowsExist = false), no snapshots (default)
+        val householderRepositoryRef = MockReferenceHolder<HouseholderRepository>()
+        val viewModel = createViewModel(
+            householderRepositoryRef = householderRepositoryRef,
+            committedRowsExist = false
+        )
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = null))
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.HouseholderNameChanged("New Name"))
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+        val newId = viewModel.uiState.value.householder.id
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.UndoChangesConfirmed)
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert — draft row deleted, form reset to empty, still on screen (not dismissed)
+        val householderRepository = requireNotNull(householderRepositoryRef.value)
+        verifyBlocking(householderRepository) { deleteById(newId) }
+        assertEquals("", viewModel.uiState.value.householder.name)
+        assertFalse(viewModel.uiState.value.hasDrafts)
+        assertEquals(1, viewModel.uiState.value.visitList.size)
+        assertEquals(VisitDetailViewModel.UiEventState.Idle, viewModel.uiState.value.eventState)
+    }
+
     private fun createViewModel(
         conversationRepositoryRef: MockReferenceHolder<ConversationRepository>? = null,
         householderRepositoryRef: MockReferenceHolder<HouseholderRepository>? = null,
