@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 10,
-    "identityHash": "7198e64290dc03af7bdcb83f7b40f429",
+    "identityHash": "443ac569cfc82edc013b23cfaffb8e41",
     "entities": [
       {
         "tableName": "conversation",
@@ -234,20 +234,8 @@
       },
       {
         "tableName": "householder_snapshot",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`isNewDraft` INTEGER NOT NULL, `createdAt` TEXT NOT NULL, `id` TEXT NOT NULL, `name` TEXT NOT NULL, `address` TEXT NOT NULL, `notes` TEXT, `addressLatitude` REAL, `addressLongitude` REAL, `preferredDay` TEXT NOT NULL, `preferredTime` TEXT NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`id`) REFERENCES `householder`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `address` TEXT NOT NULL, `notes` TEXT, `addressLatitude` REAL, `addressLongitude` REAL, `preferredDay` TEXT NOT NULL, `preferredTime` TEXT NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`id`) REFERENCES `householder`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
-          {
-            "fieldPath": "isNewDraft",
-            "columnName": "isNewDraft",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "createdAt",
-            "columnName": "createdAt",
-            "affinity": "TEXT",
-            "notNull": true
-          },
           {
             "fieldPath": "householder.id",
             "columnName": "id",
@@ -417,7 +405,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '7198e64290dc03af7bdcb83f7b40f429')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '443ac569cfc82edc013b23cfaffb8e41')"
     ]
   }
 }
