@@ -73,6 +73,7 @@ class VisitDetailViewModel
     private var isUpdatingVisit: Boolean = false
     private var isAddressFieldFocused: Boolean = false
     private var autoSaveJob: Job? = null
+    private var didCreateViewAlready: Boolean = false
 
     val uiState: StateFlow<UiState> = _uiState
 
@@ -1077,42 +1078,21 @@ class VisitDetailViewModel
             val conversationList = conversations.map { conversation ->
                 conversation.asState
             }
-            val isRecreatingView = initialEditableData != null
-            if (isRecreatingView) {
-                newState {
-                    copy(conversationList = conversationList)
-                }
+
+            if (didCreateViewAlready) {
+                newState { copy(conversationList = conversationList) }
                 return@launch
             }
+
+            didCreateViewAlready = true
+
             val visitTypeList = listOf(
                 VisitType.BIBLE_STUDY.asState,
                 VisitType.RETURN_VISIT.asState,
                 VisitType.FIRST_VISIT.asState
             )
-            if (householderId != null) {
-                val householder = householderRepository.getById(householderId).asState
-                visits = visitRepository.getAll(householderId)
-                val visitList = visits.map { visit ->
-                    val conversation = conversationList.firstOrNull { conversation ->
-                        conversation.id == visit.nextConversationId
-                    }
-                    visit.asState(conversation)
-                }
-                    .reindexIfNeeded()
-                    .revalidatePendingVisits(householder)
-                val hasDrafts = visitList.hasDrafts()
-                newState {
-                    copy(
-                        householder = householder,
-                        visitList = visitList,
-                        conversationList = conversationList,
-                        visitTypeList = visitTypeList,
-                        eventState = UiEventState.Idle,
-                        showDeleteButton = isUpdatingVisit,
-                        hasDrafts = hasDrafts
-                    )
-                }
-            } else {
+
+            if (householderId == null) {
                 newState {
                     copy(
                         visitList = listOf(newVisit(0)),
@@ -1122,6 +1102,32 @@ class VisitDetailViewModel
                         showDeleteButton = isUpdatingVisit
                     )
                 }
+                initialEditableData = _uiState.value.getEditableDataSnapshot()
+                startAutoSave()
+                return@launch
+            }
+
+            val householder = householderRepository.getById(householderId).asState
+            visits = visitRepository.getAll(householderId)
+            val visitList = visits.map { visit ->
+                val conversation = conversationList.firstOrNull { conversation ->
+                    conversation.id == visit.nextConversationId
+                }
+                visit.asState(conversation)
+            }
+                .reindexIfNeeded()
+                .revalidatePendingVisits(householder)
+            val hasDrafts = visitList.hasDrafts()
+            newState {
+                copy(
+                    householder = householder,
+                    visitList = visitList,
+                    conversationList = conversationList,
+                    visitTypeList = visitTypeList,
+                    eventState = UiEventState.Idle,
+                    showDeleteButton = isUpdatingVisit,
+                    hasDrafts = hasDrafts
+                )
             }
             initialEditableData = _uiState.value.getEditableDataSnapshot()
             startAutoSave()
