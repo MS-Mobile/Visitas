@@ -4,6 +4,7 @@ import com.msmobile.visitas.conversation.Conversation
 import com.msmobile.visitas.conversation.ConversationRepository
 import com.msmobile.visitas.householder.Householder
 import com.msmobile.visitas.householder.HouseholderRepository
+import com.msmobile.visitas.householder.HouseholderSnapshot
 import com.msmobile.visitas.util.AddressProvider
 import com.msmobile.visitas.util.CalendarEventManager
 import com.msmobile.visitas.util.SyncVisitCalendarEventUseCase
@@ -124,6 +125,116 @@ class VisitDetailViewModelTest {
 
         // Assert
         assertFalse(viewModel.uiState.value.visitList.first().isDraft)
+    }
+
+    @Test
+    fun `auto save snapshots the committed visit before marking it a draft`() {
+        // Arrange
+        val snapshotRepositoryRef = MockReferenceHolder<SnapshotRepository>()
+        val viewModel = createViewModel(snapshotRepositoryRef = snapshotRepositoryRef)
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+        val visit = viewModel.uiState.value.visitList.first()
+
+        // Act — edit the existing visit, then let the debounced auto-save run
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.VisitDoneChanged(value = true, visit = visit))
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert — the committed visit (isDone = false) was snapshotted
+        val snapshotRepository = requireNotNull(snapshotRepositoryRef.value)
+        val captor = org.mockito.kotlin.argumentCaptor<VisitSnapshot>()
+        verifyBlocking(snapshotRepository) { saveVisitSnapshot(captor.capture()) }
+        assertEquals(FIRST_VISIT_ID, captor.firstValue.visit.id)
+        assertFalse(captor.firstValue.visit.isDone)
+    }
+
+    @Test
+    fun `auto save snapshots an edited visit only once across multiple passes`() {
+        // Arrange
+        val snapshotRepositoryRef = MockReferenceHolder<SnapshotRepository>()
+        val viewModel = createViewModel(snapshotRepositoryRef = snapshotRepositoryRef)
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+        val visit = viewModel.uiState.value.visitList.first()
+
+        // Act — edit the visit, settle, then edit it again and settle again
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.VisitDoneChanged(value = true, visit = visit))
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+        val draftedVisit = viewModel.uiState.value.visitList.first()
+        viewModel.onEvent(
+            VisitDetailViewModel.UiEvent.VisitSubjectChanged(
+                visit = draftedVisit,
+                value = "Edited subject",
+                caretPosition = 0
+            )
+        )
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert — the committed visit was snapshotted exactly once, not on the second pass
+        val snapshotRepository = requireNotNull(snapshotRepositoryRef.value)
+        verifyBlocking(snapshotRepository, org.mockito.kotlin.times(1)) { saveVisitSnapshot(any()) }
+    }
+
+    @Test
+    fun `auto save snapshots the committed householder before marking it a draft`() {
+        // Arrange
+        val snapshotRepositoryRef = MockReferenceHolder<SnapshotRepository>()
+        val viewModel = createViewModel(snapshotRepositoryRef = snapshotRepositoryRef)
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.HouseholderNameChanged("Changed Name"))
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert — the committed householder ("Test Name") was snapshotted
+        val snapshotRepository = requireNotNull(snapshotRepositoryRef.value)
+        val captor = org.mockito.kotlin.argumentCaptor<HouseholderSnapshot>()
+        verifyBlocking(snapshotRepository) { saveHouseholderSnapshot(captor.capture()) }
+        assertEquals("Test Name", captor.firstValue.householder.name)
+    }
+
+    @Test
+    fun `auto save on a brand-new record marks householder draft without snapshotting`() {
+        // Arrange — a new record has no committed rows in the DB
+        val snapshotRepositoryRef = MockReferenceHolder<SnapshotRepository>()
+        val viewModel = createViewModel(
+            snapshotRepositoryRef = snapshotRepositoryRef,
+            committedRowsExist = false
+        )
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = null))
+
+        // Act — edit only a householder field
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.HouseholderNameChanged("New Name"))
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert — marked draft, but no snapshot written
+        assertTrue(viewModel.uiState.value.householder.isDraft)
+        val snapshotRepository = requireNotNull(snapshotRepositoryRef.value)
+        verifyBlocking(snapshotRepository, org.mockito.kotlin.never()) { saveHouseholderSnapshot(any()) }
+    }
+
+    @Test
+    fun `save deletes snapshots and finalizes householder draft flag`() {
+        // Arrange
+        val snapshotRepositoryRef = MockReferenceHolder<SnapshotRepository>()
+        val viewModel = createViewModel(snapshotRepositoryRef = snapshotRepositoryRef)
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+        // Dirty the householder so it becomes a draft first.
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.HouseholderNameChanged("Edited Name"))
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.householder.isDraft)
+
+        // Act — calendar permission is mocked false, but there are no pending visits requiring it
+        //       after we mark the single visit done to avoid the calendar rationale path.
+        val visit = viewModel.uiState.value.visitList.first()
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.VisitDoneChanged(value = true, visit = visit))
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.SaveClicked)
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert
+        val snapshotRepository = requireNotNull(snapshotRepositoryRef.value)
+        verifyBlocking(snapshotRepository) { deleteHouseholderSnapshot(HOUSEHOLDER_ID) }
+        verifyBlocking(snapshotRepository) { deleteVisitSnapshots(HOUSEHOLDER_ID) }
+        assertFalse(viewModel.uiState.value.householder.isDraft)
+        assertFalse(viewModel.uiState.value.hasDrafts)
     }
 
     @Test
@@ -835,11 +946,174 @@ class VisitDetailViewModelTest {
         assertFalse(viewModel.uiState.value.visitList.first().isVisitTypeListExpanded)
     }
 
+    @Test
+    fun `hasDrafts is true when the loaded householder is a draft`() {
+        // Arrange — the committed householder row is itself a draft (e.g. a reopened draft session)
+        val viewModel = createViewModel(householderIsDraft = true)
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+
+        // Assert
+        assertTrue(viewModel.uiState.value.householder.isDraft)
+        assertTrue(viewModel.uiState.value.hasDrafts)
+    }
+
+    @Test
+    fun `adding a visit to a committed record makes hasDrafts true after autosave`() {
+        // Arrange
+        val viewModel = createViewModel()
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+        assertFalse(viewModel.uiState.value.hasDrafts)
+
+        // Act — add a visit and let the debounced autosave run
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.AddVisitClicked)
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert
+        assertTrue(viewModel.uiState.value.hasDrafts)
+    }
+
+    @Test
+    fun `undo changes confirmed restores committed householder and visits from snapshot`() {
+        // Arrange — a committed householder snapshot exists (name "Test Name").
+        val committedSnapshot = HouseholderSnapshot(
+            Householder(
+                id = HOUSEHOLDER_ID,
+                name = "Test Name",
+                address = "Test Address",
+                notes = "Test Notes"
+            )
+        )
+        val snapshotRepositoryRef = MockReferenceHolder<SnapshotRepository>()
+        val householderRepositoryRef = MockReferenceHolder<HouseholderRepository>()
+        val viewModel = createViewModel(
+            snapshotRepositoryRef = snapshotRepositoryRef,
+            householderRepositoryRef = householderRepositoryRef,
+            householderSnapshot = committedSnapshot
+        )
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+
+        // Dirty the householder so it is a draft -> restore (not delete) branch on discard.
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.HouseholderNameChanged("Edited Name"))
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.UndoChangesConfirmed)
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert — snapshot restored to the live table, snapshots consumed, UI reset
+        val householderRepository = requireNotNull(householderRepositoryRef.value)
+        val snapshotRepository = requireNotNull(snapshotRepositoryRef.value)
+        val captor = org.mockito.kotlin.argumentCaptor<Householder>()
+        // save() is called by both the draft autosave and the restore, so capture all calls.
+        verifyBlocking(householderRepository, org.mockito.kotlin.atLeastOnce()) { save(captor.capture()) }
+        assertTrue(captor.allValues.any { it.name == "Test Name" && !it.isDraft })
+        verifyBlocking(snapshotRepository) { deleteHouseholderSnapshot(HOUSEHOLDER_ID) }
+        verifyBlocking(snapshotRepository) { deleteVisitSnapshots(HOUSEHOLDER_ID) }
+        assertFalse(viewModel.uiState.value.hasDrafts)
+        assertEquals(VisitDetailViewModel.UiEventState.Idle, viewModel.uiState.value.eventState)
+    }
+
+    @Test
+    fun `undo changes confirmed on a brand-new record deletes it and resets to empty form`() {
+        // Arrange — new record: no committed rows (committedRowsExist = false), no snapshots (default)
+        val householderRepositoryRef = MockReferenceHolder<HouseholderRepository>()
+        val viewModel = createViewModel(
+            householderRepositoryRef = householderRepositoryRef,
+            committedRowsExist = false
+        )
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = null))
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.HouseholderNameChanged("New Name"))
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+        val newId = viewModel.uiState.value.householder.id
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.UndoChangesConfirmed)
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert — draft row deleted, form reset to empty, still on screen (not dismissed)
+        val householderRepository = requireNotNull(householderRepositoryRef.value)
+        verifyBlocking(householderRepository) { deleteById(newId) }
+        assertEquals("", viewModel.uiState.value.householder.name)
+        assertFalse(viewModel.uiState.value.hasDrafts)
+        assertEquals(1, viewModel.uiState.value.visitList.size)
+        assertEquals(VisitDetailViewModel.UiEventState.Idle, viewModel.uiState.value.eventState)
+    }
+
+    @Test
+    fun `undo changes confirmed deletes session-added draft visits`() {
+        // Arrange — DB has one committed visit plus one session-added draft visit (no snapshot).
+        val addedVisitId = UUID.fromString("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+        val committedVisit = Visit(
+            id = FIRST_VISIT_ID,
+            subject = "Subject 1",
+            date = TEST_DATE_TIME,
+            isDone = false,
+            householderId = HOUSEHOLDER_ID,
+            orderIndex = 0,
+            visitType = VisitType.FIRST_VISIT,
+            nextConversationId = null,
+            isDraft = false
+        )
+        val addedVisit = committedVisit.copy(id = addedVisitId, orderIndex = 1, isDraft = true)
+        val visitRepositoryRef = MockReferenceHolder<VisitRepository>()
+        val viewModel = createViewModel(
+            visitRepositoryRef = visitRepositoryRef,
+            liveVisits = listOf(committedVisit, addedVisit)
+        )
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+
+        // Act — committed householder (not a draft, no snapshot) => restore branch.
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.UndoChangesConfirmed)
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert — only the session-added draft visit is deleted; the committed one is preserved.
+        val visitRepository = requireNotNull(visitRepositoryRef.value)
+        verifyBlocking(visitRepository) { deleteBulk(listOf(addedVisitId)) }
+    }
+
+    @Test
+    fun `undo changes confirmed restores an edited committed visit from its snapshot`() {
+        // Arrange — a visit snapshot exists holding the committed ("Original Subject") visit.
+        val committedVisit = Visit(
+            id = FIRST_VISIT_ID,
+            subject = "Original Subject",
+            date = TEST_DATE_TIME,
+            isDone = false,
+            householderId = HOUSEHOLDER_ID,
+            orderIndex = 0,
+            visitType = VisitType.FIRST_VISIT,
+            nextConversationId = null,
+            isDraft = false
+        )
+        val visitRepositoryRef = MockReferenceHolder<VisitRepository>()
+        val viewModel = createViewModel(
+            visitRepositoryRef = visitRepositoryRef,
+            visitSnapshots = listOf(VisitSnapshot(committedVisit))
+        )
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.UndoChangesConfirmed)
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert — the committed visit is written back from its snapshot.
+        val visitRepository = requireNotNull(visitRepositoryRef.value)
+        verifyBlocking(visitRepository) { save(committedVisit) }
+    }
+
     private fun createViewModel(
         conversationRepositoryRef: MockReferenceHolder<ConversationRepository>? = null,
         householderRepositoryRef: MockReferenceHolder<HouseholderRepository>? = null,
         visitRepositoryRef: MockReferenceHolder<VisitRepository>? = null,
         clipboardHandlerRef: MockReferenceHolder<ClipboardHandler>? = null,
+        snapshotRepositoryRef: MockReferenceHolder<SnapshotRepository>? = null,
+        committedRowsExist: Boolean = true,
+        householderIsDraft: Boolean = false,
+        householderSnapshot: HouseholderSnapshot? = null,
+        visitSnapshots: List<VisitSnapshot> = emptyList(),
+        liveVisits: List<Visit>? = null,
         householderLatitude: Double? = null,
         householderLongitude: Double? = null,
         householderPreferredDay: VisitPreferredDay = VisitPreferredDay.ANY,
@@ -861,15 +1135,34 @@ class VisitDetailViewModelTest {
                 longitude = householderLongitude,
                 preferredDay = householderPreferredDay,
                 preferredTime = householderPreferredTime,
-                notes = householderNotes
+                notes = householderNotes,
+                isDraft = householderIsDraft
             )
+            on { getByIdOrNull(any()) } doReturn if (committedRowsExist) {
+                createHouseholder(
+                    latitude = householderLatitude,
+                    longitude = householderLongitude,
+                    preferredDay = householderPreferredDay,
+                    preferredTime = householderPreferredTime,
+                    notes = householderNotes
+                )
+            } else {
+                null
+            }
         }
         householderRepositoryRef?.value = householderRepository
 
         val visitRepository = mock<VisitRepository> {
-            on { getAll(any()) } doReturn createVisitList()
+            on { getAll(any()) } doReturn (liveVisits ?: createVisitList())
+            on { getByIdOrNull(any()) } doReturn if (committedRowsExist) createVisitList().first() else null
         }
         visitRepositoryRef?.value = visitRepository
+
+        val snapshotRepository = mock<SnapshotRepository> {
+            on { getHouseholderSnapshot(any()) } doReturn householderSnapshot
+            on { getVisitSnapshots(any()) } doReturn visitSnapshots
+        }
+        snapshotRepositoryRef?.value = snapshotRepository
 
         val addressProvider = mock<AddressProvider>()
         val idProvider = mock<IdProvider> {
@@ -897,6 +1190,7 @@ class VisitDetailViewModelTest {
             dispatchers = dispatchers,
             householderRepository = householderRepository,
             visitRepository = visitRepository,
+            snapshotRepository = snapshotRepository,
             conversationRepository = conversationRepository,
             addressProvider = addressProvider,
             idProvider = idProvider,
@@ -942,7 +1236,8 @@ class VisitDetailViewModelTest {
         longitude: Double? = null,
         preferredDay: VisitPreferredDay = VisitPreferredDay.ANY,
         preferredTime: VisitPreferredTime = VisitPreferredTime.ANY,
-        notes: String = "Test Notes"
+        notes: String = "Test Notes",
+        isDraft: Boolean = false
     ): Householder {
         return Householder(
             id = HOUSEHOLDER_ID,
@@ -952,7 +1247,8 @@ class VisitDetailViewModelTest {
             addressLatitude = latitude,
             addressLongitude = longitude,
             preferredDay = preferredDay,
-            preferredTime = preferredTime
+            preferredTime = preferredTime,
+            isDraft = isDraft
         )
     }
 

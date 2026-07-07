@@ -59,9 +59,8 @@ internal class VisitDetailPreviewConfigProvider :
             householderId = UUID.randomUUID(),
             uiState = previewVisitDetailUiState.copy(
                 visitList = listOf(
-                    previewFirstVisitUiState.copy(canBeRemoved = false)
-                ),
-                hasDrafts = true
+                    previewFirstVisitUiState.copy(canBeRemoved = false, isDraft = true)
+                )
             ),
             isDarkMode = false
         ),

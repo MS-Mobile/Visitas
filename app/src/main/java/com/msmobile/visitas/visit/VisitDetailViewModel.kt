@@ -10,6 +10,7 @@ import com.msmobile.visitas.extension.split
 import com.msmobile.visitas.extension.subListInclusive
 import com.msmobile.visitas.householder.Householder
 import com.msmobile.visitas.householder.HouseholderRepository
+import com.msmobile.visitas.householder.HouseholderSnapshot
 import com.msmobile.visitas.util.AddressProvider
 import com.msmobile.visitas.util.CalendarEventManager
 import com.msmobile.visitas.util.SyncVisitCalendarEventUseCase
@@ -41,6 +42,7 @@ class VisitDetailViewModel
     private val dispatchers: DispatcherProvider,
     private val householderRepository: HouseholderRepository,
     private val visitRepository: VisitRepository,
+    private val snapshotRepository: SnapshotRepository,
     private val conversationRepository: ConversationRepository,
     private val addressProvider: AddressProvider,
     private val idProvider: IdProvider,
@@ -66,13 +68,13 @@ class VisitDetailViewModel
             eventState = UiEventState.Idle
         )
     )
-    private var visits: List<Visit> = listOf()
     private var conversations: List<Conversation> = listOf()
     @Volatile private var initialEditableData: EditableDataSnapshot? = null
     private var loadAddressAfterPermission = false
     private var isUpdatingVisit: Boolean = false
     private var isAddressFieldFocused: Boolean = false
     private var autoSaveJob: Job? = null
+    private var didCreateViewAlready: Boolean = false
 
     val uiState: StateFlow<UiState> = _uiState
 
@@ -126,6 +128,9 @@ class VisitDetailViewModel
             UiEvent.LoadAddressClicked -> loadAddressClicked()
             UiEvent.LookUpAddressFromLatLongClicked -> lookUpAddressFromLatLongClicked()
             UiEvent.CancelClicked -> cancelClicked()
+            UiEvent.UndoChangesClicked -> undoChangesClicked()
+            UiEvent.UndoChangesConfirmed -> undoChangesConfirmed()
+            UiEvent.UndoChangesConfirmationDismissed -> undoChangesConfirmationDismissed()
             UiEvent.DeleteClicked -> deleteClicked()
             UiEvent.DeleteAccepted -> deleteAccepted()
             UiEvent.DeleteDismissed -> deleteDismissed()
@@ -774,6 +779,103 @@ class VisitDetailViewModel
         }
     }
 
+    private fun undoChangesClicked() {
+        newState {
+            copy(eventState = UiEventState.UndoChangesConfirmation)
+        }
+    }
+
+    private fun undoChangesConfirmationDismissed() {
+        newState {
+            copy(eventState = UiEventState.Idle)
+        }
+    }
+
+    private fun undoChangesConfirmed() {
+        val householderId = _uiState.value.householder.id
+        val householderIsDraft = _uiState.value.householder.isDraft
+
+        newState {
+            copy(eventState = UiEventState.Idle)
+        }
+
+        viewModelScope.launch(dispatchers.io) {
+            val householderSnapshot = snapshotRepository.getHouseholderSnapshot(householderId)
+
+            if (householderIsDraft && householderSnapshot == null) {
+                // Never committed -> nothing to restore to. Delete the draft (cascades visits +
+                // snapshots) and reset to a fresh empty form (Reset, do not dismiss).
+                householderRepository.deleteById(householderId)
+                reinitializeEmptyForm()
+                return@launch
+            }
+
+            // Committed record: restore from snapshots.
+            if (householderSnapshot != null) {
+                householderRepository.save(householderSnapshot.householder)
+            }
+
+            val visitSnapshots = snapshotRepository.getVisitSnapshots(householderId)
+            val committedVisitIds = visitSnapshots.map { snapshot -> snapshot.visit.id }.toSet()
+            // Delete ONLY visits added this session: draft in the DB and with no snapshot.
+            // Untouched committed visits (not draft, no snapshot) must be preserved.
+            val liveVisits = visitRepository.getAll(householderId)
+            val addedVisitIds = liveVisits
+                .filter { visit -> visit.isDraft && visit.id !in committedVisitIds }
+                .map { visit -> visit.id }
+            visitRepository.deleteBulk(addedVisitIds)
+            visitSnapshots.forEach { visitRepository.save(it.visit) }
+
+            snapshotRepository.deleteHouseholderSnapshot(householderId)
+            snapshotRepository.deleteVisitSnapshots(householderId)
+
+            rebuildUiFromDb(householderId)
+        }
+    }
+
+    private fun reinitializeEmptyForm() {
+        newState {
+            copy(
+                householder = newHouseholder(),
+                visitList = listOf(newVisit(0)),
+                eventState = UiEventState.Idle
+            )
+        }
+        initialEditableData = _uiState.value.getEditableDataSnapshot()
+    }
+
+    private suspend fun rebuildUiFromDb(householderId: UUID) {
+        val (householder, visitList) = mapHouseholderStateFromDatabase(
+            householderId,
+            _uiState.value.conversationList
+        )
+        newState {
+            copy(
+                householder = householder,
+                visitList = visitList,
+                eventState = UiEventState.Idle
+            )
+        }
+        initialEditableData = _uiState.value.getEditableDataSnapshot()
+    }
+
+    private suspend fun mapHouseholderStateFromDatabase(
+        householderId: UUID,
+        conversationList: List<ConversationState>
+    ): Pair<HouseholderState, List<VisitState>> {
+        val householder = householderRepository.getById(householderId).asState
+        val visitList = visitRepository.getAll(householderId)
+            .map { visit ->
+                val conversation = conversationList.firstOrNull { conversation ->
+                    conversation.id == visit.nextConversationId
+                }
+                visit.asState(conversation)
+            }
+            .reindexIfNeeded()
+            .revalidatePendingVisits(householder)
+        return householder to visitList
+    }
+
     private fun saveClicked() {
         // Check if there are pending visits that need calendar integration
         val hasPendingVisits = _uiState.value.visitList.any { !it.isDone && !it.wasRemoved }
@@ -800,7 +902,7 @@ class VisitDetailViewModel
                     return@onEach
                 }
 
-                updateUiStateChangedVisitsAsDraft(baseline)
+                captureSnapshotsAndMarkDrafts(baseline)
 
                 val updatedState = _uiState.value
                 saveDraftSilently(updatedState)
@@ -813,25 +915,56 @@ class VisitDetailViewModel
     }
 
     /**
-     * Marks every visit that was added or edited relative to [baseline] as a draft, so the UI
-     * can surface a "draft" indicator and the silent save persists the flag.
-     *
-     * A visit is considered a draft when it has no counterpart in the baseline (added) or when its
-     * editable data differs from the baseline counterpart (changed). Visits are matched by id.
+     * For each entity dirtied relative to [baseline], snapshots its committed DB row (once) and
+     * marks it a draft. The committed row is read via `getByIdOrNull` so this is robust to a prior
+     * manual save. A brand-new record has no committed row: it is still marked draft (so discard can
+     * detect "never committed") but is not snapshotted.
      */
-    private fun updateUiStateChangedVisitsAsDraft(baseline: EditableDataSnapshot) {
+    private suspend fun captureSnapshotsAndMarkDrafts(baseline: EditableDataSnapshot) {
+        val state = _uiState.value
+
+        // Householder
+        val householder = state.householder
+        if (!householder.isDraft) {
+            val committed = householderRepository.getByIdOrNull(householder.id)
+            val householderChanged = householder.editable != baseline.householder
+            when {
+                committed == null -> markHouseholderDraft()          // new record, nothing to snapshot
+                householderChanged -> {                              // committed householder first dirtied
+                    if (!committed.isDraft) {
+                        snapshotRepository.saveHouseholderSnapshot(HouseholderSnapshot(committed))
+                    }
+                    markHouseholderDraft()
+                }
+                // committed && unchanged -> leave isDraft = false
+            }
+        }
+
+        // Visits
+        state.visitList.forEach { visit ->
+            if (visit.isDraft || visit.wasRemoved) return@forEach
+            val baselineEditable = baseline.visits[visit.id]
+            val isNewOrChanged = baselineEditable == null || baselineEditable != visit.editable
+            if (!isNewOrChanged) return@forEach
+
+            val committed = visitRepository.getByIdOrNull(visit.id)
+            if (committed != null && !committed.isDraft) {
+                snapshotRepository.saveVisitSnapshot(VisitSnapshot(committed))
+            }
+            markVisitDraft(visit.id)
+        }
+    }
+
+    private fun markHouseholderDraft() {
+        newState { copy(householder = householder.copy(isDraft = true)) }
+    }
+
+    private fun markVisitDraft(visitId: UUID) {
         newState {
             val updatedList = visitList.map { visit ->
-                val baselineEditable = baseline.visits[visit.id]
-                val isNewOrChanged = baselineEditable == null || baselineEditable != visit.editable
-                if (isNewOrChanged && !visit.isDraft) {
-                    visit.copy(isDraft = true)
-                } else {
-                    visit
-                }
+                if (visit.id == visitId) visit.copy(isDraft = true) else visit
             }
-            val hasDrafts = visitList.hasDrafts()
-            copy(visitList = updatedList, hasDrafts = hasDrafts)
+            copy(visitList = updatedList)
         }
     }
 
@@ -852,7 +985,7 @@ class VisitDetailViewModel
             )
         }
         viewModelScope.launch(dispatchers.io) {
-            val householderModel = _uiState.value.householder.asModel
+            val householderModel = _uiState.value.householder.finalized().asModel
             addOrUpdateHouseholder(householderModel)
             val householderId = householderModel.id
             val houseHolder = householderModel.asState
@@ -862,6 +995,10 @@ class VisitDetailViewModel
                 householderName = householderModel.name,
                 visitList = _uiState.value.visitList.map { it.finalized() }
             )
+
+            snapshotRepository.deleteHouseholderSnapshot(householderId)
+            snapshotRepository.deleteVisitSnapshots(householderId)
+
             newState {
                 copy(
                     householder = houseHolder,
@@ -869,6 +1006,9 @@ class VisitDetailViewModel
                     eventState = UiEventState.SaveSucceeded
                 )
             }
+            // Rebase the autosave baseline to the committed state so a debounced emission landing
+            // after this save does not re-dirty (and re-snapshot) the just-committed record.
+            initialEditableData = _uiState.value.getEditableDataSnapshot()
         }
     }
 
@@ -1041,7 +1181,7 @@ class VisitDetailViewModel
             showClearSubject = false,
             wasRemoved = false,
             caretPosition = 0,
-            isDraft = true,
+            isDraft = false,
         )
     }
 
@@ -1052,42 +1192,21 @@ class VisitDetailViewModel
             val conversationList = conversations.map { conversation ->
                 conversation.asState
             }
-            val isRecreatingView = initialEditableData != null
-            if (isRecreatingView) {
-                newState {
-                    copy(conversationList = conversationList)
-                }
+
+            if (didCreateViewAlready) {
+                newState { copy(conversationList = conversationList) }
                 return@launch
             }
+
+            didCreateViewAlready = true
+
             val visitTypeList = listOf(
                 VisitType.BIBLE_STUDY.asState,
                 VisitType.RETURN_VISIT.asState,
                 VisitType.FIRST_VISIT.asState
             )
-            if (householderId != null) {
-                val householder = householderRepository.getById(householderId).asState
-                visits = visitRepository.getAll(householderId)
-                val visitList = visits.map { visit ->
-                    val conversation = conversationList.firstOrNull { conversation ->
-                        conversation.id == visit.nextConversationId
-                    }
-                    visit.asState(conversation)
-                }
-                    .reindexIfNeeded()
-                    .revalidatePendingVisits(householder)
-                val hasDrafts = visitList.hasDrafts()
-                newState {
-                    copy(
-                        householder = householder,
-                        visitList = visitList,
-                        conversationList = conversationList,
-                        visitTypeList = visitTypeList,
-                        eventState = UiEventState.Idle,
-                        showDeleteButton = isUpdatingVisit,
-                        hasDrafts = hasDrafts
-                    )
-                }
-            } else {
+
+            if (householderId == null) {
                 newState {
                     copy(
                         visitList = listOf(newVisit(0)),
@@ -1097,6 +1216,21 @@ class VisitDetailViewModel
                         showDeleteButton = isUpdatingVisit
                     )
                 }
+                initialEditableData = _uiState.value.getEditableDataSnapshot()
+                startAutoSave()
+                return@launch
+            }
+
+            val (householder, visitList) = mapHouseholderStateFromDatabase(householderId, conversationList)
+            newState {
+                copy(
+                    householder = householder,
+                    visitList = visitList,
+                    conversationList = conversationList,
+                    visitTypeList = visitTypeList,
+                    eventState = UiEventState.Idle,
+                    showDeleteButton = isUpdatingVisit
+                )
             }
             initialEditableData = _uiState.value.getEditableDataSnapshot()
             startAutoSave()
@@ -1128,10 +1262,6 @@ class VisitDetailViewModel
             hasFocus -> HouseholderAddressState.ShowClearAddress
             else -> HouseholderAddressState.None
         }
-    }
-
-    private fun List<VisitState>.hasDrafts(): Boolean {
-        return filter { !it.wasRemoved }.any { it.isDraft }
     }
 
     private fun List<ConversationState>.filterBy(filter: String): List<ConversationState> {
@@ -1175,7 +1305,8 @@ class VisitDetailViewModel
                 addressLatitude = addressLatitude,
                 addressLongitude = addressLongitude,
                 preferredDay = preferredDay,
-                preferredTime = preferredTime
+                preferredTime = preferredTime,
+                isDraft = isDraft
             )
         }
 
@@ -1201,7 +1332,8 @@ class VisitDetailViewModel
                 addressState = addressState,
                 showClearNotes = false,
                 isNotesExpanded = false, // Notes collapsed by default; user can expand if needed
-                isLoadingAddress = false
+                isLoadingAddress = false,
+                isDraft = isDraft
             )
         }
 
@@ -1233,6 +1365,8 @@ class VisitDetailViewModel
                 orderIndex = orderIndex
             )
         }
+
+    private fun HouseholderState.finalized() = copy(isDraft = false)
 
     private fun VisitState.finalized() = copy(isDraft = false)
 
@@ -1366,7 +1500,8 @@ class VisitDetailViewModel
         val addressState: HouseholderAddressState,
         val showClearNotes: Boolean,
         val isLoadingAddress: Boolean,
-        val isNotesExpanded: Boolean
+        val isNotesExpanded: Boolean,
+        val isDraft: Boolean = false
     ) {
         val name get() = editable.name
         val address get() = editable.address
@@ -1452,6 +1587,9 @@ class VisitDetailViewModel
         data object DeleteAccepted : UiEvent()
         data object DeleteDismissed : UiEvent()
         data object CancelClicked : UiEvent()
+        data object UndoChangesClicked : UiEvent()
+        data object UndoChangesConfirmed : UiEvent()
+        data object UndoChangesConfirmationDismissed : UiEvent()
         data object SaveClicked : UiEvent()
         data object ClearNameClicked : UiEvent()
         data object ClearAddressClicked : UiEvent()
@@ -1478,6 +1616,7 @@ class VisitDetailViewModel
         data object ValidationError : UiEventState()
         data class VisitDateExpanded(val visit: VisitState) : UiEventState()
         data object DeleteConfirmation : UiEventState()
+        data object UndoChangesConfirmation : UiEventState()
         data object Deleting : UiEventState()
         data object Deleted : UiEventState()
         data class NextVisitSuggestionShowing(val visit: VisitState) : UiEventState()
@@ -1494,9 +1633,11 @@ class VisitDetailViewModel
         val showLocationRationale: Boolean = false,
         val showLocationPermissionDialog: Boolean = false,
         val showCalendarRationale: Boolean = false,
-        val showCalendarPermissionDialog: Boolean = false,
-        val hasDrafts: Boolean = false
-    )
+        val showCalendarPermissionDialog: Boolean = false
+    ) {
+        val hasDrafts: Boolean
+            get() = householder.isDraft || visitList.any { !it.wasRemoved && it.isDraft }
+    }
 
     companion object {
         private const val DEFAULT_VISIT_INTERVAL_DAYS = 7L

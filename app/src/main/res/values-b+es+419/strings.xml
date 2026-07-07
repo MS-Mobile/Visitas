@@ -15,6 +15,9 @@
     <string name="confirm">Confirmar</string>
     <string name="would_you_like_to_delete_this">¿Está seguro de que desea eliminar este registro?</string>
     <string name="delete_title">Eliminar registro</string>
+    <string name="undo_changes">Deshacer cambios</string>
+    <string name="discard_changes_title">Descartar cambios</string>
+    <string name="discard_changes_message">¿Está seguro de que desea descartar los cambios no guardados?</string>
     <string name="first_visit">Primera visita</string>
     <string name="add_conversation">Agregar conversación</string>
     <string name="return_visit">Revisita</string>

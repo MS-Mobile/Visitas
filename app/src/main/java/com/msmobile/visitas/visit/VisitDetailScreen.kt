@@ -27,10 +27,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Undo
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.rounded.ArrowBackIosNew
 import androidx.compose.material.icons.rounded.ArrowDropDown
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.ContentCopy
@@ -81,13 +81,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.AppScaffold
-import com.msmobile.visitas.util.scaffold.AppScaffoldState
-import com.msmobile.visitas.util.scaffold.DetailFooterAction
-import com.msmobile.visitas.util.scaffold.FloatingActionButtonAction
 import com.msmobile.visitas.R
-import com.msmobile.visitas.util.scaffold.TopBarAction
-import com.msmobile.visitas.util.scaffold.TopNavigationAction
-import com.msmobile.visitas.util.scaffold.topNavigationActions
 import com.msmobile.visitas.extension.EditableTextFieldColors
 import com.msmobile.visitas.extension.OnBackPressed
 import com.msmobile.visitas.extension.ReadOnlyTextFieldColors
@@ -111,6 +105,12 @@ import com.msmobile.visitas.util.DetailScreenStyle
 import com.msmobile.visitas.util.borderPadding
 import com.msmobile.visitas.util.floatingBarBottomPadding
 import com.msmobile.visitas.util.horizontalFieldPadding
+import com.msmobile.visitas.util.scaffold.AppScaffoldState
+import com.msmobile.visitas.util.scaffold.DetailFooterAction
+import com.msmobile.visitas.util.scaffold.FloatingActionButtonAction
+import com.msmobile.visitas.util.scaffold.TopBarAction
+import com.msmobile.visitas.util.scaffold.TopNavigationAction
+import com.msmobile.visitas.util.scaffold.topNavigationActions
 import com.msmobile.visitas.util.snackbarPadding
 import com.msmobile.visitas.util.verticalFieldPadding
 import com.ramcosta.composedestinations.annotation.Destination
@@ -159,12 +159,16 @@ private fun VisitDetailScreenContent(
         onEvent(VisitDetailViewModel.UiEvent.CancelClicked)
     }
 
+    val hasDrafts = uiState.hasDrafts
     val chromeOwner = remember { Any() }
     val topNavigationActions = visitDetailTopNavigationActions(onNavigateUp = onNavigateUp)
     val topBarActions = visitDetailTopBarActions(onEvent = onEvent)
-    val detailFooterActions = visitDetailFooterActions(onEvent = onEvent)
+    val detailFooterActions = visitDetailFooterActions(
+        shouldEnableDiscardButton = hasDrafts,
+        onEvent = onEvent
+    )
     val floatingActionButtonActions = visitDetailFloatingActionButtonActions(onEvent = onEvent)
-    val subtitle = visitDetailSubtitleString(uiState.hasDrafts)
+    val subtitle = visitDetailSubtitleString(hasDrafts)
 
     DisposableEffect(subtitle) {
         appScaffoldState.setUiState(
@@ -396,6 +400,39 @@ private fun HouseholderDetail(
 }
 
 @Composable
+private fun DiscardChangesConfirmation(onEvent: (VisitDetailViewModel.UiEvent) -> Unit) {
+    AlertDialog(
+        onDismissRequest = {
+            onEvent(VisitDetailViewModel.UiEvent.UndoChangesConfirmationDismissed)
+        },
+        title = {
+            Text(text = stringResource(id = R.string.discard_changes_title))
+        },
+        text = {
+            Text(text = stringResource(id = R.string.discard_changes_message))
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onEvent(VisitDetailViewModel.UiEvent.UndoChangesConfirmed)
+                }
+            ) {
+                Text(stringResource(id = R.string.confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = {
+                    onEvent(VisitDetailViewModel.UiEvent.UndoChangesConfirmationDismissed)
+                }
+            ) {
+                Text(stringResource(id = R.string.cancel))
+            }
+        }
+    )
+}
+
+@Composable
 private fun visitDetailTopNavigationActions(
     onNavigateUp: () -> Unit
 ): List<TopNavigationAction> = topNavigationActions(onNavigateUp = onNavigateUp)
@@ -422,19 +459,20 @@ private fun visitDetailTopBarActions(
 
 @Composable
 private fun visitDetailFooterActions(
+    shouldEnableDiscardButton: Boolean,
     onEvent: (VisitDetailViewModel.UiEvent) -> Unit
 ): List<DetailFooterAction> {
     return listOf(
         DetailFooterAction(
-            contentDescription = stringResource(id = R.string.cancel),
-            icon = Icons.Rounded.ArrowBackIosNew,
-            onClick = { onEvent(VisitDetailViewModel.UiEvent.CancelClicked) }
-        ),
+            contentDescription = stringResource(id = R.string.undo_changes),
+            icon = Icons.AutoMirrored.Rounded.Undo,
+            isEnabled = shouldEnableDiscardButton
+        ) { onEvent(VisitDetailViewModel.UiEvent.UndoChangesClicked) },
         DetailFooterAction(
             contentDescription = stringResource(id = R.string.save),
             icon = Icons.Rounded.DoneOutline,
-            onClick = { onEvent(VisitDetailViewModel.UiEvent.SaveClicked) }
-        )
+            isEnabled = true
+        ) { onEvent(VisitDetailViewModel.UiEvent.SaveClicked) }
     )
 }
 
@@ -1000,6 +1038,10 @@ private fun StateHandler(
             DeleteMessage(onEvent)
         }
 
+        is VisitDetailViewModel.UiEventState.UndoChangesConfirmation -> {
+            DiscardChangesConfirmation(onEvent)
+        }
+
         is VisitDetailViewModel.UiEventState.NoAddressFound -> {
             NoAddressFoundSnackbar(
                 modifier = Modifier.snackbarPadding(),
@@ -1144,7 +1186,10 @@ internal fun VisitDetailScreenPreview(
                 onNavigate = {},
                 topNavigationActions = visitDetailTopNavigationActions(onNavigateUp = {}),
                 topBarActions = visitDetailTopBarActions(onEvent = {}),
-                detailFooterActions = visitDetailFooterActions(onEvent = {}),
+                detailFooterActions = visitDetailFooterActions(
+                    shouldEnableDiscardButton = config.uiState.hasDrafts,
+                    onEvent = {},
+                ),
                 floatingActionButtonActions = visitDetailFloatingActionButtonActions(onEvent = {}),
                 subtitle = visitDetailSubtitleString(showSubtitle = config.uiState.hasDrafts)
             ) {

@@ -16,6 +16,9 @@ interface VisitDao {
     @Query("SELECT * FROM visit WHERE id = :id")
     suspend fun getById(id: UUID): Visit
 
+    @Query("SELECT * FROM visit WHERE id = :id")
+    suspend fun getByIdOrNull(id: UUID): Visit?
+
     @Query("DELETE FROM visit WHERE id IN (:idList)")
     suspend fun deleteBulk(idList: List<UUID>)
 

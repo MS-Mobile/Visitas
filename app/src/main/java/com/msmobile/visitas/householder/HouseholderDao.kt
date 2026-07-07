@@ -13,6 +13,9 @@ interface HouseholderDao {
     @Query("SELECT * FROM Householder WHERE id = :id")
     suspend fun getById(id: UUID): Householder
 
+    @Query("SELECT * FROM Householder WHERE id = :id")
+    suspend fun getByIdOrNull(id: UUID): Householder?
+
     @Query("DELETE FROM Householder WHERE id = :id")
     suspend fun deleteById(id: UUID)
 

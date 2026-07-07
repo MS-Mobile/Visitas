@@ -15,6 +15,10 @@ class VisitRepository(private val visitDao: VisitDao) {
         return visitDao.getById(id)
     }
 
+    suspend fun getByIdOrNull(id: UUID): Visit? {
+        return visitDao.getByIdOrNull(id)
+    }
+
     suspend fun deleteBulk(idList: List<UUID>) {
         visitDao.deleteBulk(idList)
     }
