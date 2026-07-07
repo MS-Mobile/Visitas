@@ -212,6 +212,31 @@ class VisitDetailViewModelTest {
     }
 
     @Test
+    fun `save deletes snapshots and finalizes householder draft flag`() {
+        // Arrange
+        val snapshotRepositoryRef = MockReferenceHolder<SnapshotRepository>()
+        val viewModel = createViewModel(snapshotRepositoryRef = snapshotRepositoryRef)
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+        // Dirty the householder so it becomes a draft first.
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.HouseholderNameChanged("Edited Name"))
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.householder.isDraft)
+
+        // Act — calendar permission is mocked false, but there are no pending visits requiring it
+        //       after we mark the single visit done to avoid the calendar rationale path.
+        val visit = viewModel.uiState.value.visitList.first()
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.VisitDoneChanged(value = true, visit = visit))
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.SaveClicked)
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert
+        val snapshotRepository = requireNotNull(snapshotRepositoryRef.value)
+        verifyBlocking(snapshotRepository) { deleteHouseholderSnapshot(HOUSEHOLDER_ID) }
+        verifyBlocking(snapshotRepository) { deleteVisitSnapshots(HOUSEHOLDER_ID) }
+        assertFalse(viewModel.uiState.value.householder.isDraft)
+    }
+
+    @Test
     fun `onEvent with HouseholderNameChanged updates householder name`() {
         // Arrange
         val viewModel = createViewModel()

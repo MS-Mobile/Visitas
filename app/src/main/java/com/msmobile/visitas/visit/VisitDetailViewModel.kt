@@ -979,7 +979,7 @@ class VisitDetailViewModel
             )
         }
         viewModelScope.launch(dispatchers.io) {
-            val householderModel = _uiState.value.householder.asModel
+            val householderModel = _uiState.value.householder.finalized().asModel
             addOrUpdateHouseholder(householderModel)
             val householderId = householderModel.id
             val houseHolder = householderModel.asState
@@ -990,7 +990,8 @@ class VisitDetailViewModel
                 visitList = _uiState.value.visitList.map { it.finalized() }
             )
 
-            // TODO: Update snapshots repository
+            snapshotRepository.deleteHouseholderSnapshot(householderId)
+            snapshotRepository.deleteVisitSnapshots(householderId)
 
             newState {
                 copy(
@@ -999,6 +1000,9 @@ class VisitDetailViewModel
                     eventState = UiEventState.SaveSucceeded
                 )
             }
+            // Rebase the autosave baseline to the committed state so a debounced emission landing
+            // after this save does not re-dirty (and re-snapshot) the just-committed record.
+            initialEditableData = _uiState.value.getEditableDataSnapshot()
         }
     }
 
@@ -1370,6 +1374,8 @@ class VisitDetailViewModel
                 orderIndex = orderIndex
             )
         }
+
+    private fun HouseholderState.finalized() = copy(isDraft = false)
 
     private fun VisitState.finalized() = copy(isDraft = false)
 
