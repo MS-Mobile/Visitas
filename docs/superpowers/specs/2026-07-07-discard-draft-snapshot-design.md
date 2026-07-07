@@ -61,6 +61,8 @@ Because the flag flips to `true`, every later pass skips the entity — the orig
 
 ### ② Restore — on discard only (`undoChangesConfirmed`)
 
+Discard is **confirmation-gated**. The existing event flow stays as-is: `UndoChangesClicked` → `UiEventState.UndoChangesConfirmation` (dialog) → `UndoChangesConfirmed` (proceed) or `UndoChangesConfirmationDismissed` (cancel, no-op). The restore below runs only in `undoChangesConfirmed`, i.e. after the user confirms the dialog.
+
 Read `householder_snapshot` + this householder's `visit_snapshot`s, then branch on a single condition:
 
 ```
