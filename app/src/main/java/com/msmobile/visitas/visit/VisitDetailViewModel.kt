@@ -833,8 +833,7 @@ class VisitDetailViewModel
             copy(
                 householder = newHouseholder(),
                 visitList = listOf(newVisit(0)),
-                eventState = UiEventState.Idle,
-                hasDrafts = false
+                eventState = UiEventState.Idle
             )
         }
         initialEditableData = _uiState.value.getEditableDataSnapshot()
@@ -855,8 +854,7 @@ class VisitDetailViewModel
             copy(
                 householder = householder,
                 visitList = visitList,
-                eventState = UiEventState.Idle,
-                hasDrafts = householder.isDraft || visitList.hasDrafts()
+                eventState = UiEventState.Idle
             )
         }
         initialEditableData = _uiState.value.getEditableDataSnapshot()
@@ -942,12 +940,7 @@ class VisitDetailViewModel
     }
 
     private fun markHouseholderDraft() {
-        newState {
-            copy(
-                householder = householder.copy(isDraft = true),
-                hasDrafts = true
-            )
-        }
+        newState { copy(householder = householder.copy(isDraft = true)) }
     }
 
     private fun markVisitDraft(visitId: UUID) {
@@ -955,10 +948,7 @@ class VisitDetailViewModel
             val updatedList = visitList.map { visit ->
                 if (visit.id == visitId) visit.copy(isDraft = true) else visit
             }
-            copy(
-                visitList = updatedList,
-                hasDrafts = householder.isDraft || updatedList.hasDrafts()
-            )
+            copy(visitList = updatedList)
         }
     }
 
@@ -1175,7 +1165,7 @@ class VisitDetailViewModel
             showClearSubject = false,
             wasRemoved = false,
             caretPosition = 0,
-            isDraft = true,
+            isDraft = false,
         )
     }
 
@@ -1225,7 +1215,6 @@ class VisitDetailViewModel
             }
                 .reindexIfNeeded()
                 .revalidatePendingVisits(householder)
-            val hasDrafts = householder.isDraft || visitList.hasDrafts()
             newState {
                 copy(
                     householder = householder,
@@ -1233,8 +1222,7 @@ class VisitDetailViewModel
                     conversationList = conversationList,
                     visitTypeList = visitTypeList,
                     eventState = UiEventState.Idle,
-                    showDeleteButton = isUpdatingVisit,
-                    hasDrafts = hasDrafts
+                    showDeleteButton = isUpdatingVisit
                 )
             }
             initialEditableData = _uiState.value.getEditableDataSnapshot()
@@ -1267,10 +1255,6 @@ class VisitDetailViewModel
             hasFocus -> HouseholderAddressState.ShowClearAddress
             else -> HouseholderAddressState.None
         }
-    }
-
-    private fun List<VisitState>.hasDrafts(): Boolean {
-        return filter { !it.wasRemoved }.any { it.isDraft }
     }
 
     private fun List<ConversationState>.filterBy(filter: String): List<ConversationState> {
@@ -1642,9 +1626,11 @@ class VisitDetailViewModel
         val showLocationRationale: Boolean = false,
         val showLocationPermissionDialog: Boolean = false,
         val showCalendarRationale: Boolean = false,
-        val showCalendarPermissionDialog: Boolean = false,
-        val hasDrafts: Boolean = false
-    )
+        val showCalendarPermissionDialog: Boolean = false
+    ) {
+        val hasDrafts: Boolean
+            get() = householder.isDraft || visitList.any { !it.wasRemoved && it.isDraft }
+    }
 
     companion object {
         private const val DEFAULT_VISIT_INTERVAL_DAYS = 7L

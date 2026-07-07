@@ -234,6 +234,7 @@ class VisitDetailViewModelTest {
         verifyBlocking(snapshotRepository) { deleteHouseholderSnapshot(HOUSEHOLDER_ID) }
         verifyBlocking(snapshotRepository) { deleteVisitSnapshots(HOUSEHOLDER_ID) }
         assertFalse(viewModel.uiState.value.householder.isDraft)
+        assertFalse(viewModel.uiState.value.hasDrafts)
     }
 
     @Test
@@ -955,6 +956,21 @@ class VisitDetailViewModelTest {
 
         // Assert
         assertTrue(viewModel.uiState.value.householder.isDraft)
+        assertTrue(viewModel.uiState.value.hasDrafts)
+    }
+
+    @Test
+    fun `adding a visit to a committed record makes hasDrafts true after autosave`() {
+        // Arrange
+        val viewModel = createViewModel()
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+        assertFalse(viewModel.uiState.value.hasDrafts)
+
+        // Act — add a visit and let the debounced autosave run
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.AddVisitClicked)
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert
         assertTrue(viewModel.uiState.value.hasDrafts)
     }
 
