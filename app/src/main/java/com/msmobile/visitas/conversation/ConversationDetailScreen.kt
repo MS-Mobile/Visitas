@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Undo
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.rounded.ArrowBackIosNew
@@ -89,7 +90,7 @@ fun ConversationDetailScreen(
     ConversationDetailScreenContent(
         firstConversationId = firstConversationId,
         uiState = uiState,
-        appScaffoldState =  appScaffoldState,
+        appScaffoldState = appScaffoldState,
         onEvent = onEvent,
         onNavigateUp = onNavigateUp
     )
@@ -114,8 +115,12 @@ private fun ConversationDetailScreenContent(
     val chromeOwner = remember { Any() }
     val topNavigationActions = conversationDetailTopNavigationActions(onNavigateUp = onNavigateUp)
     val topBarActions = conversationDetailTopBarActions(onEvent = onEvent)
-    val detailFooterActions = conversationDetailFooterActions(onEvent = onEvent)
-    val floatingActionButtonActions = conversationDetailFloatingActionButtonActions(onEvent = onEvent)
+    val detailFooterActions = conversationDetailFooterActions(
+        shouldEnableDiscardButton = uiState.hasDrafts,
+        onEvent = onEvent
+    )
+    val floatingActionButtonActions =
+        conversationDetailFloatingActionButtonActions(onEvent = onEvent)
     DisposableEffect(Unit) {
         appScaffoldState.setUiState(
             owner = chromeOwner,
@@ -156,13 +161,14 @@ private fun conversationDetailTopBarActions(
 
 @Composable
 private fun conversationDetailFooterActions(
+    shouldEnableDiscardButton: Boolean,
     onEvent: (ConversationDetailViewModel.UiEvent) -> Unit
 ): List<DetailFooterAction> {
     return listOf(
         DetailFooterAction(
-            contentDescription = stringResource(id = R.string.cancel),
-            icon = Icons.Rounded.ArrowBackIosNew,
-            isEnabled = true
+            contentDescription = stringResource(id = R.string.undo_changes),
+            icon = Icons.AutoMirrored.Rounded.Undo,
+            isEnabled = shouldEnableDiscardButton
         ) { onEvent(ConversationDetailViewModel.UiEvent.CancelClicked) },
         DetailFooterAction(
             contentDescription = stringResource(id = R.string.save),
@@ -407,7 +413,10 @@ internal fun ConversationDetailScreenPreview(
                 onNavigate = {},
                 topNavigationActions = conversationDetailTopNavigationActions(onNavigateUp = {}),
                 topBarActions = conversationDetailTopBarActions(onEvent = {}),
-                detailFooterActions = conversationDetailFooterActions(onEvent = {}),
+                detailFooterActions = conversationDetailFooterActions(
+                    shouldEnableDiscardButton = config.uiState.hasDrafts,
+                    onEvent = {}
+                ),
                 floatingActionButtonActions = conversationDetailFloatingActionButtonActions(onEvent = {})
             ) {
                 ConversationDetailScreenContent(

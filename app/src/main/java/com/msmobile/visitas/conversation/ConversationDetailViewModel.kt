@@ -329,6 +329,7 @@ constructor(
 
     data class UiState(
         val conversationList: List<ConversationState>,
-        val eventState: UiEventState
+        val eventState: UiEventState,
+        val hasDrafts: Boolean = false
     )
 }

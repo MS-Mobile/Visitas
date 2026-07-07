@@ -259,7 +259,10 @@ private fun ScaffoldDetailFooter(
                 },
                 content = {
                     detailFooterActions.forEach { action ->
-                        IconButton(onClick = action.onClick) {
+                        IconButton(
+                            onClick = action.onClick,
+                            enabled = action.isEnabled
+                        ) {
                             Icon(
                                 imageVector = action.icon,
                                 contentDescription = action.contentDescription
