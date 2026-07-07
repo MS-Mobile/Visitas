@@ -845,7 +845,7 @@ class VisitDetailViewModel
     }
 
     private suspend fun rebuildUiFromDb(householderId: UUID) {
-        val (householder, visitList) = loadHouseholderState(
+        val (householder, visitList) = mapHouseholderStateFromDatabase(
             householderId,
             _uiState.value.conversationList
         )
@@ -859,7 +859,7 @@ class VisitDetailViewModel
         initialEditableData = _uiState.value.getEditableDataSnapshot()
     }
 
-    private suspend fun loadHouseholderState(
+    private suspend fun mapHouseholderStateFromDatabase(
         householderId: UUID,
         conversationList: List<ConversationState>
     ): Pair<HouseholderState, List<VisitState>> {
@@ -1221,7 +1221,7 @@ class VisitDetailViewModel
                 return@launch
             }
 
-            val (householder, visitList) = loadHouseholderState(householderId, conversationList)
+            val (householder, visitList) = mapHouseholderStateFromDatabase(householderId, conversationList)
             newState {
                 copy(
                     householder = householder,
