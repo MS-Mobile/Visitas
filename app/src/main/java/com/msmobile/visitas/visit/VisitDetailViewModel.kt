@@ -68,7 +68,6 @@ class VisitDetailViewModel
             eventState = UiEventState.Idle
         )
     )
-    private var visits: List<Visit> = listOf()
     private var conversations: List<Conversation> = listOf()
     @Volatile private var initialEditableData: EditableDataSnapshot? = null
     private var loadAddressAfterPermission = false
@@ -846,16 +845,10 @@ class VisitDetailViewModel
     }
 
     private suspend fun rebuildUiFromDb(householderId: UUID) {
-        val householder = householderRepository.getById(householderId).asState
-        val restoredVisits = visitRepository.getAll(householderId)
-        val visitList = restoredVisits.map { visit ->
-            val conversation = _uiState.value.conversationList.firstOrNull { conversation ->
-                conversation.id == visit.nextConversationId
-            }
-            visit.asState(conversation)
-        }
-            .reindexIfNeeded()
-            .revalidatePendingVisits(householder)
+        val (householder, visitList) = loadHouseholderState(
+            householderId,
+            _uiState.value.conversationList
+        )
         newState {
             copy(
                 householder = householder,
@@ -864,6 +857,23 @@ class VisitDetailViewModel
             )
         }
         initialEditableData = _uiState.value.getEditableDataSnapshot()
+    }
+
+    private suspend fun loadHouseholderState(
+        householderId: UUID,
+        conversationList: List<ConversationState>
+    ): Pair<HouseholderState, List<VisitState>> {
+        val householder = householderRepository.getById(householderId).asState
+        val visitList = visitRepository.getAll(householderId)
+            .map { visit ->
+                val conversation = conversationList.firstOrNull { conversation ->
+                    conversation.id == visit.nextConversationId
+                }
+                visit.asState(conversation)
+            }
+            .reindexIfNeeded()
+            .revalidatePendingVisits(householder)
+        return householder to visitList
     }
 
     private fun saveClicked() {
@@ -1211,16 +1221,7 @@ class VisitDetailViewModel
                 return@launch
             }
 
-            val householder = householderRepository.getById(householderId).asState
-            visits = visitRepository.getAll(householderId)
-            val visitList = visits.map { visit ->
-                val conversation = conversationList.firstOrNull { conversation ->
-                    conversation.id == visit.nextConversationId
-                }
-                visit.asState(conversation)
-            }
-                .reindexIfNeeded()
-                .revalidatePendingVisits(householder)
+            val (householder, visitList) = loadHouseholderState(householderId, conversationList)
             newState {
                 copy(
                     householder = householder,
