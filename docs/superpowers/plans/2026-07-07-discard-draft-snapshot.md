@@ -239,46 +239,83 @@ git commit -m "Add nullable getById and expose snapshot get/delete on repositori
 
 This task wires `isDraft` into `HouseholderState`, its mappers, and `hasDrafts`, and adds the `SnapshotRepository` constructor dependency (already provided by Hilt in `ApplicationModule`). It does not yet capture or restore snapshots — that's Tasks 4–6 — so `isDraft` on the householder is only set via the existing mappers here.
 
-- [ ] **Step 1: Update the test helper to supply a `SnapshotRepository` mock**
+- [ ] **Step 1: Update the test helper to supply a `SnapshotRepository` mock and snapshot/committed-row stubs**
 
-In `VisitDetailViewModelTest.kt`, add a parameter and mock to `createViewModel`, then pass it to the constructor. Add the import at the top of the file:
+All stubbing is done inside `mock { ... }` blocks — mockito-kotlin's `on { ... }` handles `suspend` functions correctly there, whereas post-construction `whenever(mock).suspendFun()` does not compile. Later tests select behavior through new `createViewModel` parameters rather than re-stubbing.
+
+Add the import at the top of `VisitDetailViewModelTest.kt`:
 
 ```kotlin
 import com.msmobile.visitas.householder.HouseholderSnapshot
 ```
 
-Add the parameter to the `createViewModel` signature (after `visitRepositoryRef`):
+(`Householder`, `SnapshotRepository`, `VisitSnapshot`, and `Visit` are already imported / in scope for this test file.)
+
+Add these parameters to the `createViewModel` signature (after `visitRepositoryRef`):
 
 ```kotlin
         snapshotRepositoryRef: MockReferenceHolder<SnapshotRepository>? = null,
+        committedRowsExist: Boolean = true,
+        householderIsDraft: Boolean = false,
+        householderSnapshot: HouseholderSnapshot? = null,
+        visitSnapshots: List<VisitSnapshot> = emptyList(),
 ```
 
-Inside `createViewModel`, after the `visitRepository` mock block, add:
+Add an `isDraft` parameter to the `createHouseholder` helper (default `false`) and pass it to the `Householder(...)` it builds:
 
 ```kotlin
-        val snapshotRepository = mock<SnapshotRepository> {
-            on { getHouseholderSnapshot(any()) } doReturn null
-            on { getVisitSnapshots(any()) } doReturn emptyList()
-        }
-        snapshotRepositoryRef?.value = snapshotRepository
+    private fun createHouseholder(
+        latitude: Double? = null,
+        longitude: Double? = null,
+        preferredDay: VisitPreferredDay = VisitPreferredDay.ANY,
+        preferredTime: VisitPreferredTime = VisitPreferredTime.ANY,
+        notes: String = "Test Notes",
+        isDraft: Boolean = false
+    ): Householder {
+        return Householder(
+            id = HOUSEHOLDER_ID,
+            name = "Test Name",
+            address = "Test Address",
+            notes = notes,
+            addressLatitude = latitude,
+            addressLongitude = longitude,
+            preferredDay = preferredDay,
+            preferredTime = preferredTime,
+            isDraft = isDraft
+        )
+    }
 ```
 
-Stub the new nullable getters on the existing `householderRepository` and `visitRepository` mocks so the snapshot guard (Task 4) sees committed rows. Add to the `householderRepository` mock lambda:
+Update the existing `householderRepository` `on { getById(any()) } doReturn createHouseholder(...)` stub to pass `isDraft = householderIsDraft` (so a loaded householder can be a draft). Then add the nullable getter to the same `mock<HouseholderRepository> { ... }` block (committed source is always `isDraft = false`):
 
 ```kotlin
-            on { getByIdOrNull(any()) } doReturn createHouseholder(
-                latitude = householderLatitude,
-                longitude = householderLongitude,
-                preferredDay = householderPreferredDay,
-                preferredTime = householderPreferredTime,
-                notes = householderNotes
-            )
+            on { getByIdOrNull(any()) } doReturn if (committedRowsExist) {
+                createHouseholder(
+                    latitude = householderLatitude,
+                    longitude = householderLongitude,
+                    preferredDay = householderPreferredDay,
+                    preferredTime = householderPreferredTime,
+                    notes = householderNotes
+                )
+            } else {
+                null
+            }
 ```
 
 Add to the `visitRepository` mock lambda:
 
 ```kotlin
-            on { getByIdOrNull(any()) } doReturn createVisitList().first()
+            on { getByIdOrNull(any()) } doReturn if (committedRowsExist) createVisitList().first() else null
+```
+
+After the `visitRepository` mock block, add the `SnapshotRepository` mock:
+
+```kotlin
+        val snapshotRepository = mock<SnapshotRepository> {
+            on { getHouseholderSnapshot(any()) } doReturn householderSnapshot
+            on { getVisitSnapshots(any()) } doReturn visitSnapshots
+        }
+        snapshotRepositoryRef?.value = snapshotRepository
 ```
 
 Pass the new dependency in the `VisitDetailViewModel(...)` constructor call (add after `visitRepository = visitRepository,`):
@@ -287,21 +324,18 @@ Pass the new dependency in the `VisitDetailViewModel(...)` constructor call (add
             snapshotRepository = snapshotRepository,
 ```
 
-- [ ] **Step 2: Write a failing test for `hasDrafts` reflecting householder draft state**
+- [ ] **Step 2: Write a failing test — loading a draft householder makes `hasDrafts` true**
 
-Add this test to `VisitDetailViewModelTest.kt`:
+This exercises the `Householder.asState` mapping and the aggregate `hasDrafts` wiring without depending on autosave marking (which arrives in Task 4).
 
 ```kotlin
     @Test
-    fun `hasDrafts is true when the householder is a draft`() {
-        // Arrange
-        val viewModel = createViewModel()
-        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
-        assertFalse(viewModel.uiState.value.hasDrafts)
+    fun `hasDrafts is true when the loaded householder is a draft`() {
+        // Arrange — the committed householder row is itself a draft (e.g. a reopened draft session)
+        val viewModel = createViewModel(householderIsDraft = true)
 
-        // Act — change a householder field, then let the debounced auto-save run
-        viewModel.onEvent(VisitDetailViewModel.UiEvent.HouseholderNameChanged("Changed Name"))
-        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
 
         // Assert
         assertTrue(viewModel.uiState.value.householder.isDraft)
@@ -312,7 +346,7 @@ Add this test to `VisitDetailViewModelTest.kt`:
 - [ ] **Step 3: Run it to verify it fails**
 
 Run: `./gradlew :app:testDebugUnitTest --tests "com.msmobile.visitas.visit.VisitDetailViewModelTest"`
-Expected: FAIL — `HouseholderState` has no `isDraft` (compile error), and the householder is never marked draft.
+Expected: FAIL — `HouseholderState` has no `isDraft` (compile error), and `viewCreated` does not fold the householder flag into `hasDrafts`.
 
 - [ ] **Step 4: Add `isDraft` to `HouseholderState` and its accessors**
 
@@ -351,30 +385,15 @@ In `HouseholderState.asModel`, map it back:
 
 `newHouseholder()` already omits `isDraft`, so it defaults to `false` (Decision 3: draft means dirty; new records are not born draft). Leave it as-is.
 
-- [ ] **Step 6: Include the householder in `hasDrafts`**
+- [ ] **Step 6: Fold the householder flag into `hasDrafts` at load**
 
-Change the private helper so the aggregate draft state covers the householder. Replace the `hasDrafts()` extension and its call sites with a single computation. First, update the extension to keep the visit part:
-
-```kotlin
-    private fun List<VisitState>.hasDrafts(): Boolean {
-        return filter { !it.wasRemoved }.any { it.isDraft }
-    }
-```
-
-Then, everywhere `hasDrafts` is written into state, OR it with the householder flag. In `updateUiStateChangedVisitsAsDraft`:
-
-```kotlin
-            val hasDrafts = householder.isDraft || visitList.hasDrafts()
-            copy(visitList = updatedList, hasDrafts = hasDrafts)
-```
-
-In `viewCreated` (the existing-householder branch), replace `val hasDrafts = visitList.hasDrafts()` with a version that also reads the loaded householder flag:
+Leave the `List<VisitState>.hasDrafts()` extension unchanged (it still computes the visit part). In `viewCreated` (the existing-householder branch), replace `val hasDrafts = visitList.hasDrafts()` with a version that also reads the loaded householder flag:
 
 ```kotlin
             val hasDrafts = householder.isDraft || visitList.hasDrafts()
 ```
 
-(The `householder` in that scope is the `HouseholderState` mapped from the DB, so its `isDraft` reflects the stored column.)
+(The `householder` in that scope is the `HouseholderState` mapped from the DB, so its `isDraft` reflects the stored column. `updateUiStateChangedVisitsAsDraft` is left alone here — Task 4 replaces it entirely with householder-aware marking.)
 
 - [ ] **Step 7: Add the `SnapshotRepository` constructor dependency**
 
@@ -467,26 +486,17 @@ Replace `updateUiStateChangedVisitsAsDraft` with logic that, before persisting a
 
 - [ ] **Step 3: Write a failing test — a brand-new record is marked draft but not snapshotted**
 
-For a new record (`ViewCreated(householderId = null)`), the nullable getters must return `null` (no committed row). Add a dedicated helper build with those stubs overridden:
+For a new record, pass `committedRowsExist = false` so the nullable getters return `null` (no committed row):
 
 ```kotlin
     @Test
     fun `auto save on a brand-new record marks householder draft without snapshotting`() {
         // Arrange — a new record has no committed rows in the DB
         val snapshotRepositoryRef = MockReferenceHolder<SnapshotRepository>()
-        val householderRepositoryRef = MockReferenceHolder<HouseholderRepository>()
-        val visitRepositoryRef = MockReferenceHolder<VisitRepository>()
         val viewModel = createViewModel(
             snapshotRepositoryRef = snapshotRepositoryRef,
-            householderRepositoryRef = householderRepositoryRef,
-            visitRepositoryRef = visitRepositoryRef
+            committedRowsExist = false
         )
-        // Override the nullable getters to simulate "never persisted"
-        val householderRepository = requireNotNull(householderRepositoryRef.value)
-        val visitRepository = requireNotNull(visitRepositoryRef.value)
-        org.mockito.kotlin.doReturn(null).whenever(householderRepository).getByIdOrNull(any())
-        org.mockito.kotlin.doReturn(null).whenever(visitRepository).getByIdOrNull(any())
-
         viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = null))
 
         // Act — edit only a householder field
@@ -498,12 +508,6 @@ For a new record (`ViewCreated(householderId = null)`), the nullable getters mus
         val snapshotRepository = requireNotNull(snapshotRepositoryRef.value)
         verifyBlocking(snapshotRepository, org.mockito.kotlin.never()) { saveHouseholderSnapshot(any()) }
     }
-```
-
-Add the import for `whenever` at the top of the test file:
-
-```kotlin
-import org.mockito.kotlin.whenever
 ```
 
 - [ ] **Step 4: Run the tests to verify they fail**
@@ -634,30 +638,25 @@ Implement the single-branch restore: a never-committed record (`householder.isDr
 ```kotlin
     @Test
     fun `undo changes confirmed restores committed householder and visits from snapshot`() {
-        // Arrange
+        // Arrange — a committed householder snapshot exists (name "Test Name").
+        val committedSnapshot = HouseholderSnapshot(
+            Householder(
+                id = HOUSEHOLDER_ID,
+                name = "Test Name",
+                address = "Test Address",
+                notes = "Test Notes"
+            )
+        )
         val snapshotRepositoryRef = MockReferenceHolder<SnapshotRepository>()
         val householderRepositoryRef = MockReferenceHolder<HouseholderRepository>()
-        val visitRepositoryRef = MockReferenceHolder<VisitRepository>()
         val viewModel = createViewModel(
             snapshotRepositoryRef = snapshotRepositoryRef,
             householderRepositoryRef = householderRepositoryRef,
-            visitRepositoryRef = visitRepositoryRef
+            householderSnapshot = committedSnapshot
         )
         viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
 
-        // A committed householder snapshot exists (name "Test Name"); the live householder is a draft.
-        val snapshotRepository = requireNotNull(snapshotRepositoryRef.value)
-        org.mockito.kotlin.doReturn(
-            HouseholderSnapshot(
-                Householder(
-                    id = HOUSEHOLDER_ID,
-                    name = "Test Name",
-                    address = "Test Address",
-                    notes = "Test Notes"
-                )
-            )
-        ).whenever(snapshotRepository).getHouseholderSnapshot(HOUSEHOLDER_ID)
-        // Mark the householder a draft so we take the restore (not delete) branch.
+        // Dirty the householder so it is a draft -> restore (not delete) branch on discard.
         viewModel.onEvent(VisitDetailViewModel.UiEvent.HouseholderNameChanged("Edited Name"))
         mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
 
@@ -667,8 +666,10 @@ Implement the single-branch restore: a never-committed record (`householder.isDr
 
         // Assert — snapshot restored to the live table, snapshots consumed, UI reset
         val householderRepository = requireNotNull(householderRepositoryRef.value)
+        val snapshotRepository = requireNotNull(snapshotRepositoryRef.value)
         val captor = org.mockito.kotlin.argumentCaptor<Householder>()
-        verifyBlocking(householderRepository) { save(captor.capture()) }
+        // save() is called by both the draft autosave and the restore, so capture all calls.
+        verifyBlocking(householderRepository, org.mockito.kotlin.atLeastOnce()) { save(captor.capture()) }
         assertTrue(captor.allValues.any { it.name == "Test Name" && !it.isDraft })
         verifyBlocking(snapshotRepository) { deleteHouseholderSnapshot(HOUSEHOLDER_ID) }
         verifyBlocking(snapshotRepository) { deleteVisitSnapshots(HOUSEHOLDER_ID) }
@@ -677,25 +678,19 @@ Implement the single-branch restore: a never-committed record (`householder.isDr
     }
 ```
 
+Note: `rebuildUiFromDb` (Task 5 Step 5) calls `householderRepository.getById(HOUSEHOLDER_ID)`, already stubbed to return the default committed householder (name "Test Name"), so the restored UI shows the committed name.
+
 - [ ] **Step 2: Write a failing test — discarding a brand-new record deletes it and resets the form**
 
 ```kotlin
     @Test
     fun `undo changes confirmed on a brand-new record deletes it and resets to empty form`() {
-        // Arrange — new record, no committed rows, no snapshots
-        val snapshotRepositoryRef = MockReferenceHolder<SnapshotRepository>()
+        // Arrange — new record: no committed rows (committedRowsExist = false), no snapshots (default)
         val householderRepositoryRef = MockReferenceHolder<HouseholderRepository>()
-        val visitRepositoryRef = MockReferenceHolder<VisitRepository>()
         val viewModel = createViewModel(
-            snapshotRepositoryRef = snapshotRepositoryRef,
             householderRepositoryRef = householderRepositoryRef,
-            visitRepositoryRef = visitRepositoryRef
+            committedRowsExist = false
         )
-        val householderRepository = requireNotNull(householderRepositoryRef.value)
-        val visitRepository = requireNotNull(visitRepositoryRef.value)
-        org.mockito.kotlin.doReturn(null).whenever(householderRepository).getByIdOrNull(any())
-        org.mockito.kotlin.doReturn(null).whenever(visitRepository).getByIdOrNull(any())
-
         viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = null))
         viewModel.onEvent(VisitDetailViewModel.UiEvent.HouseholderNameChanged("New Name"))
         mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
@@ -706,6 +701,7 @@ Implement the single-branch restore: a never-committed record (`householder.isDr
         mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
 
         // Assert — draft row deleted, form reset to empty, still on screen (not dismissed)
+        val householderRepository = requireNotNull(householderRepositoryRef.value)
         verifyBlocking(householderRepository) { deleteById(newId) }
         assertEquals("", viewModel.uiState.value.householder.name)
         assertFalse(viewModel.uiState.value.hasDrafts)
@@ -744,8 +740,13 @@ Replace the stub:
 
             val visitSnapshots = snapshotRepository.getVisitSnapshots(householderId)
             val committedVisitIds = visitSnapshots.map { it.visit.id }.toSet()
-            val liveVisitIds = visitRepository.getAll(householderId).map { it.id }
-            visitRepository.deleteBulk(liveVisitIds - committedVisitIds)
+            // Delete ONLY visits added this session: draft in the DB and with no snapshot.
+            // Untouched committed visits (not draft, no snapshot) must be preserved.
+            val liveVisits = visitRepository.getAll(householderId)
+            val addedVisitIds = liveVisits
+                .filter { it.isDraft && it.id !in committedVisitIds }
+                .map { it.id }
+            visitRepository.deleteBulk(addedVisitIds)
             visitSnapshots.forEach { visitRepository.save(it.visit) }
 
             snapshotRepository.deleteHouseholderSnapshot(householderId)
@@ -892,6 +893,9 @@ In `performSave`, finalize the householder before saving, and delete snapshots a
                     eventState = UiEventState.SaveSucceeded
                 )
             }
+            // Rebase the autosave baseline to the committed state so a debounced emission landing
+            // after this save does not re-dirty (and re-snapshot) the just-committed record.
+            initialEditableData = _uiState.value.getEditableDataSnapshot()
         }
     }
 ```

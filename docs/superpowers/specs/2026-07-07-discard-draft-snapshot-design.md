@@ -71,9 +71,12 @@ if (householder.isDraft && householderSnapshot == null):   // brand-new, never c
     reinitializeEmptyForm()                                // == viewCreated(null) path
 else:                                                       // committed record edited
     householderSnapshot?.let { householderRepository.save(it.householder) }
-    val committedVisitIds = visitSnapshots.map { it.visit.id }
-    visitRepository.deleteBulk(liveVisitIds - committedVisitIds)  // visits added this session
-    visitSnapshots.forEach { visitRepository.save(it.visit) }     // restore edited/committed visits
+    val committedVisitIds = visitSnapshots.map { it.visit.id }.toSet()
+    // Delete ONLY visits added this session: draft in the DB and with no snapshot.
+    // Untouched committed visits (not draft, no snapshot) are preserved as-is.
+    val liveVisits = visitRepository.getAll(id)
+    visitRepository.deleteBulk(liveVisits.filter { it.isDraft && it.id !in committedVisitIds }.map { it.id })
+    visitSnapshots.forEach { visitRepository.save(it.visit) }     // restore edited visits to committed state
     snapshotRepo.deleteHouseholderSnapshot(id)
     snapshotRepo.deleteVisitSnapshots(id)
     rebuildUiFromDb(id)
@@ -96,7 +99,7 @@ Touches snapshots **not at all**. Every "there's none / nothing to remove" branc
 ## Edges (confirmed handled)
 
 - **Calendar events** — `saveDraftSilently` never calls `syncVisitCalendarEvent`; calendar sync happens only in `performSave`. Drafts never create calendar events, so discard needs no calendar cleanup.
-- **Visits added this session** — absent from the snapshot ⇒ deleted on restore.
+- **Visits added this session** — draft in the DB with no snapshot ⇒ deleted on restore. Untouched committed visits (not draft, also no snapshot) are preserved; only *edited* visits carry a snapshot and are restored from it. The `isDraft` guard on the delete is what separates these two "no snapshot" cases.
 - **Removed visits** (`wasRemoved`) mid-session — still live rows until a manual save; discard restores from snapshot and re-adds them, which is correct.
 - **Partial-draft aggregate across sessions** — per-entity snapshots mean a householder edited in session 2 is snapshotted independently of a visit edited in session 1; restore reassembles from whatever snapshots exist.
 
