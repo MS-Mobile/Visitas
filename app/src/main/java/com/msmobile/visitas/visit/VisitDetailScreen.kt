@@ -1186,7 +1186,10 @@ internal fun VisitDetailScreenPreview(
                 onNavigate = {},
                 topNavigationActions = visitDetailTopNavigationActions(onNavigateUp = {}),
                 topBarActions = visitDetailTopBarActions(onEvent = {}),
-                detailFooterActions = visitDetailFooterActions(onEvent = {}),
+                detailFooterActions = visitDetailFooterActions(
+                    shouldEnableDiscardButton = config.uiState.hasDrafts,
+                    onEvent = {},
+                ),
                 floatingActionButtonActions = visitDetailFloatingActionButtonActions(onEvent = {}),
                 subtitle = visitDetailSubtitleString(showSubtitle = config.uiState.hasDrafts)
             ) {
