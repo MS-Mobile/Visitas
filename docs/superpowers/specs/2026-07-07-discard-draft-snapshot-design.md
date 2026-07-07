@@ -49,15 +49,15 @@ The live row's `isDraft` flag is the single source of truth for "dirtied since l
 
 ### ① Save snapshot — at the committed→draft transition, per entity, once
 
-Inside the autosave pass, **before** `saveDraftSilently` overwrites the live rows:
+Inside the autosave pass, **before** `saveDraftSilently` overwrites the live rows, for each entity that (a) differs from `initialEditableData` (the committed baseline) and (b) currently has `isDraft == false`:
 
-For each entity that (a) differs from `initialEditableData` (the committed baseline) and (b) currently has `isDraft == false`:
-
-1. Read the entity's **live DB row**. It still holds committed data at this instant (we snapshot before the overwrite).
+1. Read the entity's **committed DB row** via a nullable getter (`getByIdOrNull`). It still holds committed data at this instant (we run before the overwrite). Reading the live row — rather than an in-memory copy captured at load — is what makes this robust to a prior manual save: after a save, the in-memory copy would be stale and would snapshot pre-save values, so discard would silently undo the save. The DB row always reflects the latest committed state.
 2. **Snapshot only if that row exists and is `isDraft == false`** (a real committed row). A brand-new householder, or a visit added mid-session, has no committed DB row — so it is never snapshotted, which is correct: there is nothing to restore it to.
 3. Flip the entity's flag to draft in UI state, then let `saveDraftSilently` persist the draft.
 
-Because the flag flips to `true`, every later pass skips the entity — the original committed snapshot is retained. Extend the existing `updateUiStateChangedVisitsAsDraft` logic to also cover the householder.
+Because the flag flips to `true`, every later pass skips the entity — the original committed snapshot is retained. This replaces `updateUiStateChangedVisitsAsDraft`, extended to also cover the householder.
+
+**Householder `isDraft` means "the row is uncommitted."** It is set `true` in two cases: a committed householder's first field change (which also writes a snapshot), **or** a brand-new record's first persist — even if only a *visit* field changed and the householder fields did not. The new-record case writes no snapshot (nothing committed to restore to). This is what makes `householder.isDraft && householderSnapshot == null` a reliable "never committed" signal for discard (②); without it, a new record whose user only edited a visit would be indistinguishable from an existing record that merely had a visit added.
 
 ### ② Restore — on discard only (`undoChangesConfirmed`)
 
@@ -111,6 +111,8 @@ Touches snapshots **not at all**. Every "there's none / nothing to remove" branc
 **`Householder.kt`** — add `val isDraft: Boolean = false`.
 
 **`SnapshotRepository`** — expose the DAO methods not yet surfaced: `getVisitSnapshots`, `deleteHouseholderSnapshot`, `deleteVisitSnapshots`.
+
+**`HouseholderDao` / `VisitDao` (+ their repositories)** — add nullable `getByIdOrNull(id)` queries used by the snapshot guard in ① (the existing `getById` is non-null and would throw for a never-persisted row).
 
 **`VisitDetailViewModel`**:
 
