@@ -1000,6 +1000,68 @@ class VisitDetailViewModelTest {
         assertEquals(VisitDetailViewModel.UiEventState.Idle, viewModel.uiState.value.eventState)
     }
 
+    @Test
+    fun `undo changes confirmed deletes session-added draft visits`() {
+        // Arrange — DB has one committed visit plus one session-added draft visit (no snapshot).
+        val addedVisitId = UUID.fromString("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+        val committedVisit = Visit(
+            id = FIRST_VISIT_ID,
+            subject = "Subject 1",
+            date = TEST_DATE_TIME,
+            isDone = false,
+            householderId = HOUSEHOLDER_ID,
+            orderIndex = 0,
+            visitType = VisitType.FIRST_VISIT,
+            nextConversationId = null,
+            isDraft = false
+        )
+        val addedVisit = committedVisit.copy(id = addedVisitId, orderIndex = 1, isDraft = true)
+        val visitRepositoryRef = MockReferenceHolder<VisitRepository>()
+        val viewModel = createViewModel(
+            visitRepositoryRef = visitRepositoryRef,
+            liveVisits = listOf(committedVisit, addedVisit)
+        )
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+
+        // Act — committed householder (not a draft, no snapshot) => restore branch.
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.UndoChangesConfirmed)
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert — only the session-added draft visit is deleted; the committed one is preserved.
+        val visitRepository = requireNotNull(visitRepositoryRef.value)
+        verifyBlocking(visitRepository) { deleteBulk(listOf(addedVisitId)) }
+    }
+
+    @Test
+    fun `undo changes confirmed restores an edited committed visit from its snapshot`() {
+        // Arrange — a visit snapshot exists holding the committed ("Original Subject") visit.
+        val committedVisit = Visit(
+            id = FIRST_VISIT_ID,
+            subject = "Original Subject",
+            date = TEST_DATE_TIME,
+            isDone = false,
+            householderId = HOUSEHOLDER_ID,
+            orderIndex = 0,
+            visitType = VisitType.FIRST_VISIT,
+            nextConversationId = null,
+            isDraft = false
+        )
+        val visitRepositoryRef = MockReferenceHolder<VisitRepository>()
+        val viewModel = createViewModel(
+            visitRepositoryRef = visitRepositoryRef,
+            visitSnapshots = listOf(VisitSnapshot(committedVisit))
+        )
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.UndoChangesConfirmed)
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert — the committed visit is written back from its snapshot.
+        val visitRepository = requireNotNull(visitRepositoryRef.value)
+        verifyBlocking(visitRepository) { save(committedVisit) }
+    }
+
     private fun createViewModel(
         conversationRepositoryRef: MockReferenceHolder<ConversationRepository>? = null,
         householderRepositoryRef: MockReferenceHolder<HouseholderRepository>? = null,
@@ -1010,6 +1072,7 @@ class VisitDetailViewModelTest {
         householderIsDraft: Boolean = false,
         householderSnapshot: HouseholderSnapshot? = null,
         visitSnapshots: List<VisitSnapshot> = emptyList(),
+        liveVisits: List<Visit>? = null,
         householderLatitude: Double? = null,
         householderLongitude: Double? = null,
         householderPreferredDay: VisitPreferredDay = VisitPreferredDay.ANY,
@@ -1049,7 +1112,7 @@ class VisitDetailViewModelTest {
         householderRepositoryRef?.value = householderRepository
 
         val visitRepository = mock<VisitRepository> {
-            on { getAll(any()) } doReturn createVisitList()
+            on { getAll(any()) } doReturn (liveVisits ?: createVisitList())
             on { getByIdOrNull(any()) } doReturn if (committedRowsExist) createVisitList().first() else null
         }
         visitRepositoryRef?.value = visitRepository
