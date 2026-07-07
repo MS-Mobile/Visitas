@@ -11,6 +11,10 @@ class HouseholderRepository(private val householderDao: HouseholderDao) {
         return householderDao.getById(id)
     }
 
+    suspend fun getByIdOrNull(id: UUID): Householder? {
+        return householderDao.getByIdOrNull(id)
+    }
+
     suspend fun deleteById(id: UUID) {
         householderDao.deleteById(id)
     }
