@@ -795,29 +795,35 @@ class VisitDetailViewModel
     private fun undoChangesConfirmed() {
         val householderId = _uiState.value.householder.id
         val householderIsDraft = _uiState.value.householder.isDraft
-        newState { copy(eventState = UiEventState.Idle) }
+
+        newState {
+            copy(eventState = UiEventState.Idle)
+        }
+
         viewModelScope.launch(dispatchers.io) {
             val householderSnapshot = snapshotRepository.getHouseholderSnapshot(householderId)
 
             if (householderIsDraft && householderSnapshot == null) {
                 // Never committed -> nothing to restore to. Delete the draft (cascades visits +
-                // snapshots) and reset to a fresh empty form (Decision 4: reset, do not dismiss).
+                // snapshots) and reset to a fresh empty form (Reset, do not dismiss).
                 householderRepository.deleteById(householderId)
                 reinitializeEmptyForm()
                 return@launch
             }
 
             // Committed record: restore from snapshots.
-            householderSnapshot?.let { householderRepository.save(it.householder) }
+            if (householderSnapshot != null) {
+                householderRepository.save(householderSnapshot.householder)
+            }
 
             val visitSnapshots = snapshotRepository.getVisitSnapshots(householderId)
-            val committedVisitIds = visitSnapshots.map { it.visit.id }.toSet()
+            val committedVisitIds = visitSnapshots.map { snapshot -> snapshot.visit.id }.toSet()
             // Delete ONLY visits added this session: draft in the DB and with no snapshot.
             // Untouched committed visits (not draft, no snapshot) must be preserved.
             val liveVisits = visitRepository.getAll(householderId)
             val addedVisitIds = liveVisits
-                .filter { it.isDraft && it.id !in committedVisitIds }
-                .map { it.id }
+                .filter { visit -> visit.isDraft && visit.id !in committedVisitIds }
+                .map { visit -> visit.id }
             visitRepository.deleteBulk(addedVisitIds)
             visitSnapshots.forEach { visitRepository.save(it.visit) }
 
