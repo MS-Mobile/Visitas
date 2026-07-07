@@ -15,5 +15,6 @@ data class Householder(
     val addressLatitude: Double? = null,
     val addressLongitude: Double? = null,
     val preferredDay: VisitPreferredDay = VisitPreferredDay.ANY,
-    val preferredTime: VisitPreferredTime = VisitPreferredTime.ANY
+    val preferredTime: VisitPreferredTime = VisitPreferredTime.ANY,
+    val isDraft: Boolean = false
 )
