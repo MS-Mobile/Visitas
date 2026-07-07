@@ -148,6 +148,32 @@ class VisitDetailViewModelTest {
     }
 
     @Test
+    fun `auto save snapshots an edited visit only once across multiple passes`() {
+        // Arrange
+        val snapshotRepositoryRef = MockReferenceHolder<SnapshotRepository>()
+        val viewModel = createViewModel(snapshotRepositoryRef = snapshotRepositoryRef)
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+        val visit = viewModel.uiState.value.visitList.first()
+
+        // Act — edit the visit, settle, then edit it again and settle again
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.VisitDoneChanged(value = true, visit = visit))
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+        val draftedVisit = viewModel.uiState.value.visitList.first()
+        viewModel.onEvent(
+            VisitDetailViewModel.UiEvent.VisitSubjectChanged(
+                visit = draftedVisit,
+                value = "Edited subject",
+                caretPosition = 0
+            )
+        )
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert — the committed visit was snapshotted exactly once, not on the second pass
+        val snapshotRepository = requireNotNull(snapshotRepositoryRef.value)
+        verifyBlocking(snapshotRepository, org.mockito.kotlin.times(1)) { saveVisitSnapshot(any()) }
+    }
+
+    @Test
     fun `auto save snapshots the committed householder before marking it a draft`() {
         // Arrange
         val snapshotRepositoryRef = MockReferenceHolder<SnapshotRepository>()

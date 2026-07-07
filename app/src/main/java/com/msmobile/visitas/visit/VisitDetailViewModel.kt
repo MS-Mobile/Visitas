@@ -854,7 +854,9 @@ class VisitDetailViewModel
             when {
                 committed == null -> markHouseholderDraft()          // new record, nothing to snapshot
                 householderChanged -> {                              // committed householder first dirtied
-                    snapshotRepository.saveHouseholderSnapshot(HouseholderSnapshot(committed))
+                    if (!committed.isDraft) {
+                        snapshotRepository.saveHouseholderSnapshot(HouseholderSnapshot(committed))
+                    }
                     markHouseholderDraft()
                 }
                 // committed && unchanged -> leave isDraft = false
