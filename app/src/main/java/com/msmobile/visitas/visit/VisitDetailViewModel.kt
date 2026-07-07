@@ -10,6 +10,7 @@ import com.msmobile.visitas.extension.split
 import com.msmobile.visitas.extension.subListInclusive
 import com.msmobile.visitas.householder.Householder
 import com.msmobile.visitas.householder.HouseholderRepository
+import com.msmobile.visitas.householder.HouseholderSnapshot
 import com.msmobile.visitas.util.AddressProvider
 import com.msmobile.visitas.util.CalendarEventManager
 import com.msmobile.visitas.util.SyncVisitCalendarEventUseCase
@@ -41,6 +42,7 @@ class VisitDetailViewModel
     private val dispatchers: DispatcherProvider,
     private val householderRepository: HouseholderRepository,
     private val visitRepository: VisitRepository,
+    private val snapshotRepository: SnapshotRepository,
     private val conversationRepository: ConversationRepository,
     private val addressProvider: AddressProvider,
     private val idProvider: IdProvider,
@@ -1117,7 +1119,7 @@ class VisitDetailViewModel
             }
                 .reindexIfNeeded()
                 .revalidatePendingVisits(householder)
-            val hasDrafts = visitList.hasDrafts()
+            val hasDrafts = householder.isDraft || visitList.hasDrafts()
             newState {
                 copy(
                     householder = householder,
@@ -1206,7 +1208,8 @@ class VisitDetailViewModel
                 addressLatitude = addressLatitude,
                 addressLongitude = addressLongitude,
                 preferredDay = preferredDay,
-                preferredTime = preferredTime
+                preferredTime = preferredTime,
+                isDraft = isDraft
             )
         }
 
@@ -1232,7 +1235,8 @@ class VisitDetailViewModel
                 addressState = addressState,
                 showClearNotes = false,
                 isNotesExpanded = false, // Notes collapsed by default; user can expand if needed
-                isLoadingAddress = false
+                isLoadingAddress = false,
+                isDraft = isDraft
             )
         }
 
@@ -1397,7 +1401,8 @@ class VisitDetailViewModel
         val addressState: HouseholderAddressState,
         val showClearNotes: Boolean,
         val isLoadingAddress: Boolean,
-        val isNotesExpanded: Boolean
+        val isNotesExpanded: Boolean,
+        val isDraft: Boolean = false
     ) {
         val name get() = editable.name
         val address get() = editable.address

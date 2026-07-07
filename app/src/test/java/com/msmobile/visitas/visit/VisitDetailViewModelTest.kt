@@ -4,6 +4,7 @@ import com.msmobile.visitas.conversation.Conversation
 import com.msmobile.visitas.conversation.ConversationRepository
 import com.msmobile.visitas.householder.Householder
 import com.msmobile.visitas.householder.HouseholderRepository
+import com.msmobile.visitas.householder.HouseholderSnapshot
 import com.msmobile.visitas.util.AddressProvider
 import com.msmobile.visitas.util.CalendarEventManager
 import com.msmobile.visitas.util.SyncVisitCalendarEventUseCase
@@ -835,11 +836,29 @@ class VisitDetailViewModelTest {
         assertFalse(viewModel.uiState.value.visitList.first().isVisitTypeListExpanded)
     }
 
+    @Test
+    fun `hasDrafts is true when the loaded householder is a draft`() {
+        // Arrange — the committed householder row is itself a draft (e.g. a reopened draft session)
+        val viewModel = createViewModel(householderIsDraft = true)
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+
+        // Assert
+        assertTrue(viewModel.uiState.value.householder.isDraft)
+        assertTrue(viewModel.uiState.value.hasDrafts)
+    }
+
     private fun createViewModel(
         conversationRepositoryRef: MockReferenceHolder<ConversationRepository>? = null,
         householderRepositoryRef: MockReferenceHolder<HouseholderRepository>? = null,
         visitRepositoryRef: MockReferenceHolder<VisitRepository>? = null,
         clipboardHandlerRef: MockReferenceHolder<ClipboardHandler>? = null,
+        snapshotRepositoryRef: MockReferenceHolder<SnapshotRepository>? = null,
+        committedRowsExist: Boolean = true,
+        householderIsDraft: Boolean = false,
+        householderSnapshot: HouseholderSnapshot? = null,
+        visitSnapshots: List<VisitSnapshot> = emptyList(),
         householderLatitude: Double? = null,
         householderLongitude: Double? = null,
         householderPreferredDay: VisitPreferredDay = VisitPreferredDay.ANY,
@@ -861,15 +880,34 @@ class VisitDetailViewModelTest {
                 longitude = householderLongitude,
                 preferredDay = householderPreferredDay,
                 preferredTime = householderPreferredTime,
-                notes = householderNotes
+                notes = householderNotes,
+                isDraft = householderIsDraft
             )
+            on { getByIdOrNull(any()) } doReturn if (committedRowsExist) {
+                createHouseholder(
+                    latitude = householderLatitude,
+                    longitude = householderLongitude,
+                    preferredDay = householderPreferredDay,
+                    preferredTime = householderPreferredTime,
+                    notes = householderNotes
+                )
+            } else {
+                null
+            }
         }
         householderRepositoryRef?.value = householderRepository
 
         val visitRepository = mock<VisitRepository> {
             on { getAll(any()) } doReturn createVisitList()
+            on { getByIdOrNull(any()) } doReturn if (committedRowsExist) createVisitList().first() else null
         }
         visitRepositoryRef?.value = visitRepository
+
+        val snapshotRepository = mock<SnapshotRepository> {
+            on { getHouseholderSnapshot(any()) } doReturn householderSnapshot
+            on { getVisitSnapshots(any()) } doReturn visitSnapshots
+        }
+        snapshotRepositoryRef?.value = snapshotRepository
 
         val addressProvider = mock<AddressProvider>()
         val idProvider = mock<IdProvider> {
@@ -897,6 +935,7 @@ class VisitDetailViewModelTest {
             dispatchers = dispatchers,
             householderRepository = householderRepository,
             visitRepository = visitRepository,
+            snapshotRepository = snapshotRepository,
             conversationRepository = conversationRepository,
             addressProvider = addressProvider,
             idProvider = idProvider,
@@ -942,7 +981,8 @@ class VisitDetailViewModelTest {
         longitude: Double? = null,
         preferredDay: VisitPreferredDay = VisitPreferredDay.ANY,
         preferredTime: VisitPreferredTime = VisitPreferredTime.ANY,
-        notes: String = "Test Notes"
+        notes: String = "Test Notes",
+        isDraft: Boolean = false
     ): Householder {
         return Householder(
             id = HOUSEHOLDER_ID,
@@ -952,7 +992,8 @@ class VisitDetailViewModelTest {
             addressLatitude = latitude,
             addressLongitude = longitude,
             preferredDay = preferredDay,
-            preferredTime = preferredTime
+            preferredTime = preferredTime,
+            isDraft = isDraft
         )
     }
 
