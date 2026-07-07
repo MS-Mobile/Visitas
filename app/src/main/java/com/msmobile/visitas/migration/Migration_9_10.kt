@@ -13,7 +13,7 @@ val MIGRATION_9_10 = object : Migration(9, 10) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL(
             "CREATE TABLE IF NOT EXISTS `householder_snapshot` (" +
-                "`isNewDraft` INTEGER NOT NULL, `createdAt` TEXT NOT NULL, `id` TEXT NOT NULL, " +
+                "`id` TEXT NOT NULL, " +
                 "`name` TEXT NOT NULL, `address` TEXT NOT NULL, `notes` TEXT, " +
                 "`addressLatitude` REAL, `addressLongitude` REAL, `preferredDay` TEXT NOT NULL, " +
                 "`preferredTime` TEXT NOT NULL, PRIMARY KEY(`id`), " +
