@@ -159,12 +159,16 @@ private fun VisitDetailScreenContent(
         onEvent(VisitDetailViewModel.UiEvent.CancelClicked)
     }
 
+    val hasDrafts = uiState.hasDrafts
     val chromeOwner = remember { Any() }
     val topNavigationActions = visitDetailTopNavigationActions(onNavigateUp = onNavigateUp)
     val topBarActions = visitDetailTopBarActions(onEvent = onEvent)
-    val detailFooterActions = visitDetailFooterActions(onEvent = onEvent)
+    val detailFooterActions = visitDetailFooterActions(
+        shouldEnableDiscardButton = hasDrafts,
+        onEvent = onEvent
+    )
     val floatingActionButtonActions = visitDetailFloatingActionButtonActions(onEvent = onEvent)
-    val subtitle = visitDetailSubtitleString(uiState.hasDrafts)
+    val subtitle = visitDetailSubtitleString(hasDrafts)
 
     DisposableEffect(subtitle) {
         appScaffoldState.setUiState(
@@ -455,19 +459,20 @@ private fun visitDetailTopBarActions(
 
 @Composable
 private fun visitDetailFooterActions(
+    shouldEnableDiscardButton: Boolean,
     onEvent: (VisitDetailViewModel.UiEvent) -> Unit
 ): List<DetailFooterAction> {
     return listOf(
         DetailFooterAction(
             contentDescription = stringResource(id = R.string.undo_changes),
             icon = Icons.AutoMirrored.Rounded.Undo,
-            onClick = { onEvent(VisitDetailViewModel.UiEvent.UndoChangesClicked) }
-        ),
+            isEnabled = shouldEnableDiscardButton
+        ) { onEvent(VisitDetailViewModel.UiEvent.UndoChangesClicked) },
         DetailFooterAction(
             contentDescription = stringResource(id = R.string.save),
             icon = Icons.Rounded.DoneOutline,
-            onClick = { onEvent(VisitDetailViewModel.UiEvent.SaveClicked) }
-        )
+            isEnabled = true
+        ) { onEvent(VisitDetailViewModel.UiEvent.SaveClicked) }
     )
 }
 

@@ -162,13 +162,13 @@ private fun conversationDetailFooterActions(
         DetailFooterAction(
             contentDescription = stringResource(id = R.string.cancel),
             icon = Icons.Rounded.ArrowBackIosNew,
-            onClick = { onEvent(ConversationDetailViewModel.UiEvent.CancelClicked) }
-        ),
+            isEnabled = true
+        ) { onEvent(ConversationDetailViewModel.UiEvent.CancelClicked) },
         DetailFooterAction(
             contentDescription = stringResource(id = R.string.save),
             icon = Icons.Rounded.DoneOutline,
-            onClick = { onEvent(ConversationDetailViewModel.UiEvent.SaveClicked) }
-        )
+            isEnabled = true
+        ) { onEvent(ConversationDetailViewModel.UiEvent.SaveClicked) }
     )
 }
 
