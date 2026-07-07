@@ -349,7 +349,7 @@ class VisitListViewModelTest {
             subject = "Draft subject",
             date = LocalDateTime.now(),
             isDone = false,
-            isDraft = true,
+            hasDrafts = true,
             householderId = FIRST_HOUSEHOLDER_ID,
             householderName = "Draft Householder",
             householderAddress = "Address 1",

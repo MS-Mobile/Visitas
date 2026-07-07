@@ -662,7 +662,7 @@ fun VisitCardSkeleton() {
             householderAddress = householderAddress,
             date = LocalDateTime.now(),
             isDone = false,
-            isDraft = false,
+            hasDrafts = false,
             hasToBeRescheduled = false,
             isPendingVisitMenuExpanded = false,
             subjectPreview = subjectPreview,
@@ -799,7 +799,7 @@ private fun VisitCard(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (visit.isDraft) {
+                    if (visit.hasDrafts) {
                         Text(
                             text = stringResource(id = R.string.visit_draft),
                             style = MaterialTheme.typography.bodyMedium,

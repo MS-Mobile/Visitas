@@ -11,7 +11,7 @@ import java.util.UUID
         v.subject as subject,
         v.date as date,
         v.isDone as isDone,
-        v.isDraft as isDraft,
+        (h.isDraft OR EXISTS(SELECT 1 FROM visit vd WHERE vd.householderId = v.householderId AND vd.isDraft)) as hasDrafts,
         v.householderId as householderId,
         v.visitType as type,
         h.name as householderName,
@@ -24,7 +24,7 @@ import java.util.UUID
         SELECT householderId, MAX(date) as max_date
         FROM visit
         GROUP BY householderId
-    ) latest ON v.householderId = latest.householderId 
+    ) latest ON v.householderId = latest.householderId
         AND v.date = latest.max_date
     ORDER BY v.householderId, v.date DESC
     """,
@@ -35,7 +35,7 @@ data class VisitHouseholder(
     val subject: String,
     val date: LocalDateTime,
     val isDone: Boolean,
-    val isDraft: Boolean = false,
+    val hasDrafts: Boolean = false,
     val householderId: UUID,
     val householderName: String,
     val householderAddress: String,

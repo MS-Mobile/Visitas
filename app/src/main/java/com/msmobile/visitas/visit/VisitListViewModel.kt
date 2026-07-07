@@ -678,13 +678,13 @@ constructor(
                 isFilteringByDistance = isFilteringByDistance,
                 householderDistanceAsFilter = householderDistanceAsFilter
             )
-            val isDraft = visit.isDraft
-            val show = isDraft
+            val hasDrafts = visit.hasDrafts
+            val show = hasDrafts
                     || isSearchEmpty && (matchesDate || matchesDistance)
                     || matchesName
             visit.copy(hide = !show) to matchesDistance
         }.sortedWith(
-            compareByDescending<Pair<VisitHouseholderState, Boolean>> { (visit, _) -> visit.isDraft }
+            compareByDescending<Pair<VisitHouseholderState, Boolean>> { (visit, _) -> visit.hasDrafts }
                 .thenByDescending { (_, matchesDistance) -> matchesDistance }
                 .thenBy { (visit, _) -> visit.date }
         ).map { (visit, _) -> visit }
@@ -724,7 +724,7 @@ constructor(
                 subjectPreview = subject.split("\n").firstOrNull() ?: "",
                 date = date,
                 isDone = isDone,
-                isDraft = isDraft,
+                hasDrafts = hasDrafts,
                 householderId = householderId,
                 householderName = householderName,
                 householderAddress = householderAddress,
@@ -838,7 +838,7 @@ constructor(
         val subjectPreview: String,
         val date: LocalDateTime,
         val isDone: Boolean,
-        val isDraft: Boolean,
+        val hasDrafts: Boolean,
         val householderId: UUID,
         val householderName: String,
         val householderAddress: String,
