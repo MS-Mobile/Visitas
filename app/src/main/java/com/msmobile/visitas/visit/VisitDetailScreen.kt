@@ -54,6 +54,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -305,8 +306,14 @@ private fun PhoneOptionsSheet(
     ) {
         Column(modifier = Modifier.navigationBarsPadding()) {
             ListItem(
+                modifier = Modifier,
+                leadingContent = null,
+                trailingContent = null,
                 overlineContent = { Text(text = stringResource(id = R.string.householder_phone)) },
-                headlineContent = { Text(text = phoneNumber) }
+                supportingContent = null,
+                colors = ListItemDefaults.colors(),
+                elevation = ListItemDefaults.elevation(),
+                content = { Text(text = phoneNumber) },
             )
             HorizontalDivider()
             PhoneOptionItem(
@@ -349,7 +356,12 @@ private fun PhoneOptionItem(
     ListItem(
         modifier = Modifier.clickable(onClick = onClick),
         leadingContent = { Icon(imageVector = icon, contentDescription = null) },
-        headlineContent = { Text(text = label) }
+        trailingContent = null,
+        overlineContent = null,
+        supportingContent = null,
+        colors = ListItemDefaults.colors(),
+        elevation = ListItemDefaults.elevation(),
+        content = { Text(text = label) },
     )
 }
 
