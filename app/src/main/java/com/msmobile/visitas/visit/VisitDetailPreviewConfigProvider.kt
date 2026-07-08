@@ -205,6 +205,38 @@ internal class VisitDetailPreviewConfigProvider :
             isDarkMode = false
         ),
         VisitDetailPreviewConfig(
+            configName = "Notes Overflow Collapsed",
+            mainActivityUiState = previewMainActivityUiState,
+            householderId = UUID.randomUUID(),
+            uiState = previewVisitDetailUiState.copy(
+                householder = previewVisitDetailUiState.householder.copy(
+                    editable = previewVisitDetailUiState.householder.editable.copy(
+                        notes = "Receptive householder, prefers morning visits. Interested in studying the Bible. Asked us to return next week to talk more about the resurrection hope and the promise of a paradise earth.",
+                    ),
+                    showClearNotes = false,
+                    isNotesExpanded = false
+                ),
+                visitList = listOf(previewFirstVisitUiState.copy(canBeRemoved = false))
+            ),
+            isDarkMode = false
+        ),
+        VisitDetailPreviewConfig(
+            configName = "Notes Overflow Expanded",
+            mainActivityUiState = previewMainActivityUiState,
+            householderId = UUID.randomUUID(),
+            uiState = previewVisitDetailUiState.copy(
+                householder = previewVisitDetailUiState.householder.copy(
+                    editable = previewVisitDetailUiState.householder.editable.copy(
+                        notes = "Receptive householder, prefers morning visits. Interested in studying the Bible. Asked us to return next week to talk more about the resurrection hope and the promise of a paradise earth.",
+                    ),
+                    showClearNotes = false,
+                    isNotesExpanded = true
+                ),
+                visitList = listOf(previewFirstVisitUiState.copy(canBeRemoved = false))
+            ),
+            isDarkMode = false
+        ),
+        VisitDetailPreviewConfig(
             configName = "Phone Number Input",
             mainActivityUiState = previewMainActivityUiState,
             householderId = UUID.randomUUID(),
