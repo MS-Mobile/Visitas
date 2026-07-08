@@ -57,6 +57,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -298,7 +299,10 @@ private fun PhoneOptionsSheet(
 ) {
     val context = LocalContext.current
     val onDismiss = { onEvent(VisitDetailViewModel.UiEvent.PhoneOptionsDismissed) }
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ) {
         Column(modifier = Modifier.navigationBarsPadding()) {
             ListItem(
                 overlineContent = { Text(text = stringResource(id = R.string.householder_phone)) },
