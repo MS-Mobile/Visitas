@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
@@ -27,16 +28,20 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Message
 import androidx.compose.material.icons.automirrored.rounded.Undo
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.rounded.ArrowDropDown
+import androidx.compose.material.icons.rounded.Call
+import androidx.compose.material.icons.rounded.Chat
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.DoneOutline
+import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.TravelExplore
@@ -48,8 +53,10 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -69,10 +76,12 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
@@ -84,6 +93,9 @@ import com.msmobile.visitas.AppScaffold
 import com.msmobile.visitas.R
 import com.msmobile.visitas.extension.EditableTextFieldColors
 import com.msmobile.visitas.extension.OnBackPressed
+import com.msmobile.visitas.extension.launchDialer
+import com.msmobile.visitas.extension.launchSms
+import com.msmobile.visitas.extension.launchWhatsApp
 import com.msmobile.visitas.extension.ReadOnlyTextFieldColors
 import com.msmobile.visitas.extension.RequestCalendarPermission
 import com.msmobile.visitas.extension.RequestLocationPermission
@@ -221,7 +233,120 @@ private fun VisitDetailScreenContent(
             onEvent(VisitDetailViewModel.UiEvent.CalendarRationaleAccepted)
         }
     )
+    if (uiState.showPhoneInputDialog) {
+        PhoneInputDialog(
+            initialPhoneNumber = uiState.householder.phoneNumber.orEmpty(),
+            onEvent = onEvent
+        )
+    }
+    if (uiState.showPhoneOptionsSheet) {
+        PhoneOptionsSheet(
+            phoneNumber = uiState.householder.phoneNumber.orEmpty(),
+            onEvent = onEvent
+        )
+    }
     StateHandler(uiState = uiState, onNavigateUp = onNavigateUp, onEvent = onEvent)
+}
+
+@Composable
+private fun PhoneInputDialog(
+    initialPhoneNumber: String,
+    onEvent: (VisitDetailViewModel.UiEvent) -> Unit
+) {
+    var phoneNumber by remember { mutableStateOf(initialPhoneNumber) }
+    val onDismiss = { onEvent(VisitDetailViewModel.UiEvent.PhoneInputDismissed) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = { Icon(imageVector = Icons.Rounded.Call, contentDescription = null) },
+        title = { Text(text = stringResource(id = R.string.householder_phone)) },
+        text = {
+            TextField(
+                modifier = Modifier.fillMaxWidth(),
+                value = phoneNumber,
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                trailingIcon = {
+                    TextFieldClearButton(phoneNumber.isNotEmpty(), onClear = { phoneNumber = "" })
+                },
+                label = { Text(text = stringResource(id = R.string.householder_phone)) },
+                colors = EditableTextFieldColors,
+                shape = MaterialTheme.shapes.textField,
+                onValueChange = { value -> phoneNumber = value }
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                onEvent(VisitDetailViewModel.UiEvent.HouseholderPhoneChanged(phoneNumber))
+                onDismiss()
+            }) {
+                Text(text = stringResource(id = R.string.save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(id = R.string.cancel))
+            }
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PhoneOptionsSheet(
+    phoneNumber: String,
+    onEvent: (VisitDetailViewModel.UiEvent) -> Unit
+) {
+    val context = LocalContext.current
+    val onDismiss = { onEvent(VisitDetailViewModel.UiEvent.PhoneOptionsDismissed) }
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(modifier = Modifier.navigationBarsPadding()) {
+            ListItem(
+                overlineContent = { Text(text = stringResource(id = R.string.householder_phone)) },
+                headlineContent = { Text(text = phoneNumber) }
+            )
+            HorizontalDivider()
+            PhoneOptionItem(
+                icon = Icons.Rounded.Call,
+                label = stringResource(id = R.string.phone_action_call)
+            ) {
+                context.launchDialer(phoneNumber)
+                onDismiss()
+            }
+            PhoneOptionItem(
+                icon = Icons.AutoMirrored.Rounded.Message,
+                label = stringResource(id = R.string.phone_action_sms)
+            ) {
+                context.launchSms(phoneNumber)
+                onDismiss()
+            }
+            PhoneOptionItem(
+                icon = Icons.Rounded.Chat,
+                label = stringResource(id = R.string.phone_action_whatsapp)
+            ) {
+                context.launchWhatsApp(phoneNumber)
+                onDismiss()
+            }
+            PhoneOptionItem(
+                icon = Icons.Rounded.Edit,
+                label = stringResource(id = R.string.phone_action_edit)
+            ) {
+                onEvent(VisitDetailViewModel.UiEvent.EditPhoneClicked)
+            }
+        }
+    }
+}
+
+@Composable
+private fun PhoneOptionItem(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    onClick: () -> Unit
+) {
+    ListItem(
+        modifier = Modifier.clickable(onClick = onClick),
+        leadingContent = { Icon(imageVector = icon, contentDescription = null) },
+        headlineContent = { Text(text = label) }
+    )
 }
 
 @Composable
@@ -441,9 +566,15 @@ private fun visitDetailTopNavigationActions(
 private fun visitDetailTopBarActions(
     onEvent: (VisitDetailViewModel.UiEvent) -> Unit
 ): List<TopBarAction> {
+    val contactDescription = stringResource(id = R.string.contact_householder)
     val copyDataDescription = stringResource(id = R.string.copy_data_content_description)
     val deleteDescription = stringResource(id = R.string.delete)
     return listOf(
+        TopBarAction(
+            contentDescription = contactDescription,
+            icon = Icons.Rounded.Call,
+            onClick = { onEvent(VisitDetailViewModel.UiEvent.PhoneClicked) }
+        ),
         TopBarAction(
             contentDescription = copyDataDescription,
             icon = Icons.Rounded.ContentCopy,

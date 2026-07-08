@@ -84,6 +84,7 @@ class VisitDetailViewModel
             is UiEvent.HouseholderNameChanged -> nameChanged(uiEvent.value)
             is UiEvent.HouseholderAddressChanged -> addressChanged(uiEvent.value)
             is UiEvent.HouseholderNotesChanged -> notesChanged(uiEvent.value)
+            is UiEvent.HouseholderPhoneChanged -> phoneChanged(uiEvent.value)
             is UiEvent.VisitSubjectChanged -> visitSubjectChanged(
                 uiEvent.value,
                 uiEvent.visit,
@@ -151,6 +152,10 @@ class VisitDetailViewModel
             UiEvent.CalendarPermissionGranted -> handleCalendarPermissionGranted()
             UiEvent.CalendarPermissionDialogShown -> handleCalendarPermissionDialogShown()
             UiEvent.CopyVisitDataClicked -> copyVisitDataClicked()
+            UiEvent.PhoneClicked -> phoneClicked()
+            UiEvent.PhoneInputDismissed -> phoneInputDismissed()
+            UiEvent.PhoneOptionsDismissed -> phoneOptionsDismissed()
+            UiEvent.EditPhoneClicked -> editPhoneClicked()
         }
     }
 
@@ -1096,6 +1101,39 @@ class VisitDetailViewModel
         }
     }
 
+    private fun phoneChanged(value: String) {
+        newState {
+            copy(
+                householder = householder.copy(
+                    editable = householder.editable.copy(phoneNumber = value)
+                ),
+                eventState = UiEventState.Idle
+            )
+        }
+    }
+
+    private fun phoneClicked() {
+        newState {
+            if (householder.phoneNumber.isNullOrBlank()) {
+                copy(showPhoneInputDialog = true, eventState = UiEventState.Idle)
+            } else {
+                copy(showPhoneOptionsSheet = true, eventState = UiEventState.Idle)
+            }
+        }
+    }
+
+    private fun phoneInputDismissed() {
+        newState { copy(showPhoneInputDialog = false) }
+    }
+
+    private fun phoneOptionsDismissed() {
+        newState { copy(showPhoneOptionsSheet = false) }
+    }
+
+    private fun editPhoneClicked() {
+        newState { copy(showPhoneOptionsSheet = false, showPhoneInputDialog = true) }
+    }
+
     private fun preferredDayChanged(value: VisitPreferredDay) {
         newState {
             val updatedHouseholder =
@@ -1302,6 +1340,7 @@ class VisitDetailViewModel
                 name = name,
                 address = address,
                 notes = notes,
+                phoneNumber = phoneNumber?.trim()?.ifBlank { null },
                 addressLatitude = addressLatitude,
                 addressLongitude = addressLongitude,
                 preferredDay = preferredDay,
@@ -1322,6 +1361,7 @@ class VisitDetailViewModel
                     name = name,
                     address = address,
                     notes = notes,
+                    phoneNumber = phoneNumber,
                     addressLatitude = addressLatitude,
                     addressLongitude = addressLongitude,
                     preferredDay = preferredDay,
@@ -1506,6 +1546,7 @@ class VisitDetailViewModel
         val name get() = editable.name
         val address get() = editable.address
         val notes get() = editable.notes
+        val phoneNumber get() = editable.phoneNumber
         val addressLatitude get() = editable.addressLatitude
         val addressLongitude get() = editable.addressLongitude
         val preferredDay get() = editable.preferredDay
@@ -1518,6 +1559,7 @@ class VisitDetailViewModel
         val name: String,
         val address: String,
         val notes: String?,
+        val phoneNumber: String? = null,
         val addressLatitude: Double? = null,
         val addressLongitude: Double? = null,
         val preferredDay: VisitPreferredDay = VisitPreferredDay.ANY,
@@ -1542,6 +1584,7 @@ class VisitDetailViewModel
         data class HouseholderNameChanged(val value: String) : UiEvent()
         data class HouseholderAddressChanged(val value: String) : UiEvent()
         data class HouseholderNotesChanged(val value: String) : UiEvent()
+        data class HouseholderPhoneChanged(val value: String) : UiEvent()
         data class VisitSubjectChanged(
             val visit: VisitState,
             val value: String,
@@ -1605,6 +1648,10 @@ class VisitDetailViewModel
         data object CalendarPermissionGranted : UiEvent()
         data object CalendarPermissionDialogShown : UiEvent()
         data object CopyVisitDataClicked : UiEvent()
+        data object PhoneClicked : UiEvent()
+        data object PhoneInputDismissed : UiEvent()
+        data object PhoneOptionsDismissed : UiEvent()
+        data object EditPhoneClicked : UiEvent()
     }
 
     sealed class UiEventState {
@@ -1633,7 +1680,9 @@ class VisitDetailViewModel
         val showLocationRationale: Boolean = false,
         val showLocationPermissionDialog: Boolean = false,
         val showCalendarRationale: Boolean = false,
-        val showCalendarPermissionDialog: Boolean = false
+        val showCalendarPermissionDialog: Boolean = false,
+        val showPhoneInputDialog: Boolean = false,
+        val showPhoneOptionsSheet: Boolean = false
     ) {
         val hasDrafts: Boolean
             get() = householder.isDraft || visitList.any { !it.wasRemoved && it.isDraft }

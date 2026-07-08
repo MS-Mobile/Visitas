@@ -3,6 +3,12 @@
     <string name="save">Guardar</string>
     <string name="householder_name">Nombre del residente</string>
     <string name="householder_notes">Detalles sobre el residente</string>
+    <string name="householder_phone">Número de teléfono</string>
+    <string name="contact_householder">Contactar al residente</string>
+    <string name="phone_action_call">Llamar</string>
+    <string name="phone_action_sms">Mensaje</string>
+    <string name="phone_action_whatsapp">WhatsApp</string>
+    <string name="phone_action_edit">Editar número</string>
     <string name="householder_address">Dirección</string>
     <string name="visit_date">Fecha de la visita</string>
     <string name="visit_subject">Tema</string>

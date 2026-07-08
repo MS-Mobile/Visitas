@@ -113,6 +113,59 @@ class VisitDetailViewModelTest {
     }
 
     @Test
+    fun `phone clicked without a saved number opens the input dialog`() {
+        // Arrange — the loaded householder has no phone number
+        val viewModel = createViewModel(householderPhoneNumber = null)
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.PhoneClicked)
+
+        // Assert
+        val state = viewModel.uiState.value
+        assertTrue(state.showPhoneInputDialog)
+        assertFalse(state.showPhoneOptionsSheet)
+    }
+
+    @Test
+    fun `phone clicked with a saved number opens the options sheet`() {
+        // Arrange — the loaded householder already has a phone number
+        val viewModel = createViewModel(householderPhoneNumber = "+55 11 99999-0000")
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.PhoneClicked)
+
+        // Assert
+        val state = viewModel.uiState.value
+        assertTrue(state.showPhoneOptionsSheet)
+        assertFalse(state.showPhoneInputDialog)
+    }
+
+    @Test
+    fun `householder phone changed updates state and persists via auto save`() {
+        // Arrange
+        val householderRepositoryRef = MockReferenceHolder<HouseholderRepository>()
+        val viewModel = createViewModel(householderRepositoryRef = householderRepositoryRef)
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+
+        // Act — enter a number, then let the debounced auto-save run
+        viewModel.onEvent(
+            VisitDetailViewModel.UiEvent.HouseholderPhoneChanged("+55 11 99999-0000")
+        )
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert — state reflects the number and it is persisted
+        assertEquals("+55 11 99999-0000", viewModel.uiState.value.householder.phoneNumber)
+        val householderRepository = requireNotNull(householderRepositoryRef.value)
+        val captor = org.mockito.kotlin.argumentCaptor<Householder>()
+        verifyBlocking(householderRepository, org.mockito.kotlin.atLeastOnce()) {
+            save(captor.capture())
+        }
+        assertTrue(captor.allValues.any { it.phoneNumber == "+55 11 99999-0000" })
+    }
+
+    @Test
     fun `auto save does not mark an unchanged visit as draft when only householder changes`() {
         // Arrange
         val viewModel = createViewModel()
@@ -1119,6 +1172,7 @@ class VisitDetailViewModelTest {
         householderPreferredDay: VisitPreferredDay = VisitPreferredDay.ANY,
         householderPreferredTime: VisitPreferredTime = VisitPreferredTime.ANY,
         householderNotes: String = "Test Notes",
+        householderPhoneNumber: String? = null,
         visitTimeValidResult: Boolean = true
     ): VisitDetailViewModel {
         val dispatchers = DispatcherProvider(
@@ -1136,6 +1190,7 @@ class VisitDetailViewModelTest {
                 preferredDay = householderPreferredDay,
                 preferredTime = householderPreferredTime,
                 notes = householderNotes,
+                phoneNumber = householderPhoneNumber,
                 isDraft = householderIsDraft
             )
             on { getByIdOrNull(any()) } doReturn if (committedRowsExist) {
@@ -1237,6 +1292,7 @@ class VisitDetailViewModelTest {
         preferredDay: VisitPreferredDay = VisitPreferredDay.ANY,
         preferredTime: VisitPreferredTime = VisitPreferredTime.ANY,
         notes: String = "Test Notes",
+        phoneNumber: String? = null,
         isDraft: Boolean = false
     ): Householder {
         return Householder(
@@ -1244,6 +1300,7 @@ class VisitDetailViewModelTest {
             name = "Test Name",
             address = "Test Address",
             notes = notes,
+            phoneNumber = phoneNumber,
             addressLatitude = latitude,
             addressLongitude = longitude,
             preferredDay = preferredDay,

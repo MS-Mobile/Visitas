@@ -2,6 +2,12 @@
     <string name="save">Salvar</string>
     <string name="householder_name">Nome do morador</string>
     <string name="householder_notes">Detalhes sobre o morador</string>
+    <string name="householder_phone">Número de telefone</string>
+    <string name="contact_householder">Contatar morador</string>
+    <string name="phone_action_call">Ligar</string>
+    <string name="phone_action_sms">Mensagem</string>
+    <string name="phone_action_whatsapp">WhatsApp</string>
+    <string name="phone_action_edit">Editar número</string>
     <string name="householder_address">Endereço</string>
     <string name="visit_date">Data da visita</string>
     <string name="visit_subject">Assunto</string>
