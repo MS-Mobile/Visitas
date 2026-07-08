@@ -185,6 +185,33 @@ class HouseholderDaoTest {
     }
 
     @Test
+    fun saveHouseholder_withPhoneNumber_shouldRoundTrip() = runTest {
+        // Arrange
+        val householderId = UUID.randomUUID()
+        val householder = Householder(
+            id = householderId,
+            name = "Phone Owner",
+            address = "1 Phone Street",
+            notes = null,
+            phoneNumber = "+55 11 99999-0000"
+        )
+
+        // Act
+        database.householderDao().save(householder)
+
+        // Assert - the phone number is persisted and read back
+        val saved = database.householderDao().getById(householderId)
+        assertEquals("+55 11 99999-0000", saved.phoneNumber)
+
+        // Act - clearing the number back to null is persisted
+        database.householderDao().save(householder.copy(phoneNumber = null))
+
+        // Assert
+        val cleared = database.householderDao().getById(householderId)
+        assertEquals(null, cleared.phoneNumber)
+    }
+
+    @Test
     fun saveHouseholder_consecutiveUpdates_shouldNotDeleteVisits() = runTest {
         // Arrange
         val householderId = UUID.randomUUID()

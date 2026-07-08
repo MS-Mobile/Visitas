@@ -1,5 +1,6 @@
 package com.msmobile.visitas.extension
 
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -29,4 +30,35 @@ fun Context.showShareIntent(shareFileUri: Uri, mime: String) {
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
     this.startActivity(Intent.createChooser(shareIntent, this.getString(R.string.share_backup)))
+}
+
+/** Opens the dialer with [phone] pre-filled. ACTION_DIAL needs no permission. */
+fun Context.launchDialer(phone: String) {
+    val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${phone.trim()}"))
+    startActivitySafely(intent)
+}
+
+/** Opens the default messaging app with [phone] pre-filled. */
+fun Context.launchSms(phone: String) {
+    val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:${phone.trim()}"))
+    startActivitySafely(intent)
+}
+
+/**
+ * Opens a WhatsApp chat with [phone] via a `https://wa.me/<digits>` link. The number is
+ * sanitized to digits only, as wa.me requires a bare international number. If WhatsApp is
+ * installed the link opens the app; otherwise it falls back to WhatsApp Web in a browser.
+ */
+fun Context.launchWhatsApp(phone: String) {
+    val digits = phone.filter { it.isDigit() }
+    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/$digits"))
+    startActivitySafely(intent)
+}
+
+private fun Context.startActivitySafely(intent: Intent) {
+    try {
+        startActivity(intent)
+    } catch (_: ActivityNotFoundException) {
+        // No app can handle this action on the device; nothing to do.
+    }
 }

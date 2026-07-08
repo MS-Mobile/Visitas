@@ -4,6 +4,12 @@
     <string name="save">Save</string>
     <string name="householder_name">Householder name</string>
     <string name="householder_notes">Details about the householder</string>
+    <string name="householder_phone">Phone number</string>
+    <string name="contact_householder">Contact householder</string>
+    <string name="phone_action_call">Call</string>
+    <string name="phone_action_sms">Message</string>
+    <string name="phone_action_whatsapp">WhatsApp</string>
+    <string name="phone_action_edit">Edit number</string>
     <string name="householder_address">Address</string>
     <string name="visit_date">Visit date</string>
     <string name="visit_subject">Subject</string>

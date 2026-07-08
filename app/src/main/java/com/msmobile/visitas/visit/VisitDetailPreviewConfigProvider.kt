@@ -236,6 +236,36 @@ internal class VisitDetailPreviewConfigProvider :
             ),
             isDarkMode = false
         ),
+        VisitDetailPreviewConfig(
+            configName = "Phone Number Input",
+            mainActivityUiState = previewMainActivityUiState,
+            householderId = UUID.randomUUID(),
+            uiState = previewVisitDetailUiState.copy(
+                householder = previewVisitDetailUiState.householder.copy(
+                    editable = previewVisitDetailUiState.householder.editable.copy(
+                        phoneNumber = ""
+                    )
+                ),
+                visitList = listOf(previewFirstVisitUiState.copy(canBeRemoved = false)),
+                showPhoneInputDialog = true
+            ),
+            isDarkMode = false
+        ),
+        VisitDetailPreviewConfig(
+            configName = "Phone Options",
+            mainActivityUiState = previewMainActivityUiState,
+            householderId = UUID.randomUUID(),
+            uiState = previewVisitDetailUiState.copy(
+                householder = previewVisitDetailUiState.householder.copy(
+                    editable = previewVisitDetailUiState.householder.editable.copy(
+                        phoneNumber = "+55 11 99999-0000"
+                    )
+                ),
+                visitList = listOf(previewFirstVisitUiState.copy(canBeRemoved = false)),
+                showPhoneOptionsSheet = true
+            ),
+            isDarkMode = false
+        ),
     )
 
     override fun getDisplayName(index: Int): String {
