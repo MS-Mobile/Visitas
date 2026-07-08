@@ -353,7 +353,7 @@ private fun HouseholderDetail(
                     text = notes,
                     style = textStyle,
                     constraints = constraints,
-                    maxLines = 1,
+                    maxLines = 3,
                     overflow = TextOverflow.Clip
                 )
                 result.hasVisualOverflow
@@ -390,7 +390,7 @@ private fun HouseholderDetail(
             },
             colors = EditableTextFieldColors,
             shape = MaterialTheme.shapes.textField.removeTopCorner(),
-            singleLine = !householder.isNotesExpanded,
+            maxLines = if (householder.isNotesExpanded) Int.MAX_VALUE else 3,
             onValueChange = { value ->
                 notesTextValue = value
                 onEvent(VisitDetailViewModel.UiEvent.HouseholderNotesChanged(value.text))
