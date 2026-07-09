@@ -73,8 +73,11 @@ fun PreviewOverlayHost(content: @Composable () -> Unit) {
             emptyList()
         }
 
+        // Wrap each entry in a single-node Box so exactly one measurable is produced per entry,
+        // keeping overlayPlaceables aligned index-for-index with entries regardless of what an
+        // entry's content emits.
         val overlayPlaceables = subcompose(PreviewOverlaySlot.Overlays) {
-            entries.forEach { it.content() }
+            entries.forEach { entry -> Box { entry.content() } }
         }.mapIndexed { index, measurable ->
             val entry = entries[index]
             val overlayConstraints = when (entry.placement) {
