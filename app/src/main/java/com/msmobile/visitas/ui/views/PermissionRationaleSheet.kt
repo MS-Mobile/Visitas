@@ -8,8 +8,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -23,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import com.msmobile.visitas.R
 import com.msmobile.visitas.ui.theme.PreviewPhone
@@ -93,12 +92,14 @@ object PermissionRationaleSheetDefaults {
 
 @PreviewPhone
 @Composable
-internal fun PermissionRationaleSheetPreview() {
-    VisitasTheme {
+internal fun PermissionRationaleSheetPreview(
+    @PreviewParameter(PermissionRationaleSheetPreviewConfigProvider::class) config: PermissionRationaleSheetPreviewConfig
+) {
+    VisitasTheme(config.isDarkMode) {
         PreviewOverlayHost {
             PermissionRationaleSheet(
-                icon = Icons.Rounded.LocationOn,
-                message = stringResource(R.string.location_permission_message),
+                icon = config.icon,
+                message = stringResource(config.messageRes),
                 isVisible = true,
                 onDismiss = {},
                 onConfirm = {},
