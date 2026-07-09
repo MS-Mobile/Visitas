@@ -52,7 +52,10 @@ fun PermissionRationaleSheet(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Column(
-                    modifier = Modifier.padding(contentPaddingValues)
+                    modifier = Modifier
+                        .padding(contentPaddingValues)
+                        .fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Icon(
                         imageVector = icon,
