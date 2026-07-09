@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -27,6 +28,7 @@ import com.msmobile.visitas.R
 import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.util.borderPadding
+import com.msmobile.visitas.util.cardInnerPadding
 import com.msmobile.visitas.util.verticalFieldPadding
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -65,6 +67,8 @@ fun PermissionRationaleSheet(
                             .align(Alignment.CenterHorizontally)
                     )
                     Text(
+                        modifier = Modifier
+                            .widthIn(max = 250.dp), // Center-justified
                         text = message,
                         textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.bodyLarge
