@@ -143,44 +143,12 @@ internal class VisitDetailPreviewConfigProvider :
             isDarkMode = false
         ),
         VisitDetailPreviewConfig(
-            configName = "Notes Expanded",
-            mainActivityUiState = previewMainActivityUiState,
-            householderId = UUID.randomUUID(),
-            uiState = previewVisitDetailUiState.copy(
-                householder = previewVisitDetailUiState.householder.copy(
-                    editable = previewVisitDetailUiState.householder.editable.copy(
-                        notes = "Receptive householder, prefers morning visits. Interested in studying the Bible.",
-                    ),
-                    showClearNotes = false,
-                    isNotesExpanded = true
-                ),
-                visitList = listOf(previewFirstVisitUiState.copy(canBeRemoved = false))
-            ),
-            isDarkMode = false
-        ),
-        VisitDetailPreviewConfig(
             configName = "Delete Button",
             mainActivityUiState = previewMainActivityUiState,
             householderId = UUID.randomUUID(),
             uiState = previewVisitDetailUiState.copy(
                 visitList = listOf(previewFirstVisitUiState.copy(canBeRemoved = false)),
                 showDeleteButton = true
-            ),
-            isDarkMode = false
-        ),
-        VisitDetailPreviewConfig(
-            configName = "Notes Collapsed",
-            mainActivityUiState = previewMainActivityUiState,
-            householderId = UUID.randomUUID(),
-            uiState = previewVisitDetailUiState.copy(
-                householder = previewVisitDetailUiState.householder.copy(
-                    editable = previewVisitDetailUiState.householder.editable.copy(
-                        notes = "Receptive householder, prefers morning visits.\nInterested in studying the Bible.",
-                    ),
-                    showClearNotes = false,
-                    isNotesExpanded = false
-                ),
-                visitList = listOf(previewFirstVisitUiState.copy(canBeRemoved = false))
             ),
             isDarkMode = false
         ),
