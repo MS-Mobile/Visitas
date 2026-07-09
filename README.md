@@ -4,6 +4,16 @@
 
 An Android application for managing visits and householder records.
 
+## Screenshots
+
+| Visits | Visit detail | Conversations |
+|:------:|:------------:|:-------------:|
+| <img src="docs/screenshots/visit-list.png" width="220" alt="Visit list" /> | <img src="docs/screenshots/visit-detail.png" width="220" alt="Visit detail" /> | <img src="docs/screenshots/conversation-list.png" width="220" alt="Conversation list" /> |
+
+| Conversation detail | Settings |
+|:-------------------:|:--------:|
+| <img src="docs/screenshots/conversation-detail.png" width="220" alt="Conversation detail" /> | <img src="docs/screenshots/settings.png" width="220" alt="Settings" /> |
+
 ## Tech Stack
 
 - **Language:** Kotlin
