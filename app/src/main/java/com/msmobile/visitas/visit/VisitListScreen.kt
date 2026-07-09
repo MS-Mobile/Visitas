@@ -1199,7 +1199,7 @@ private fun AddressOptionsSheet(
             )
             HorizontalDivider()
             AddressOptionItem(
-                icon = Icons.Rounded.Explore,
+                icon = Icons.Rounded.Map,
                 label = stringResource(id = R.string.address_action_google_maps)
             ) {
                 context.launchGoogleMaps(address.address, address.latitude, address.longitude)
