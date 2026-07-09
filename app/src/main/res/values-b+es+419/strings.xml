@@ -136,7 +136,7 @@
     <string name="show_visits_map_content_description">Mostrar mapa de visitas</string>
     <string name="no_visits_found_icon_content_description">No se encontraron visitas</string>
     <string name="filter_visits_content_description">Filtrar visitas</string>
-    <string name="open_map_directions_content_description">Abrir direcciones en el mapa</string>
+    <string name="open_address_options_content_description">Abrir opciones de dirección</string>
     <string name="permission_rationale_icon_content_description">Permiso requerido</string>
     <string name="search_icon_content_description">Buscar</string>
     <string name="restore_backup_icon_content_description">Restaurar copia de seguridad</string>

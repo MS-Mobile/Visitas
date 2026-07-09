@@ -893,7 +893,7 @@ private fun VisitCard(
                             }) {
                             Icon(
                                 imageVector = Icons.Rounded.Explore,
-                                contentDescription = stringResource(R.string.open_map_directions_content_description),
+                                contentDescription = stringResource(R.string.open_address_options_content_description),
                                 tint = MaterialTheme.colorScheme.primary,
                             )
                         }
