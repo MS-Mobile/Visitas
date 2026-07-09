@@ -9,6 +9,8 @@
     <string name="phone_action_whatsapp">WhatsApp</string>
     <string name="phone_action_edit">Editar número</string>
     <string name="householder_address">Endereço</string>
+    <string name="address_action_google_maps">Google Maps</string>
+    <string name="address_action_uber">Uber</string>
     <string name="visit_date">Data da visita</string>
     <string name="visit_subject">Assunto</string>
     <string name="cancel">Cancelar</string>
