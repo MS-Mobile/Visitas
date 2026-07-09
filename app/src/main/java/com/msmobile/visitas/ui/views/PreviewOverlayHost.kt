@@ -91,6 +91,10 @@ fun PreviewOverlayHost(content: @Composable () -> Unit) {
 
         val top = TOP_BAR_ANCHORED_TOP.roundToPx()
         val endMargin = TOP_BAR_ANCHORED_END_MARGIN.roundToPx()
+        // Placement is per-kind, not per-entry: entries sharing a placement land at the same
+        // coordinates and overlap. Real previews register at most one overlay per placement (a
+        // single open menu / a single open sheet), so this is sufficient; revisit if a preview
+        // ever needs two simultaneous overlays of the same kind.
         layout(constraints.maxWidth, constraints.maxHeight) {
             contentPlaceables.forEach { it.place(0, 0) }
             scrimPlaceables.forEach { it.place(0, 0) }
