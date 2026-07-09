@@ -361,7 +361,7 @@ private fun PhoneOptionItem(
         trailingContent = null,
         overlineContent = null,
         supportingContent = null,
-        colors = ListItemDefaults.colors(),
+        colors = ListItemDefaults.bottomSheetListItemColors(),
         elevation = ListItemDefaults.elevation(),
         content = { Text(text = label) },
     )
