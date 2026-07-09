@@ -221,6 +221,7 @@ fun CornerBasedShape.removeTopCorner(): CornerBasedShape {
     )
 }
 
+// TODO: Convert this to a function
 val EditableTextFieldColors: TextFieldColors
     @Composable
     get() = TextFieldDefaults.colors(
@@ -229,6 +230,7 @@ val EditableTextFieldColors: TextFieldColors
         unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer
     )
 
+// TODO: Convert this to a function
 val ReadOnlyTextFieldColors: TextFieldColors
     @Composable
     get() = EditableTextFieldColors.copy(
