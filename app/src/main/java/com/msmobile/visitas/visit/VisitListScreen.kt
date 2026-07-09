@@ -660,7 +660,6 @@ fun VisitCardSkeleton() {
         VisitListViewModel.VisitHouseholderState(
             householderId = UUID.randomUUID(),
             householderName = householderName,
-            householderAddress = householderAddress,
             date = LocalDateTime.now(),
             isDone = false,
             hasDrafts = false,
@@ -670,8 +669,11 @@ fun VisitCardSkeleton() {
             hide = false,
             visitId = UUID.randomUUID(),
             type = VisitType.FIRST_VISIT,
-            householderLatitude = 0.0,
-            householderLongitude = 0.0,
+            householderAddressState = VisitListViewModel.HouseholderAddressState.Data(
+                latitude = 0.0,
+                longitude = 0.0,
+                address = householderAddress
+            ),
             householderAddressDistance = AddressProvider.AddressDistance.Medium(300f),
             subject = ""
         )
@@ -867,17 +869,20 @@ private fun VisitCard(
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+
+                val addressState = visit.householderAddressState
                 AnimatedVisibility(
-                    visible = !isLoading
+                    visible = !isLoading && addressState is VisitListViewModel.HouseholderAddressState.Data
                 ) {
-                    if (!isLoading && visit.householderAddressDistance !is AddressProvider.AddressDistance.NoData) {
+                    if (addressState is VisitListViewModel.HouseholderAddressState.Data) {
                         IconButton(
                             modifier = Modifier.size(24.dp),
                             onClick = {
-                                val latitude = visit.householderLatitude ?: return@IconButton
-                                val longitude = visit.householderLongitude ?: return@IconButton
-                                val householderAddress = visit.householderAddress
-                                context.launchGoogleMaps(householderAddress, latitude, longitude)
+                                context.launchGoogleMaps(
+                                    addressState.address,
+                                    addressState.latitude,
+                                    addressState.longitude
+                                )
                             }) {
                             Icon(
                                 imageVector = Icons.Rounded.Explore,

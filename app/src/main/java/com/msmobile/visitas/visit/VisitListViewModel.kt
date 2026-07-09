@@ -560,14 +560,18 @@ constructor(
         visitList: List<VisitHouseholderState>
     ): VisitMapState {
         val visitMapData = visitList.mapNotNull { visit ->
-            val latitude = visit.householderLatitude ?: return@mapNotNull null
-            val longitude = visit.householderLongitude ?: return@mapNotNull null
+            if (visit.householderAddressState !is HouseholderAddressState.Data) {
+                return@mapNotNull null
+            }
+            val householderAddress = visit.householderAddressState.address
+            val latitude = visit.householderAddressState.latitude
+            val longitude = visit.householderAddressState.longitude
             val householderDistance = visit.householderAddressDistance.distanceOrNull?.toInt()
 
             VisitMapData(
                 householderName = visit.householderName,
                 visitSubject = visit.subjectPreview,
-                householderAddress = visit.householderAddress,
+                householderAddress = householderAddress,
                 householderLatitude = latitude,
                 householderLongitude = longitude,
                 householderDistance = householderDistance,
@@ -629,10 +633,11 @@ constructor(
         latitude: Double,
         longitude: Double
     ): AddressProvider.AddressDistance {
-        val householderLatitude =
-            householderLatitude ?: return AddressProvider.AddressDistance.NoData
-        val householderLongitude =
-            householderLongitude ?: return AddressProvider.AddressDistance.NoData
+        if (householderAddressState !is HouseholderAddressState.Data) {
+            return AddressProvider.AddressDistance.NoData
+        }
+        val householderLatitude = householderAddressState.latitude
+        val householderLongitude = householderAddressState.longitude
         return addressProvider.calculateDistance(
             startLatitude = latitude,
             startLongitude = longitude,
@@ -718,6 +723,18 @@ constructor(
 
     private val VisitHouseholder.asState: VisitHouseholderState
         get() {
+            val householderAddressState = if (householderAddress.isEmpty()
+                || householderLatitude == null
+                || householderLongitude == null
+            ) {
+                HouseholderAddressState.NoData
+            } else {
+                HouseholderAddressState.Data(
+                    latitude = householderLatitude,
+                    longitude = householderLongitude,
+                    address = householderAddress
+                )
+            }
             return VisitHouseholderState(
                 visitId = visitId,
                 subject = subject,
@@ -727,12 +744,10 @@ constructor(
                 hasDrafts = hasDrafts,
                 householderId = householderId,
                 householderName = householderName,
-                householderAddress = householderAddress,
+                householderAddressState = householderAddressState,
                 isPendingVisitMenuExpanded = false,
                 hasToBeRescheduled = hasToBeRescheduled(date, isDone),
                 type = type,
-                householderLatitude = householderLatitude,
-                householderLongitude = householderLongitude,
                 householderAddressDistance = AddressProvider.AddressDistance.NoData,
                 hide = false
             )
@@ -841,10 +856,8 @@ constructor(
         val hasDrafts: Boolean,
         val householderId: UUID,
         val householderName: String,
-        val householderAddress: String,
-        val householderLatitude: Double?,
-        val householderLongitude: Double?,
         val householderAddressDistance: AddressProvider.AddressDistance,
+        val householderAddressState: HouseholderAddressState,
         val hide: Boolean,
         val isPendingVisitMenuExpanded: Boolean,
         val hasToBeRescheduled: Boolean,
@@ -854,6 +867,15 @@ constructor(
     sealed interface PreviewBackupFileState {
         data object None : PreviewBackupFileState
         data class Previewing(val fileUri: Uri) : PreviewBackupFileState
+    }
+
+    sealed interface HouseholderAddressState {
+        data object NoData : HouseholderAddressState
+        data class Data(
+            val latitude: Double,
+            val longitude: Double,
+            val address: String,
+        ) : HouseholderAddressState
     }
 
     data class UiState(
