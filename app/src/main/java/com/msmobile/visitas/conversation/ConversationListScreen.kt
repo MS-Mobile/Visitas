@@ -35,7 +35,7 @@ import com.msmobile.visitas.ui.theme.PreviewFoldable
 import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.ui.views.LazyColumnWithScrollbar
-import com.msmobile.visitas.ui.views.PreviewCompatDropdownMenu
+import com.msmobile.visitas.ui.views.PreviewOverlayHost
 import com.msmobile.visitas.ui.views.SimpleSearchBar
 import com.msmobile.visitas.util.ListScreenStyle
 import com.msmobile.visitas.util.borderPadding
@@ -225,7 +225,7 @@ internal fun ConversationListScreenPreview(
     @PreviewParameter(PreviewConfigProvider::class) config: PreviewConfig
 ) {
     VisitasTheme {
-        PreviewCompatDropdownMenu.HostPreview {
+        PreviewOverlayHost {
             AppScaffold(
                 uiState = config.mainActivityUiState,
                 currentDestination = ConversationListScreenDestination,

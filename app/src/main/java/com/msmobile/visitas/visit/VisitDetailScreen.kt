@@ -57,7 +57,6 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
@@ -101,6 +100,7 @@ import com.msmobile.visitas.extension.launchWhatsApp
 import com.msmobile.visitas.extension.ReadOnlyTextFieldColors
 import com.msmobile.visitas.extension.RequestCalendarPermission
 import com.msmobile.visitas.extension.RequestLocationPermission
+import com.msmobile.visitas.extension.bottomSheetListItemColors
 import com.msmobile.visitas.extension.removeBottomCorner
 import com.msmobile.visitas.extension.removeTopCorner
 import com.msmobile.visitas.extension.sharp
@@ -113,6 +113,8 @@ import com.msmobile.visitas.ui.views.DateTimePicker
 import com.msmobile.visitas.ui.views.LazyColumnWithScrollbar
 import com.msmobile.visitas.ui.views.PermissionRationaleSheet
 import com.msmobile.visitas.ui.views.PreviewCompatDropdownMenu
+import com.msmobile.visitas.ui.views.PreviewCompatModalSheet
+import com.msmobile.visitas.ui.views.PreviewOverlayHost
 import com.msmobile.visitas.ui.views.TextFieldClearButton
 import com.msmobile.visitas.ui.views.TextFieldExpandButton
 import com.msmobile.visitas.util.DetailScreenStyle
@@ -300,7 +302,7 @@ private fun PhoneOptionsSheet(
 ) {
     val context = LocalContext.current
     val onDismiss = { onEvent(VisitDetailViewModel.UiEvent.PhoneOptionsDismissed) }
-    ModalBottomSheet(
+    PreviewCompatModalSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ) {
@@ -311,7 +313,7 @@ private fun PhoneOptionsSheet(
                 trailingContent = null,
                 overlineContent = { Text(text = stringResource(id = R.string.householder_phone)) },
                 supportingContent = null,
-                colors = ListItemDefaults.colors(),
+                colors = ListItemDefaults.bottomSheetListItemColors(),
                 elevation = ListItemDefaults.elevation(),
                 content = { Text(text = phoneNumber) },
             )
@@ -359,7 +361,7 @@ private fun PhoneOptionItem(
         trailingContent = null,
         overlineContent = null,
         supportingContent = null,
-        colors = ListItemDefaults.colors(),
+        colors = ListItemDefaults.bottomSheetListItemColors(),
         elevation = ListItemDefaults.elevation(),
         content = { Text(text = label) },
     )
@@ -1324,7 +1326,7 @@ internal fun VisitDetailScreenPreview(
     @PreviewParameter(VisitDetailPreviewConfigProvider::class) config: VisitDetailPreviewConfig
 ) {
     VisitasTheme {
-        PreviewCompatDropdownMenu.HostPreview {
+        PreviewOverlayHost {
             AppScaffold(
                 uiState = config.mainActivityUiState,
                 currentDestination = VisitDetailScreenDestination,

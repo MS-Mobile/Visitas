@@ -61,7 +61,7 @@ import com.msmobile.visitas.extension.textField
 import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.ui.views.LazyColumnWithScrollbar
-import com.msmobile.visitas.ui.views.PreviewCompatDropdownMenu
+import com.msmobile.visitas.ui.views.PreviewOverlayHost
 import com.msmobile.visitas.ui.views.TextFieldClearButton
 import com.msmobile.visitas.util.DetailScreenStyle
 import com.msmobile.visitas.util.borderPadding
@@ -404,7 +404,7 @@ internal fun ConversationDetailScreenPreview(
     @PreviewParameter(ConversationDetailPreviewConfigProvider::class) config: ConversationDetailPreviewConfig
 ) {
     VisitasTheme {
-        PreviewCompatDropdownMenu.HostPreview {
+        PreviewOverlayHost {
             AppScaffold(
                 uiState = config.mainActivityUiState,
                 currentDestination = ConversationDetailScreenDestination,
