@@ -92,6 +92,18 @@ internal class VisitListPreviewConfigProvider : PreviewParameterProvider<VisitLi
                 ),
                 isVisitsFilterMenuExpanded = true
             )
+        ),
+        VisitListPreviewConfig(
+            configName = "Address options sheet",
+            mainActivityUiState = previewMainActivityUiState,
+            summaryUiState = previewSummaryUiState,
+            visitListUiState = previewVisitListUiState.copy(
+                addressOptionsSheet = VisitListViewModel.HouseholderAddressState.Data(
+                    latitude = 0.0,
+                    longitude = 0.0,
+                    address = "12 Olive Tree Street - Near the Garden of Gethsemane"
+                )
+            )
         )
     )
 

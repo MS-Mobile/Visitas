@@ -6,13 +6,12 @@ An Android application for managing visits and householder records.
 
 ## Screenshots
 
-| Visits | Visit detail | Conversations |
-|:------:|:------------:|:-------------:|
-| <img src="docs/screenshots/visit-list.png" width="220" alt="Visit list" /> | <img src="docs/screenshots/visit-detail.png" width="220" alt="Visit detail" /> | <img src="docs/screenshots/conversation-list.png" width="220" alt="Conversation list" /> |
-
-| Conversation detail | Settings |
-|:-------------------:|:--------:|
-| <img src="docs/screenshots/conversation-detail.png" width="220" alt="Conversation detail" /> | <img src="docs/screenshots/settings.png" width="220" alt="Settings" /> |
+| | |
+|:---:|:---:|
+| <img src="docs/screenshots/visit-list.png" width="240" alt="Visit list" /><br/>**Visit list** | <img src="docs/screenshots/visit-list-address-options.png" width="240" alt="Visit list address options" /><br/>**Address options** |
+| <img src="docs/screenshots/visit-detail.png" width="240" alt="Visit detail" /><br/>**Visit detail** | <img src="docs/screenshots/visit-phone-options.png" width="240" alt="Visit phone options" /><br/>**Phone options** |
+| <img src="docs/screenshots/conversation-list.png" width="240" alt="Conversation list" /><br/>**Conversation list** | <img src="docs/screenshots/conversation-detail.png" width="240" alt="Conversation detail" /><br/>**Conversation detail** |
+| <img src="docs/screenshots/settings.png" width="240" alt="Settings" /><br/>**Settings** | |
 
 ## Tech Stack
 
