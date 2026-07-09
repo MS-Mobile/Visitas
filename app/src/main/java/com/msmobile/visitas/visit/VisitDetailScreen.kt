@@ -113,6 +113,7 @@ import com.msmobile.visitas.ui.views.DateTimePicker
 import com.msmobile.visitas.ui.views.LazyColumnWithScrollbar
 import com.msmobile.visitas.ui.views.PermissionRationaleSheet
 import com.msmobile.visitas.ui.views.PreviewCompatDropdownMenu
+import com.msmobile.visitas.ui.views.PreviewOverlayHost
 import com.msmobile.visitas.ui.views.TextFieldClearButton
 import com.msmobile.visitas.ui.views.TextFieldExpandButton
 import com.msmobile.visitas.util.DetailScreenStyle
@@ -1324,7 +1325,7 @@ internal fun VisitDetailScreenPreview(
     @PreviewParameter(VisitDetailPreviewConfigProvider::class) config: VisitDetailPreviewConfig
 ) {
     VisitasTheme {
-        PreviewCompatDropdownMenu.HostPreview {
+        PreviewOverlayHost {
             AppScaffold(
                 uiState = config.mainActivityUiState,
                 currentDestination = VisitDetailScreenDestination,
