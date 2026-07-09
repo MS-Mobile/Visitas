@@ -68,6 +68,21 @@ com.msmobile.visitas/
 
 See [GUIDELINES.md](.github/GUIDELINES.md) for detailed development conventions and patterns.
 
+The screenshots above are curated from the Compose screenshot-test reference
+renders. After changing a screen, refresh them with:
+
+```
+./gradlew :app:updateDebugScreenshotTest   # regenerate reference renders
+sh scripts/sync-readme-screenshots.sh       # copy curated shots into docs/screenshots/
+```
+
+Enable the pre-commit hook once per clone to keep the gallery in sync
+automatically whenever the reference renders change:
+
+```
+git config core.hooksPath .githooks
+```
+
 ## License
 
 All rights reserved.
