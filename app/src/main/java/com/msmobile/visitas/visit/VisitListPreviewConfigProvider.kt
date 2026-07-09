@@ -129,7 +129,11 @@ private val previewVisitListUiState = VisitListViewModel.UiState(
         VisitListViewModel.VisitHouseholderState(
             householderId = UUID.randomUUID(),
             householderName = "Mary Magdalene",
-            householderAddress = "12 Olive Tree Street - Near the Garden of Gethsemane",
+            householderAddressState = VisitListViewModel.HouseholderAddressState.Data(
+                latitude = 0.0,
+                longitude = 0.0,
+                address = "12 Olive Tree Street - Near the Garden of Gethsemane"
+            ),
             householderAddressDistance = AddressProvider.AddressDistance.Nearby(100f),
             date = previewDate1,
             isDone = false,
@@ -140,14 +144,16 @@ private val previewVisitListUiState = VisitListViewModel.UiState(
             subjectPreview = "What is God's Kingdom? — Daniel 2:44",
             hide = false,
             visitId = UUID.randomUUID(),
-            type = VisitType.FIRST_VISIT,
-            householderLatitude = 0.0,
-            householderLongitude = 0.0
+            type = VisitType.FIRST_VISIT
         ),
         VisitListViewModel.VisitHouseholderState(
             householderId = UUID.randomUUID(),
             householderName = "Joseph of Arimathea",
-            householderAddress = "45 Cedar Avenue",
+            householderAddressState = VisitListViewModel.HouseholderAddressState.Data(
+                latitude = 0.0,
+                longitude = 0.0,
+                address = "45 Cedar Avenue"
+            ),
             date = previewDate2,
             isDone = false,
             hasDrafts = false,
@@ -157,15 +163,13 @@ private val previewVisitListUiState = VisitListViewModel.UiState(
             hide = false,
             visitId = UUID.randomUUID(),
             type = VisitType.FIRST_VISIT,
-            householderLatitude = 0.0,
-            householderLongitude = 0.0,
             householderAddressDistance = AddressProvider.AddressDistance.FarAway(600f),
             subject = "The resurrection of the dead"
         ),
         VisitListViewModel.VisitHouseholderState(
             householderId = UUID.randomUUID(),
             householderName = "Nicodemus",
-            householderAddress = "7 Pharisee Street",
+            householderAddressState = VisitListViewModel.HouseholderAddressState.NoData,
             date = previewDate3,
             isDone = false,
             hasDrafts = false,
@@ -175,8 +179,6 @@ private val previewVisitListUiState = VisitListViewModel.UiState(
             hide = false,
             visitId = UUID.randomUUID(),
             type = VisitType.FIRST_VISIT,
-            householderLatitude = 0.0,
-            householderLongitude = 0.0,
             householderAddressDistance = AddressProvider.AddressDistance.NoData,
             subject = "Who is Jesus Christ?"
         ),
