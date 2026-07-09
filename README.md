@@ -4,6 +4,24 @@
 
 An Android application for managing visits and householder records.
 
+## Screenshots
+
+|                                 Visit list                                 |                                         Visit list address options                                         |
+|:--------------------------------------------------------------------------:|:----------------------------------------------------------------------------------------------------------:|
+| <img src="docs/screenshots/visit-list.png" width="240" alt="Visit list" /> | <img src="docs/screenshots/visit-list-address-options.png" width="240" alt="Visit list address options" /> |
+
+|                                  Visit detail                                  |                                  Visit detail phone options                                  |
+|:------------------------------------------------------------------------------:|:--------------------------------------------------------------------------------------------:|
+| <img src="docs/screenshots/visit-detail.png" width="240" alt="Visit detail" /> | <img src="docs/screenshots/visit-phone-options.png" width="240" alt="Visit phone options" /> |
+
+|                                    Conversation list                                     |                                     Conversation detail                                      |
+|:----------------------------------------------------------------------------------------:|:--------------------------------------------------------------------------------------------:|
+| <img src="docs/screenshots/conversation-list.png" width="240" alt="Conversation list" /> | <img src="docs/screenshots/conversation-detail.png" width="240" alt="Conversation detail" /> |
+
+|                                Settings                                | 
+|:----------------------------------------------------------------------:|
+| <img src="docs/screenshots/settings.png" width="240" alt="Settings" /> |                                                                                           
+
 ## Tech Stack
 
 - **Language:** Kotlin
