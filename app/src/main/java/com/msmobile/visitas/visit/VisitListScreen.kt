@@ -49,7 +49,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -96,6 +95,7 @@ import com.msmobile.visitas.ui.views.MonthNavigator
 import com.msmobile.visitas.ui.views.MonthNavigatorEvent
 import com.msmobile.visitas.ui.views.PermissionRationaleSheet
 import com.msmobile.visitas.ui.views.PreviewCompatDropdownMenu
+import com.msmobile.visitas.ui.views.PreviewCompatModalSheet
 import com.msmobile.visitas.ui.views.PreviewOverlayHost
 import com.msmobile.visitas.ui.views.RestoreBackupDialog
 import com.msmobile.visitas.ui.views.SimpleSearchBar
@@ -545,7 +545,7 @@ private fun BibleStudentsSheet(
     onDismiss: () -> Unit
 ) {
     AnimatedVisibility(visible = isVisible) {
-        ModalBottomSheet(
+        PreviewCompatModalSheet(
             onDismissRequest = onDismiss,
             sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ) {

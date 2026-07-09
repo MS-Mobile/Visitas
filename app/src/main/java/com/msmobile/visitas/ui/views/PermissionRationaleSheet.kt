@@ -8,11 +8,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -24,6 +25,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.msmobile.visitas.R
+import com.msmobile.visitas.ui.theme.PreviewPhone
+import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.util.borderPadding
 import com.msmobile.visitas.util.verticalFieldPadding
 
@@ -38,7 +41,7 @@ fun PermissionRationaleSheet(
     onConfirm: () -> Unit
 ) {
     AnimatedVisibility(visible = isVisible) {
-        ModalBottomSheet(
+        PreviewCompatModalSheet(
             onDismissRequest = onDismiss,
             sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ) {
@@ -83,4 +86,20 @@ fun PermissionRationaleSheet(
 
 object PermissionRationaleSheetDefaults {
     val contentPaddingValues = PaddingValues(vertical = 50.dp)
+}
+
+@PreviewPhone
+@Composable
+internal fun PermissionRationaleSheetPreview() {
+    VisitasTheme {
+        PreviewOverlayHost {
+            PermissionRationaleSheet(
+                icon = Icons.Rounded.LocationOn,
+                message = stringResource(R.string.location_permission_message),
+                isVisible = true,
+                onDismiss = {},
+                onConfirm = {},
+            )
+        }
+    }
 }
