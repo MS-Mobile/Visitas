@@ -100,6 +100,7 @@ import com.msmobile.visitas.extension.launchWhatsApp
 import com.msmobile.visitas.extension.ReadOnlyTextFieldColors
 import com.msmobile.visitas.extension.RequestCalendarPermission
 import com.msmobile.visitas.extension.RequestLocationPermission
+import com.msmobile.visitas.extension.bottomSheetListItemColors
 import com.msmobile.visitas.extension.removeBottomCorner
 import com.msmobile.visitas.extension.removeTopCorner
 import com.msmobile.visitas.extension.sharp
@@ -312,7 +313,7 @@ private fun PhoneOptionsSheet(
                 trailingContent = null,
                 overlineContent = { Text(text = stringResource(id = R.string.householder_phone)) },
                 supportingContent = null,
-                colors = ListItemDefaults.colors(),
+                colors = ListItemDefaults.bottomSheetListItemColors(),
                 elevation = ListItemDefaults.elevation(),
                 content = { Text(text = phoneNumber) },
             )
