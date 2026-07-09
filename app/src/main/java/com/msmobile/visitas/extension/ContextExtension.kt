@@ -23,6 +23,32 @@ fun Context.launchGoogleMaps(label: String, latitude: Double, longitude: Double)
     }
 }
 
+/**
+ * Requests an Uber ride to ([latitude], [longitude]) with [label] as the dropoff nickname.
+ * Pickup defaults to the rider's current location (resolved by Uber). Opens the Uber app via
+ * a `uber://` deep link when installed; otherwise falls back to the `m.uber.com` universal
+ * link in a browser.
+ */
+fun Context.launchUber(label: String, latitude: Double, longitude: Double) {
+    val encodedLabel = Uri.encode(label)
+    val deepLinkParams =
+        "action=setPickup&pickup=my_location" +
+            "&dropoff[latitude]=$latitude&dropoff[longitude]=$longitude&dropoff[nickname]=$encodedLabel"
+
+    val uberUri = Uri.parse("uber://?$deepLinkParams")
+    val uberIntent = Intent(Intent.ACTION_VIEW, uberUri)
+    uberIntent.setPackage("com.ubercab")
+
+    if (uberIntent.resolveActivity(packageManager) != null) {
+        startActivity(uberIntent)
+    } else {
+        // Fallback to the Uber universal web link if the app isn't installed
+        val fallbackUri = Uri.parse("https://m.uber.com/ul/?$deepLinkParams")
+        val fallbackIntent = Intent(Intent.ACTION_VIEW, fallbackUri)
+        startActivity(fallbackIntent)
+    }
+}
+
 fun Context.showShareIntent(shareFileUri: Uri, mime: String) {
     val shareIntent = Intent(Intent.ACTION_SEND).apply {
         type = mime

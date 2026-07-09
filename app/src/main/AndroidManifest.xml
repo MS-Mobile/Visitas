@@ -4,6 +4,7 @@
 
     <queries>
         <package android:name="com.google.android.apps.maps" />
+        <package android:name="com.ubercab" />
     </queries>
 
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />

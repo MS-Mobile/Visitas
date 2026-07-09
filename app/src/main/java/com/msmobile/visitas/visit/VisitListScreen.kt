@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -32,6 +33,7 @@ import androidx.compose.material.icons.rounded.Explore
 import androidx.compose.material.icons.rounded.FilterList
 import androidx.compose.material.icons.rounded.FindInPage
 import androidx.compose.material.icons.rounded.Group
+import androidx.compose.material.icons.rounded.LocalTaxi
 import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.Map
 import androidx.compose.material.icons.rounded.Update
@@ -48,6 +50,8 @@ import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
@@ -82,8 +86,10 @@ import com.msmobile.visitas.backup.BackupSheet
 import com.msmobile.visitas.backup.BackupViewModel
 import com.msmobile.visitas.extension.OnBackPressed
 import com.msmobile.visitas.extension.RequestLocationPermission
+import com.msmobile.visitas.extension.bottomSheetListItemColors
 import com.msmobile.visitas.extension.isKeyboardOpen
 import com.msmobile.visitas.extension.launchGoogleMaps
+import com.msmobile.visitas.extension.launchUber
 import com.msmobile.visitas.extension.textShimmer
 import com.msmobile.visitas.extension.toString
 import com.msmobile.visitas.extension.tonalButtonColors
@@ -285,6 +291,12 @@ private fun VisitListScreenContent(
             },
             onMapError = onMapError
         )
+        visitListUiState.addressOptionsSheet?.let { address ->
+            AddressOptionsSheet(
+                address = address,
+                onEvent = onVisitListEvent
+            )
+        }
         BibleStudentsSheet(
             isVisible = summaryUiState.isBibleStudentsSheetVisible,
             bibleStudentNames = summaryUiState.bibleStudentNames,
@@ -774,7 +786,6 @@ private fun VisitCard(
     val locale = LocalConfiguration.current.locales[0]
     val isHouseholderAddressNearby =
         visit.householderAddressDistance is AddressProvider.AddressDistance.Nearby
-    val context = LocalContext.current
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -878,15 +889,11 @@ private fun VisitCard(
                         IconButton(
                             modifier = Modifier.size(24.dp),
                             onClick = {
-                                context.launchGoogleMaps(
-                                    addressState.address,
-                                    addressState.latitude,
-                                    addressState.longitude
-                                )
+                                onEvent(VisitListViewModel.UiEvent.AddressOptionsClicked(visit))
                             }) {
                             Icon(
                                 imageVector = Icons.Rounded.Explore,
-                                contentDescription = stringResource(R.string.open_map_directions_content_description),
+                                contentDescription = stringResource(R.string.open_address_options_content_description),
                                 tint = MaterialTheme.colorScheme.primary,
                             )
                         }
@@ -1165,4 +1172,64 @@ internal fun VisitListScreenPreview(
             }
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AddressOptionsSheet(
+    address: VisitListViewModel.HouseholderAddressState.Data,
+    onEvent: (VisitListViewModel.UiEvent) -> Unit
+) {
+    val context = LocalContext.current
+    val onDismiss = { onEvent(VisitListViewModel.UiEvent.AddressOptionsDismissed) }
+    PreviewCompatModalSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ) {
+        Column(modifier = Modifier.navigationBarsPadding()) {
+            ListItem(
+                modifier = Modifier,
+                leadingContent = null,
+                trailingContent = null,
+                overlineContent = { Text(text = stringResource(id = R.string.householder_address)) },
+                supportingContent = null,
+                colors = ListItemDefaults.bottomSheetListItemColors(),
+                elevation = ListItemDefaults.elevation(),
+                content = { Text(text = address.address) },
+            )
+            HorizontalDivider()
+            AddressOptionItem(
+                icon = Icons.Rounded.Explore,
+                label = stringResource(id = R.string.address_action_google_maps)
+            ) {
+                context.launchGoogleMaps(address.address, address.latitude, address.longitude)
+                onDismiss()
+            }
+            AddressOptionItem(
+                icon = Icons.Rounded.LocalTaxi,
+                label = stringResource(id = R.string.address_action_uber)
+            ) {
+                context.launchUber(address.address, address.latitude, address.longitude)
+                onDismiss()
+            }
+        }
+    }
+}
+
+@Composable
+private fun AddressOptionItem(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    onClick: () -> Unit
+) {
+    ListItem(
+        modifier = Modifier.clickable(onClick = onClick),
+        leadingContent = { Icon(imageVector = icon, contentDescription = null) },
+        trailingContent = null,
+        overlineContent = null,
+        supportingContent = null,
+        colors = ListItemDefaults.bottomSheetListItemColors(),
+        elevation = ListItemDefaults.elevation(),
+        content = { Text(text = label) },
+    )
 }
