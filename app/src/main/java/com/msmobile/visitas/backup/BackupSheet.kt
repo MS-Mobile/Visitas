@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
@@ -32,6 +31,8 @@ import com.msmobile.visitas.extension.showShareIntent
 import com.msmobile.visitas.ui.theme.PreviewFoldable
 import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
+import com.msmobile.visitas.ui.views.PreviewCompatModalSheet
+import com.msmobile.visitas.ui.views.PreviewOverlayHost
 import com.msmobile.visitas.util.borderPadding
 import com.ramcosta.composedestinations.generated.destinations.VisitListScreenDestination
 
@@ -45,7 +46,7 @@ fun BackupSheet(
     onDismiss: () -> Unit
 ) {
     AnimatedVisibility(visible = isVisible) {
-        ModalBottomSheet(
+        PreviewCompatModalSheet(
             onDismissRequest = onDismiss,
             sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ) {
@@ -163,17 +164,21 @@ internal fun BackupScreenPreview(
     @PreviewParameter(BackupSheetPreviewConfigProvider::class) config: BackupSheetPreviewConfig
 ) {
     VisitasTheme(config.isDarkMode) {
-        AppScaffold(
-            uiState = config.mainActivityUiState,
-            currentDestination = VisitListScreenDestination,
-            onEvent = {},
-            onNavigateToTab = {},
-            onNavigate = {}
-        ) {
-            BackupScreenContent(
-                uiState = config.backupUiState,
-                onEvent = {}
-            )
+        PreviewOverlayHost {
+            AppScaffold(
+                uiState = config.mainActivityUiState,
+                currentDestination = VisitListScreenDestination,
+                onEvent = {},
+                onNavigateToTab = {},
+                onNavigate = {}
+            ) {
+                BackupSheet(
+                    isVisible = true,
+                    uiState = config.backupUiState,
+                    onBackupSheetEvent = {},
+                    onDismiss = {},
+                )
+            }
         }
     }
 }
