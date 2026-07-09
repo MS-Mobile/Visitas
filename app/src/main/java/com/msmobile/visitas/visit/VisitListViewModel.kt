@@ -140,6 +140,8 @@ constructor(
             is UiEvent.RestorePreviewedBackupDialogDismissed -> handleRestorePreviewedBackupDialogDismissed()
             is UiEvent.VisitMapSheetClicked -> handleVisitMapSheetClicked()
             is UiEvent.VisitMapSheetDismissed -> handleVisitMapSheetDismissed()
+            is UiEvent.AddressOptionsClicked -> handleAddressOptionsClicked(uiEvent.visit)
+            is UiEvent.AddressOptionsDismissed -> handleAddressOptionsDismissed()
         }
     }
 
@@ -441,6 +443,19 @@ constructor(
             copy(
                 showVisitMapSheet = false
             )
+        }
+    }
+
+    private fun handleAddressOptionsClicked(visit: VisitHouseholderState) {
+        val address = visit.householderAddressState as? HouseholderAddressState.Data ?: return
+        newState {
+            copy(addressOptionsSheet = address)
+        }
+    }
+
+    private fun handleAddressOptionsDismissed() {
+        newState {
+            copy(addressOptionsSheet = null)
         }
     }
 
@@ -817,6 +832,8 @@ constructor(
         data class TabSelected(val tabIndex: Int) : UiEvent()
         data class SearchChanged(val filter: String) : UiEvent()
         data class PendingVisitMenuClicked(val visit: VisitHouseholderState) : UiEvent()
+        data class AddressOptionsClicked(val visit: VisitHouseholderState) : UiEvent()
+        data object AddressOptionsDismissed : UiEvent()
         data class RescheduleVisitToday(val visit: VisitHouseholderState) : UiEvent()
         data class RescheduleVisitTomorrow(val visit: VisitHouseholderState) : UiEvent()
         data class RescheduleVisitSelected(
@@ -896,7 +913,8 @@ constructor(
         val currentCoordinates: Pair<Double, Double>,
         val visitMapState: VisitMapState,
         val previewBackupFileState: PreviewBackupFileState,
-        val visitMapEngine: VisitMapEngineOption = VisitMapEngineOption.MapLibre
+        val visitMapEngine: VisitMapEngineOption = VisitMapEngineOption.MapLibre,
+        val addressOptionsSheet: HouseholderAddressState.Data? = null
     )
 
     companion object {

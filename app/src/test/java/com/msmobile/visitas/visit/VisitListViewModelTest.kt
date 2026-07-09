@@ -15,6 +15,8 @@ import com.msmobile.visitas.util.UserLocationProvider
 import com.msmobile.visitas.util.VisitMapAdapter
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertFalse
+import junit.framework.TestCase.assertNotNull
+import junit.framework.TestCase.assertNull
 import junit.framework.TestCase.assertTrue
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Rule
@@ -216,6 +218,60 @@ class VisitListViewModelTest {
 
         // Assert
         assertFalse(viewModel.uiState.value.showVisitMapSheet)
+    }
+
+    @Test
+    fun `onEvent with AddressOptionsClicked shows sheet with the visit's address data`() {
+        // Arrange
+        val viewModel = createViewModel()
+        viewModel.onEvent(VisitListViewModel.UiEvent.ViewCreated)
+        val visitWithAddress = requireNotNull(
+            viewModel.uiState.value.visitList.find { it.visitId == SECOND_VISIT_ID }
+        )
+
+        // Act
+        viewModel.onEvent(VisitListViewModel.UiEvent.AddressOptionsClicked(visitWithAddress))
+
+        // Assert
+        val sheet = viewModel.uiState.value.addressOptionsSheet
+        assertNotNull(sheet)
+        assertEquals("Address 2", sheet?.address)
+        assertEquals(40.7128, sheet?.latitude)
+        assertEquals(-74.0060, sheet?.longitude)
+    }
+
+    @Test
+    fun `onEvent with AddressOptionsClicked ignores visit without address data`() {
+        // Arrange
+        val viewModel = createViewModel()
+        viewModel.onEvent(VisitListViewModel.UiEvent.ViewCreated)
+        val visitWithoutAddress = requireNotNull(
+            viewModel.uiState.value.visitList.find { it.visitId == FIRST_VISIT_ID }
+        )
+
+        // Act
+        viewModel.onEvent(VisitListViewModel.UiEvent.AddressOptionsClicked(visitWithoutAddress))
+
+        // Assert
+        assertNull(viewModel.uiState.value.addressOptionsSheet)
+    }
+
+    @Test
+    fun `onEvent with AddressOptionsDismissed hides the sheet`() {
+        // Arrange
+        val viewModel = createViewModel()
+        viewModel.onEvent(VisitListViewModel.UiEvent.ViewCreated)
+        val visitWithAddress = requireNotNull(
+            viewModel.uiState.value.visitList.find { it.visitId == SECOND_VISIT_ID }
+        )
+        viewModel.onEvent(VisitListViewModel.UiEvent.AddressOptionsClicked(visitWithAddress))
+        assertNotNull(viewModel.uiState.value.addressOptionsSheet)
+
+        // Act
+        viewModel.onEvent(VisitListViewModel.UiEvent.AddressOptionsDismissed)
+
+        // Assert
+        assertNull(viewModel.uiState.value.addressOptionsSheet)
     }
 
     @Test
