@@ -20,6 +20,8 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.BottomSheetDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButtonColors
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.ListItemColors
@@ -241,9 +243,10 @@ val ReadOnlyTextFieldColors: TextFieldColors
         disabledTrailingIconColor = EditableTextFieldColors.unfocusedTrailingIconColor
     )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ListItemDefaults.bottomSheetListItemColors(): ListItemColors {
     return colors().copy(
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = BottomSheetDefaults.ContainerColor,
     )
 }
