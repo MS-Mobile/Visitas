@@ -77,14 +77,22 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
@@ -118,7 +126,9 @@ import com.msmobile.visitas.ui.views.PreviewOverlayHost
 import com.msmobile.visitas.ui.views.TextFieldClearButton
 import com.msmobile.visitas.ui.views.TextFieldExpandButton
 import com.msmobile.visitas.util.DetailScreenStyle
+import com.msmobile.visitas.util.UrlValidator
 import com.msmobile.visitas.util.borderPadding
+import com.msmobile.visitas.util.findFormattedLinks
 import com.msmobile.visitas.util.floatingBarBottomPadding
 import com.msmobile.visitas.util.horizontalFieldPadding
 import com.msmobile.visitas.util.scaffold.AppScaffoldState
@@ -933,6 +943,29 @@ private fun LazyItemScope.VisitItem(
     }
 }
 
+private class FormattedLinkVisualTransformation(
+    private val linkColor: Color,
+    private val isValidUrl: (String) -> Boolean
+) : VisualTransformation {
+    override fun filter(text: AnnotatedString): TransformedText {
+        val links = findFormattedLinks(text.text, isValidUrl)
+        if (links.isEmpty()) {
+            return TransformedText(text, OffsetMapping.Identity)
+        }
+        val styled = buildAnnotatedString {
+            append(text)
+            links.forEach { span ->
+                addStyle(
+                    SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline),
+                    span.start,
+                    span.end
+                )
+            }
+        }
+        return TransformedText(styled, OffsetMapping.Identity)
+    }
+}
+
 @Composable
 private fun LazyItemScope.VisitSubjectDropdownList(
     modifier: Modifier,
@@ -961,6 +994,12 @@ private fun LazyItemScope.VisitSubjectDropdownList(
         }
     }
 
+    val linkColor = MaterialTheme.colorScheme.primary
+    val urlValidator = remember { UrlValidator() }
+    val subjectVisualTransformation = remember(linkColor) {
+        FormattedLinkVisualTransformation(linkColor, urlValidator::isValid)
+    }
+
     Column(modifier = modifier) {
         TextField(
             modifier = modifier.onFocusChanged { focusState ->
@@ -972,6 +1011,7 @@ private fun LazyItemScope.VisitSubjectDropdownList(
                 )
             },
             value = textFieldValueState,
+            visualTransformation = subjectVisualTransformation,
             shape = MaterialTheme.shapes.textField.removeBottomCorner(),
             keyboardOptions = KeyboardOptions(
                 capitalization = KeyboardCapitalization.Sentences,
