@@ -1157,6 +1157,105 @@ class VisitDetailViewModelTest {
         verifyBlocking(visitRepository) { save(committedVisit) }
     }
 
+    @Test
+    fun `onEvent with ConversationSelected and a url response inserts a formatted link`() {
+        val viewModel = createViewModel()
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+        val visit = viewModel.uiState.value.visitList.first()
+        val conversation = VisitDetailViewModel.ConversationState(
+            id = FIRST_CONVERSATION_ID,
+            question = "What is God's Kingdom?",
+            response = "https://www.jw.org/en/bible-teachings/kingdom/",
+            questionAndResponse = "unused",
+            show = true,
+            conversationGroupId = null,
+            orderIndex = 0
+        )
+
+        viewModel.onEvent(
+            VisitDetailViewModel.UiEvent.ConversationSelected(
+                visit = visit,
+                conversation = conversation,
+                caretPosition = 0
+            )
+        )
+
+        assertEquals(
+            "(What is God's Kingdom?)[https://www.jw.org/en/bible-teachings/kingdom/]",
+            viewModel.uiState.value.visitList.first().subject
+        )
+    }
+
+    @Test
+    fun `onEvent with VisitSubjectChanged removes the whole link when deleting its closing bracket`() {
+        val viewModel = createViewModel()
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+        val visit = viewModel.uiState.value.visitList.first()
+        val conversation = VisitDetailViewModel.ConversationState(
+            id = FIRST_CONVERSATION_ID,
+            question = "What is God's Kingdom?",
+            response = "https://www.jw.org/en/bible-teachings/kingdom/",
+            questionAndResponse = "unused",
+            show = true,
+            conversationGroupId = null,
+            orderIndex = 0
+        )
+        viewModel.onEvent(
+            VisitDetailViewModel.UiEvent.ConversationSelected(visit, conversation, caretPosition = 0)
+        )
+        val linkedVisit = viewModel.uiState.value.visitList.first()
+        val linkedSubject = linkedVisit.subject
+        val closingParenIndex = linkedSubject.indexOf(')')
+        val textWithParenDeleted = linkedSubject.removeRange(closingParenIndex, closingParenIndex + 1)
+
+        viewModel.onEvent(
+            VisitDetailViewModel.UiEvent.VisitSubjectChanged(
+                visit = linkedVisit,
+                value = textWithParenDeleted,
+                caretPosition = closingParenIndex
+            )
+        )
+
+        val finalVisit = viewModel.uiState.value.visitList.first()
+        assertEquals("", finalVisit.subject)
+        assertEquals(0, finalVisit.caretPosition)
+    }
+
+    @Test
+    fun `onEvent with VisitSubjectChanged allows editing text inside the link question`() {
+        val viewModel = createViewModel()
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+        val visit = viewModel.uiState.value.visitList.first()
+        val conversation = VisitDetailViewModel.ConversationState(
+            id = FIRST_CONVERSATION_ID,
+            question = "What is God's Kingdom?",
+            response = "https://www.jw.org/en/bible-teachings/kingdom/",
+            questionAndResponse = "unused",
+            show = true,
+            conversationGroupId = null,
+            orderIndex = 0
+        )
+        viewModel.onEvent(
+            VisitDetailViewModel.UiEvent.ConversationSelected(visit, conversation, caretPosition = 0)
+        )
+        val linkedVisit = viewModel.uiState.value.visitList.first()
+        val linkedSubject = linkedVisit.subject
+        val editedSubject = linkedSubject.replaceFirst(
+            "What is God's Kingdom?",
+            "What is the Kingdom?"
+        )
+
+        viewModel.onEvent(
+            VisitDetailViewModel.UiEvent.VisitSubjectChanged(
+                visit = linkedVisit,
+                value = editedSubject,
+                caretPosition = editedSubject.indexOf(')')
+            )
+        )
+
+        assertEquals(editedSubject, viewModel.uiState.value.visitList.first().subject)
+    }
+
     private fun createViewModel(
         conversationRepositoryRef: MockReferenceHolder<ConversationRepository>? = null,
         householderRepositoryRef: MockReferenceHolder<HouseholderRepository>? = null,

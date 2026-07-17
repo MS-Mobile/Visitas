@@ -20,6 +20,8 @@ import com.msmobile.visitas.util.DispatcherProvider
 import com.msmobile.visitas.util.IdProvider
 import com.msmobile.visitas.util.LatLongParser
 import com.msmobile.visitas.util.PermissionChecker
+import com.msmobile.visitas.util.findFormattedLinks
+import com.msmobile.visitas.util.sanitizeFormattedLinkEdit
 import com.msmobile.visitas.util.StringResource
 import com.msmobile.visitas.util.UrlValidator
 import com.msmobile.visitas.util.VisitDataFormatter
@@ -599,25 +601,32 @@ class VisitDetailViewModel
 
     private fun visitSubjectChanged(value: String, visit: VisitState, caretPosition: Int) {
         newState {
-            val lines = value.split('\n')
-            val lineIndex = lines.getLineIndex(caretPosition)
+            val links = findFormattedLinks(visit.subject, urlValidator::isValid)
+            val (sanitizedValue, sanitizedCaretPosition) = sanitizeFormattedLinkEdit(
+                oldText = visit.subject,
+                newText = value,
+                proposedCaretPosition = caretPosition,
+                links = links
+            )
+            val lines = sanitizedValue.split('\n')
+            val lineIndex = lines.getLineIndex(sanitizedCaretPosition)
             val lineValue = lines.elementAtOrNull(lineIndex) ?: return@newState this
             val filteredConversationList = conversationList.filterBy(lineValue)
             val isConversionListExpanded = filteredConversationList.any { conversation ->
                 conversation.show
             }
-            val showClearSubject = value.isNotEmpty()
+            val showClearSubject = sanitizedValue.isNotEmpty()
             val hasNextConversationSuggestion = visit.nextConversationSuggestion != null
             val showNextVisitSuggestion = hasNextConversationSuggestion && !showClearSubject
             val updatedList = visitList.toMutableList().apply {
                 set(
                     this@apply.indexOfById(visit),
                     visit.copy(
-                        editable = visit.editable.copy(subject = value),
+                        editable = visit.editable.copy(subject = sanitizedValue),
                         isConversationListExpanded = isConversionListExpanded,
                         showClearSubject = showClearSubject,
                         showNextVisitSuggestion = showNextVisitSuggestion,
-                        caretPosition = caretPosition
+                        caretPosition = sanitizedCaretPosition
                     )
                 )
             }
