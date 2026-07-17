@@ -17,6 +17,20 @@ class LatLongParserTest {
     }
 
     @Test
+    fun `parses comma separated coordinates using comma decimal separator`() {
+        val result = parser.parse("-28,6497173,-49,4233284")
+
+        assertEquals(LatLong(-28.6497173, -49.4233284), result.getOrNull())
+    }
+
+    @Test
+    fun `parses space separated coordinates using comma decimal separator`() {
+        val result = parser.parse("-28,6497173 -49,4233284")
+
+        assertEquals(LatLong(-28.6497173, -49.4233284), result.getOrNull())
+    }
+
+    @Test
     fun `parses plain space separated coordinates`() {
         val result = parser.parse("40.7128 -74.0060")
 

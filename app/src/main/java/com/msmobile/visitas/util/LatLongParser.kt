@@ -13,6 +13,12 @@ class LatLongParser @Inject constructor() {
         """^\s*(-?\d+(?:\.\d+)?)\s*[,\s]\s*(-?\d+(?:\.\d+)?)\s*$"""
     )
 
+    // Matches "lat,long" where each number uses a comma as decimal separator,
+    // e.g. "-28,6497173,-49,4233284" or "-28,6497173 -49,4233284".
+    private val commaDecimalPattern = Regex(
+        """^\s*(-?\d+,\d+)\s*[,\s]\s*(-?\d+,\d+)\s*$"""
+    )
+
     // Ordered list of patterns used to extract a coordinate pair from within a
     // larger string such as a map URL. Each pattern captures latitude in group 1
     // and longitude in group 2. Patterns require decimal coordinates so unrelated
@@ -34,6 +40,13 @@ class LatLongParser @Inject constructor() {
     fun parse(input: String): Result<LatLong> {
         plainPattern.matchEntire(input)?.let { match ->
             return buildResult(match.groupValues[1], match.groupValues[2])
+        }
+
+        commaDecimalPattern.matchEntire(input)?.let { match ->
+            return buildResult(
+                match.groupValues[1].replace(',', '.'),
+                match.groupValues[2].replace(',', '.')
+            )
         }
 
         for (pattern in urlPatterns) {
