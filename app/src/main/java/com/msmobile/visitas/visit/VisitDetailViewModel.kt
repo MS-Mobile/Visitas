@@ -602,6 +602,8 @@ class VisitDetailViewModel
     private fun visitSubjectChanged(value: String, visit: VisitState, caretPosition: Int) {
         newState {
             val links = findFormattedLinks(visit.subject, urlValidator::isValid)
+            // Clearing (including via ClearSubjectClicked) must always fully empty the
+            // field, even if it contained a formatted link — bypass link-aware sanitization here.
             val (sanitizedValue, sanitizedCaretPosition) = if (value.isEmpty()) {
                 value to caretPosition
             } else {
