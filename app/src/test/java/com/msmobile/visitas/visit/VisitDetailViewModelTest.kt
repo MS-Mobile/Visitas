@@ -1187,6 +1187,35 @@ class VisitDetailViewModelTest {
     }
 
     @Test
+    fun `onEvent with ConversationSelected and a non-url response inserts questionAndResponse`() {
+        val viewModel = createViewModel()
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+        val visit = viewModel.uiState.value.visitList.first()
+        val conversation = VisitDetailViewModel.ConversationState(
+            id = FIRST_CONVERSATION_ID,
+            question = "What is God's Kingdom?",
+            response = "A government ruled by Jesus Christ.",
+            questionAndResponse = "What is God's Kingdom?\nA government ruled by Jesus Christ.",
+            show = true,
+            conversationGroupId = null,
+            orderIndex = 0
+        )
+
+        viewModel.onEvent(
+            VisitDetailViewModel.UiEvent.ConversationSelected(
+                visit = visit,
+                conversation = conversation,
+                caretPosition = 0
+            )
+        )
+
+        assertEquals(
+            "What is God's Kingdom?\nA government ruled by Jesus Christ.",
+            viewModel.uiState.value.visitList.first().subject
+        )
+    }
+
+    @Test
     fun `onEvent with VisitSubjectChanged removes the whole link when deleting its closing bracket`() {
         val viewModel = createViewModel()
         viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))

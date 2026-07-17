@@ -54,7 +54,7 @@ done <<'MANIFEST'
 visit-list.png|visit/VisitListScreenshotTest|0
 visit-list-address-options.png|visit/VisitListScreenshotTest|9
 visit-detail.png|visit/VisitDetailScreenshotTest|0
-visit-phone-options.png|visit/VisitDetailScreenshotTest|14
+visit-phone-options.png|visit/VisitDetailScreenshotTest|15
 conversation-list.png|conversation/ConversationListScreenshotTest|0
 conversation-detail.png|conversation/ConversationDetailScreenshotTest|0
 settings.png|settings/SettingsScreenshotTest|0
