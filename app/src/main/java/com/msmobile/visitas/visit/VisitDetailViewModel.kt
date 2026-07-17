@@ -602,12 +602,16 @@ class VisitDetailViewModel
     private fun visitSubjectChanged(value: String, visit: VisitState, caretPosition: Int) {
         newState {
             val links = findFormattedLinks(visit.subject, urlValidator::isValid)
-            val (sanitizedValue, sanitizedCaretPosition) = sanitizeFormattedLinkEdit(
-                oldText = visit.subject,
-                newText = value,
-                proposedCaretPosition = caretPosition,
-                links = links
-            )
+            val (sanitizedValue, sanitizedCaretPosition) = if (value.isEmpty()) {
+                value to caretPosition
+            } else {
+                sanitizeFormattedLinkEdit(
+                    oldText = visit.subject,
+                    newText = value,
+                    proposedCaretPosition = caretPosition,
+                    links = links
+                )
+            }
             val lines = sanitizedValue.split('\n')
             val lineIndex = lines.getLineIndex(sanitizedCaretPosition)
             val lineValue = lines.elementAtOrNull(lineIndex) ?: return@newState this

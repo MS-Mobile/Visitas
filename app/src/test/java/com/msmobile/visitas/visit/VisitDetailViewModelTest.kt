@@ -1256,6 +1256,84 @@ class VisitDetailViewModelTest {
         assertEquals(editedSubject, viewModel.uiState.value.visitList.first().subject)
     }
 
+    @Test
+    fun `onEvent with ClearSubjectClicked fully clears the subject even when it contains a formatted link`() {
+        val viewModel = createViewModel()
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+        val visit = viewModel.uiState.value.visitList.first()
+        val conversation = VisitDetailViewModel.ConversationState(
+            id = FIRST_CONVERSATION_ID,
+            question = "What is God's Kingdom?",
+            response = "https://www.jw.org/en/bible-teachings/kingdom/",
+            questionAndResponse = "unused",
+            show = true,
+            conversationGroupId = null,
+            orderIndex = 0
+        )
+        viewModel.onEvent(
+            VisitDetailViewModel.UiEvent.ConversationSelected(visit, conversation, caretPosition = 0)
+        )
+        val linkedVisit = viewModel.uiState.value.visitList.first()
+
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ClearSubjectClicked(linkedVisit))
+
+        assertEquals("", viewModel.uiState.value.visitList.first().subject)
+    }
+
+    @Test
+    fun `onEvent with ClearSubjectClicked fully clears the subject when a formatted link has surrounding text`() {
+        val viewModel = createViewModel()
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+        val visit = viewModel.uiState.value.visitList.first()
+        val conversation = VisitDetailViewModel.ConversationState(
+            id = FIRST_CONVERSATION_ID,
+            question = "What is God's Kingdom?",
+            response = "https://www.jw.org/en/bible-teachings/kingdom/",
+            questionAndResponse = "unused",
+            show = true,
+            conversationGroupId = null,
+            orderIndex = 0
+        )
+        viewModel.onEvent(
+            VisitDetailViewModel.UiEvent.ConversationSelected(visit, conversation, caretPosition = 0)
+        )
+        val linkedVisit = viewModel.uiState.value.visitList.first()
+        val subjectWithPrefix = "prefix " + linkedVisit.subject
+        viewModel.onEvent(
+            VisitDetailViewModel.UiEvent.VisitSubjectChanged(
+                visit = linkedVisit,
+                value = subjectWithPrefix,
+                caretPosition = subjectWithPrefix.length
+            )
+        )
+        val visitWithPrefixedLink = viewModel.uiState.value.visitList.first()
+        assertEquals(subjectWithPrefix, visitWithPrefixedLink.subject)
+
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ClearSubjectClicked(visitWithPrefixedLink))
+
+        assertEquals("", viewModel.uiState.value.visitList.first().subject)
+    }
+
+    @Test
+    fun `onEvent with VisitSubjectChanged updates a plain-text subject with no formatted links`() {
+        val viewModel = createViewModel()
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+        val visit = viewModel.uiState.value.visitList.first()
+
+        viewModel.onEvent(
+            VisitDetailViewModel.UiEvent.VisitSubjectChanged(
+                visit = visit,
+                value = "Hi",
+                caretPosition = 2
+            )
+        )
+
+        val updatedVisit = viewModel.uiState.value.visitList.first()
+        assertEquals("Hi", updatedVisit.subject)
+        assertEquals(2, updatedVisit.caretPosition)
+        assertEquals(true, updatedVisit.showClearSubject)
+    }
+
     private fun createViewModel(
         conversationRepositoryRef: MockReferenceHolder<ConversationRepository>? = null,
         householderRepositoryRef: MockReferenceHolder<HouseholderRepository>? = null,
