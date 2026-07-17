@@ -13,6 +13,7 @@ import com.msmobile.visitas.util.DateTimeProvider
 import com.msmobile.visitas.util.DispatcherProvider
 import com.msmobile.visitas.util.IdProvider
 import com.msmobile.visitas.util.LatLongParser
+import com.msmobile.visitas.util.UrlValidator
 import com.msmobile.visitas.util.MainDispatcherRule
 import com.msmobile.visitas.util.MockReferenceHolder
 import com.msmobile.visitas.util.LocaleProvider
@@ -1237,6 +1238,7 @@ class VisitDetailViewModelTest {
             on { nowLocalDateTime() } doReturn TEST_DATE_TIME
         }
         val latLongParser = mock<LatLongParser>()
+        val urlValidator = UrlValidator()
         val clipboardHandler = mock<ClipboardHandler>()
         val visitDataFormatter = VisitDataFormatter(LocaleProvider())
         clipboardHandlerRef?.value = clipboardHandler
@@ -1255,6 +1257,7 @@ class VisitDetailViewModelTest {
             visitTimeValidator = visitTimeValidator,
             dateTimeProvider = dateTimeProvider,
             latLongParser = latLongParser,
+            urlValidator = urlValidator,
             clipboardHandler = clipboardHandler,
             visitDataFormatter = visitDataFormatter
         )

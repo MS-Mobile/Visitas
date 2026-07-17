@@ -340,6 +340,7 @@ private val previewConversationSuggestion = VisitDetailViewModel.ConversationSta
     id = UUID.randomUUID(),
     question = previewReturnVisit.subject,
     questionAndResponse = "${previewReturnVisit.subject} - Lucas 1:31-33",
+    response = "",
     show = true,
     conversationGroupId = UUID.randomUUID(),
     orderIndex = 0,

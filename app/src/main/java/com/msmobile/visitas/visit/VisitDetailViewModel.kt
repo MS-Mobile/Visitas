@@ -21,6 +21,7 @@ import com.msmobile.visitas.util.IdProvider
 import com.msmobile.visitas.util.LatLongParser
 import com.msmobile.visitas.util.PermissionChecker
 import com.msmobile.visitas.util.StringResource
+import com.msmobile.visitas.util.UrlValidator
 import com.msmobile.visitas.util.VisitDataFormatter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -52,6 +53,7 @@ class VisitDetailViewModel
     private val visitTimeValidator: VisitTimeValidator,
     private val dateTimeProvider: DateTimeProvider,
     private val latLongParser: LatLongParser,
+    private val urlValidator: UrlValidator,
     private val clipboardHandler: ClipboardHandler,
     private val visitDataFormatter: VisitDataFormatter
 ) : ViewModel() {
@@ -69,7 +71,8 @@ class VisitDetailViewModel
         )
     )
     private var conversations: List<Conversation> = listOf()
-    @Volatile private var initialEditableData: EditableDataSnapshot? = null
+    @Volatile
+    private var initialEditableData: EditableDataSnapshot? = null
     private var loadAddressAfterPermission = false
     private var isUpdatingVisit: Boolean = false
     private var isAddressFieldFocused: Boolean = false
@@ -705,7 +708,11 @@ class VisitDetailViewModel
     ) {
         newState {
             val updatedList = visitList.toMutableList()
-            val selectedConversation = conversation.questionAndResponse
+            val selectedConversation = if (isValidHttpAddress(conversation.response)) {
+                "(${conversation.question})[${conversation.response}]"
+            } else {
+                conversation.questionAndResponse
+            }
             val nextConversationSuggestion = conversationList.findNextConversation(
                 conversation.groupIdOrId,
                 conversation.orderIndex
@@ -1259,7 +1266,10 @@ class VisitDetailViewModel
                 return@launch
             }
 
-            val (householder, visitList) = mapHouseholderStateFromDatabase(householderId, conversationList)
+            val (householder, visitList) = mapHouseholderStateFromDatabase(
+                householderId,
+                conversationList
+            )
             newState {
                 copy(
                     householder = householder,
@@ -1300,6 +1310,10 @@ class VisitDetailViewModel
             hasFocus -> HouseholderAddressState.ShowClearAddress
             else -> HouseholderAddressState.None
         }
+    }
+
+    private fun isValidHttpAddress(address: String): Boolean {
+        return urlValidator.isValid(address)
     }
 
     private fun List<ConversationState>.filterBy(filter: String): List<ConversationState> {
@@ -1400,6 +1414,7 @@ class VisitDetailViewModel
                 id = id,
                 show = false,
                 question = question,
+                response = response,
                 questionAndResponse = questionAndResponse,
                 conversationGroupId = conversationGroupId,
                 orderIndex = orderIndex
@@ -1514,6 +1529,7 @@ class VisitDetailViewModel
     data class ConversationState(
         val id: UUID?,
         val question: String,
+        val response: String,
         val questionAndResponse: String,
         val show: Boolean,
         val conversationGroupId: UUID?,
