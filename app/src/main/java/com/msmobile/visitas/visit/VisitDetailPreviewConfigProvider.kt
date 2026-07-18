@@ -106,6 +106,23 @@ internal class VisitDetailPreviewConfigProvider :
             isDarkMode = false
         ),
         VisitDetailPreviewConfig(
+            configName = "Text And Formatted Link",
+            mainActivityUiState = previewMainActivityUiState,
+            householderId = UUID.randomUUID(),
+            uiState = previewVisitDetailUiState.copy(
+                visitList = listOf(
+                    previewFirstVisitUiState.copy(
+                        editable = previewFirstVisitUiState.editable.copy(
+                            subject = "Ask them: (What is God's Kingdom?)" +
+                                "[https://www.jw.org/en/bible-teachings/kingdom/]"
+                        ),
+                        canBeRemoved = false
+                    )
+                )
+            ),
+            isDarkMode = false
+        ),
+        VisitDetailPreviewConfig(
             configName = "Next Visit Suggestion",
             mainActivityUiState = previewMainActivityUiState,
             householderId = null,
