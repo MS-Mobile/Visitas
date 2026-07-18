@@ -166,4 +166,58 @@ class FormattedLinkTest {
         assertEquals(newText, result)
         assertEquals(0, caret)
     }
+
+    private fun visibleText(text: String, segments: List<RenderedSegment>): String =
+        segments.joinToString("") { text.substring(it.originalStart, it.originalEnd) }
+
+    @Test
+    fun `collapse reduces a single link to just its styled question`() {
+        val text = "(What is God's Kingdom?)[https://example.com]"
+        val links = findFormattedLinks(text, alwaysValid)
+
+        val segments = collapseFormattedLinks(text, links)
+
+        assertEquals(1, segments.size)
+        assertTrue(segments.single().isLink)
+        assertEquals("What is God's Kingdom?", visibleText(text, segments))
+    }
+
+    @Test
+    fun `collapse keeps surrounding text as plain segments around the link`() {
+        val text = "before (Question)[https://example.com] after"
+        val links = findFormattedLinks(text, alwaysValid)
+
+        val segments = collapseFormattedLinks(text, links)
+
+        assertEquals(3, segments.size)
+        assertEquals(listOf(false, true, false), segments.map { it.isLink })
+        assertEquals("before Question after", visibleText(text, segments))
+    }
+
+    @Test
+    fun `collapse handles multiple links in the same text`() {
+        val text = "(First)[https://a.com] and (Second)[https://b.com]"
+        val links = findFormattedLinks(text, alwaysValid)
+
+        val segments = collapseFormattedLinks(text, links)
+
+        assertEquals("First and Second", visibleText(text, segments))
+        assertEquals(listOf(true, false, true), segments.map { it.isLink })
+    }
+
+    @Test
+    fun `collapse leaves plain text untouched when there are no links`() {
+        val text = "Just plain text"
+
+        val segments = collapseFormattedLinks(text, emptyList())
+
+        assertEquals(1, segments.size)
+        assertTrue(!segments.single().isLink)
+        assertEquals(text, visibleText(text, segments))
+    }
+
+    @Test
+    fun `collapse returns no segments for empty text`() {
+        assertTrue(collapseFormattedLinks("", emptyList()).isEmpty())
+    }
 }

@@ -94,6 +94,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
@@ -126,8 +127,8 @@ import com.msmobile.visitas.ui.views.PreviewOverlayHost
 import com.msmobile.visitas.ui.views.TextFieldClearButton
 import com.msmobile.visitas.ui.views.TextFieldExpandButton
 import com.msmobile.visitas.util.DetailScreenStyle
-import com.msmobile.visitas.util.UrlValidator
 import com.msmobile.visitas.util.borderPadding
+import com.msmobile.visitas.util.collapseFormattedLinks
 import com.msmobile.visitas.util.findFormattedLinks
 import com.msmobile.visitas.util.floatingBarBottomPadding
 import com.msmobile.visitas.util.horizontalFieldPadding
@@ -943,26 +944,87 @@ private fun LazyItemScope.VisitItem(
     }
 }
 
+/**
+ * Collapses each detected `(question)[url]` span down to just its `question`,
+ * rendered colored + underlined, while the raw `(question)[url]` text is kept in
+ * the field's backing value. The accompanying [OffsetMapping] translates caret and
+ * selection offsets between the raw text and the collapsed display.
+ */
 private class FormattedLinkVisualTransformation(
-    private val linkColor: Color,
-    private val isValidUrl: (String) -> Boolean
+    private val linkColor: Color
 ) : VisualTransformation {
     override fun filter(text: AnnotatedString): TransformedText {
-        val links = findFormattedLinks(text.text, isValidUrl)
+        val links = findFormattedLinks(text.text)
         if (links.isEmpty()) {
             return TransformedText(text, OffsetMapping.Identity)
         }
-        val styled = buildAnnotatedString {
-            append(text)
-            links.forEach { span ->
-                addStyle(
-                    SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline),
-                    span.start,
-                    span.end
+        val original = text.text
+        val linkStyle = SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline)
+        val slices = ArrayList<KeptSlice>()
+        val transformed = buildAnnotatedString {
+            collapseFormattedLinks(original, links).forEach { segment ->
+                slices.add(
+                    KeptSlice(
+                        originalStart = segment.originalStart,
+                        originalEnd = segment.originalEnd,
+                        transformedStart = length
+                    )
                 )
+                val slice = original.substring(segment.originalStart, segment.originalEnd)
+                if (segment.isLink) {
+                    withStyle(linkStyle) { append(slice) }
+                } else {
+                    append(slice)
+                }
             }
         }
-        return TransformedText(styled, OffsetMapping.Identity)
+        val offsetMapping = FormattedLinkOffsetMapping(
+            slices = slices,
+            originalLength = original.length,
+            transformedLength = transformed.length
+        )
+        return TransformedText(transformed, offsetMapping)
+    }
+
+    private data class KeptSlice(
+        val originalStart: Int,
+        val originalEnd: Int,
+        val transformedStart: Int
+    )
+
+    /**
+     * Kept slices are contiguous in transformed coordinates (they are appended back
+     * to back) but leave gaps in original coordinates wherever a link's surrounding
+     * characters were dropped. Offsets landing in a dropped gap snap to the nearest
+     * kept boundary so the caret can never sit inside hidden text.
+     */
+    private class FormattedLinkOffsetMapping(
+        private val slices: List<KeptSlice>,
+        private val originalLength: Int,
+        private val transformedLength: Int
+    ) : OffsetMapping {
+        override fun originalToTransformed(offset: Int): Int {
+            slices.forEach { slice ->
+                if (offset < slice.originalStart) {
+                    return slice.transformedStart
+                }
+                if (offset <= slice.originalEnd) {
+                    return slice.transformedStart + (offset - slice.originalStart)
+                }
+            }
+            return transformedLength
+        }
+
+        override fun transformedToOriginal(offset: Int): Int {
+            slices.forEach { slice ->
+                val sliceTransformedEnd =
+                    slice.transformedStart + (slice.originalEnd - slice.originalStart)
+                if (offset <= sliceTransformedEnd) {
+                    return slice.originalStart + (offset - slice.transformedStart)
+                }
+            }
+            return originalLength
+        }
     }
 }
 
@@ -995,9 +1057,8 @@ private fun LazyItemScope.VisitSubjectDropdownList(
     }
 
     val linkColor = MaterialTheme.colorScheme.primary
-    val urlValidator = remember { UrlValidator() }
     val subjectVisualTransformation = remember(linkColor) {
-        FormattedLinkVisualTransformation(linkColor, urlValidator::isValid)
+        FormattedLinkVisualTransformation(linkColor)
     }
 
     Column(modifier = modifier) {

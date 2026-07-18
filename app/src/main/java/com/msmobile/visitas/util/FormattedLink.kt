@@ -11,7 +11,16 @@ data class FormattedLinkSpan(
 
 private val FORMATTED_LINK_PATTERN = Regex("""\(([^()\[\]\n]*)\)\[([^\[\]\n]*)\]""")
 
-fun findFormattedLinks(text: String, isValidUrl: (String) -> Boolean): List<FormattedLinkSpan> {
+/**
+ * Detects `(question)[url]` spans in [text]. [isValidUrl] gates which matches count
+ * as links and defaults to accepting any well-formed match: the view model only ever
+ * inserts this format after validating the URL, so the format itself is the contract
+ * and the rendering layer does not need to re-validate.
+ */
+fun findFormattedLinks(
+    text: String,
+    isValidUrl: (String) -> Boolean = { true }
+): List<FormattedLinkSpan> {
     return FORMATTED_LINK_PATTERN.findAll(text)
         .filter { match -> isValidUrl(match.groupValues[2]) }
         .map { match ->
@@ -26,6 +35,45 @@ fun findFormattedLinks(text: String, isValidUrl: (String) -> Boolean): List<Form
             )
         }
         .toList()
+}
+
+/**
+ * A contiguous slice of the original subject text that survives collapsing. An
+ * [isLink] segment is the question text of a formatted link (rendered styled);
+ * any other segment is plain, unchanged text. The surrounding "(", ")" and
+ * "[url]" of each link are dropped, so they never appear as a segment.
+ */
+data class RenderedSegment(
+    val originalStart: Int,
+    val originalEnd: Int,
+    val isLink: Boolean
+)
+
+/**
+ * Splits [text] into the ordered segments that should remain visible once each
+ * `(question)[url]` formatted link collapses down to just its styled question.
+ * [links] must be the spans returned by [findFormattedLinks] for the same text,
+ * ordered by position and non-overlapping.
+ */
+fun collapseFormattedLinks(text: String, links: List<FormattedLinkSpan>): List<RenderedSegment> {
+    if (links.isEmpty()) {
+        return if (text.isEmpty()) emptyList() else listOf(RenderedSegment(0, text.length, isLink = false))
+    }
+    val segments = mutableListOf<RenderedSegment>()
+    var cursor = 0
+    links.forEach { link ->
+        if (link.start > cursor) {
+            segments.add(RenderedSegment(cursor, link.start, isLink = false))
+        }
+        if (link.questionEnd > link.questionStart) {
+            segments.add(RenderedSegment(link.questionStart, link.questionEnd, isLink = true))
+        }
+        cursor = link.end
+    }
+    if (cursor < text.length) {
+        segments.add(RenderedSegment(cursor, text.length, isLink = false))
+    }
+    return segments
 }
 
 fun sanitizeFormattedLinkEdit(
