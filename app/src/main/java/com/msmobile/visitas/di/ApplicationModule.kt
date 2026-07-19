@@ -34,6 +34,7 @@ import com.msmobile.visitas.util.LocaleProvider
 import com.msmobile.visitas.util.Logger
 import com.msmobile.visitas.util.NetworkStatusTracker
 import com.msmobile.visitas.util.PermissionChecker
+import com.msmobile.visitas.util.UrlUtil
 import com.msmobile.visitas.util.UserLocationProvider
 import com.msmobile.visitas.util.VisitMapAdapter
 import com.msmobile.visitas.visit.SnapshotDao
@@ -337,5 +338,11 @@ class ApplicationModule {
     @Provides
     fun appVersionProvider(): AppVersionProvider {
         return AppVersionProvider
+    }
+
+    @Singleton
+    @Provides
+    fun urlUtil(): UrlUtil {
+        return UrlUtil
     }
 }

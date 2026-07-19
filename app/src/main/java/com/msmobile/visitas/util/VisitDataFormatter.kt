@@ -4,7 +4,6 @@ import com.msmobile.visitas.extension.toString
 import com.msmobile.visitas.visit.VisitPreferredDay
 import com.msmobile.visitas.visit.VisitPreferredTime
 import java.time.LocalDateTime
-import java.util.Locale
 import javax.inject.Inject
 
 class VisitDataFormatter @Inject constructor(
@@ -52,6 +51,17 @@ class VisitDataFormatter @Inject constructor(
                 appendLine(nextPendingVisitDate.toString(localeProvider.getLocale()))
             }
         }.trim()
+    }
+
+    /**
+     * Builds a `[text](url)` markdown link the subject field can render: brackets are stripped
+     * from the label (a blank label falls back to the url) and the characters that would
+     * terminate the token early (spaces, closing parens) are percent-encoded in the url.
+     */
+    fun formatAsMarkdownHyperlink(text: String, url: String): String {
+        val label = text.replace("[", "").replace("]", "").trim().ifEmpty { url }
+        val safeUrl = url.replace(" ", "%20").replace(")", "%29")
+        return "[$label]($safeUrl)"
     }
 }
 

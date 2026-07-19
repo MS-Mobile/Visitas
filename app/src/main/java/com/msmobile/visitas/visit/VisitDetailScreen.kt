@@ -96,6 +96,7 @@ import com.msmobile.visitas.extension.EditableTextFieldColors
 import com.msmobile.visitas.extension.OnBackPressed
 import com.msmobile.visitas.extension.launchDialer
 import com.msmobile.visitas.extension.launchSms
+import com.msmobile.visitas.extension.launchUrl
 import com.msmobile.visitas.extension.launchWhatsApp
 import com.msmobile.visitas.extension.ReadOnlyTextFieldColors
 import com.msmobile.visitas.extension.RequestCalendarPermission
@@ -961,6 +962,12 @@ private fun LazyItemScope.VisitSubjectDropdownList(
         }
     }
 
+    val context = LocalContext.current
+    val linkColor = MaterialTheme.colorScheme.primary
+    val markdownLinkTransformation = remember(linkColor) {
+        MarkdownLinkVisualTransformation(linkColor)
+    }
+
     Column(modifier = modifier) {
         TextField(
             modifier = modifier.onFocusChanged { focusState ->
@@ -998,16 +1005,21 @@ private fun LazyItemScope.VisitSubjectDropdownList(
                 Text(text = stringResource(id = R.string.visit_subject))
             },
             colors = EditableTextFieldColors,
+            visualTransformation = markdownLinkTransformation,
             onValueChange = { value ->
+                val result = interceptMarkdownLinkEdit(textFieldValueState, value)
+
                 // Update local state immediately for smooth typing
-                textFieldValueState = value
+                textFieldValueState = result.value
+
+                result.clickedUrl?.let { url -> context.launchUrl(url) }
 
                 // Send to ViewModel
                 onEvent(
                     VisitDetailViewModel.UiEvent.VisitSubjectChanged(
                         visit = visit,
-                        value = value.text,
-                        caretPosition = value.selection.start
+                        value = result.value.text,
+                        caretPosition = result.value.selection.start
                     )
                 )
             })

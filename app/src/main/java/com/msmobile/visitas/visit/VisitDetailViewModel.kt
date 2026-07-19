@@ -13,7 +13,6 @@ import com.msmobile.visitas.householder.HouseholderRepository
 import com.msmobile.visitas.householder.HouseholderSnapshot
 import com.msmobile.visitas.util.AddressProvider
 import com.msmobile.visitas.util.CalendarEventManager
-import com.msmobile.visitas.util.SyncVisitCalendarEventUseCase
 import com.msmobile.visitas.util.ClipboardHandler
 import com.msmobile.visitas.util.DateTimeProvider
 import com.msmobile.visitas.util.DispatcherProvider
@@ -21,6 +20,8 @@ import com.msmobile.visitas.util.IdProvider
 import com.msmobile.visitas.util.LatLongParser
 import com.msmobile.visitas.util.PermissionChecker
 import com.msmobile.visitas.util.StringResource
+import com.msmobile.visitas.util.SyncVisitCalendarEventUseCase
+import com.msmobile.visitas.util.UrlUtil
 import com.msmobile.visitas.util.VisitDataFormatter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -53,7 +54,8 @@ class VisitDetailViewModel
     private val dateTimeProvider: DateTimeProvider,
     private val latLongParser: LatLongParser,
     private val clipboardHandler: ClipboardHandler,
-    private val visitDataFormatter: VisitDataFormatter
+    private val visitDataFormatter: VisitDataFormatter,
+    private val urlUtil: UrlUtil
 ) : ViewModel() {
     private val didEditableDataChange: Boolean
         get() {
@@ -484,7 +486,7 @@ class VisitDetailViewModel
                     )
                 )
             }
-            val nextSubject = visit.nextConversationSuggestion?.questionAndResponse ?: ""
+            val nextSubject = visit.nextConversationSuggestion?.asSubjectText() ?: ""
             val nextConversationId = visit.nextConversationSuggestion?.groupIdOrId
             val nextOrderIndex = visit.nextConversationSuggestion?.orderIndex
             val nextConversationSuggestion = conversationList.findNextConversation(
@@ -698,6 +700,19 @@ class VisitDetailViewModel
         }
     }
 
+    /**
+     * Text this conversation contributes to a visit subject: a single `[question](url)`
+     * markdown line when the response is a url (repeating the question above the link
+     * would render the same text twice), otherwise question + response.
+     */
+    private fun ConversationState.asSubjectText(): String {
+        return if (urlUtil.isValidUrl(response)) {
+            visitDataFormatter.formatAsMarkdownHyperlink(text = question, url = response)
+        } else {
+            questionAndResponse
+        }
+    }
+
     private fun conversationSelected(
         visit: VisitState,
         conversation: ConversationState,
@@ -705,7 +720,7 @@ class VisitDetailViewModel
     ) {
         newState {
             val updatedList = visitList.toMutableList()
-            val selectedConversation = conversation.questionAndResponse
+            val selectedConversation = conversation.asSubjectText()
             val nextConversationSuggestion = conversationList.findNextConversation(
                 conversation.groupIdOrId,
                 conversation.orderIndex
@@ -1391,16 +1406,11 @@ class VisitDetailViewModel
 
     private val Conversation.asState: ConversationState
         get() {
-            val questionAndResponse = if (response.isNotEmpty()) {
-                question.plus("\n").plus(response)
-            } else {
-                question
-            }
             return ConversationState(
                 id = id,
                 show = false,
                 question = question,
-                questionAndResponse = questionAndResponse,
+                response = response,
                 conversationGroupId = conversationGroupId,
                 orderIndex = orderIndex
             )
@@ -1514,7 +1524,7 @@ class VisitDetailViewModel
     data class ConversationState(
         val id: UUID?,
         val question: String,
-        val questionAndResponse: String,
+        val response: String,
         val show: Boolean,
         val conversationGroupId: UUID?,
         val orderIndex: Int
@@ -1522,6 +1532,15 @@ class VisitDetailViewModel
         val groupIdOrId: UUID?
             get() {
                 return conversationGroupId ?: id
+            }
+
+        val questionAndResponse: String
+            get() {
+                return if (response.isNotEmpty()) {
+                    question.plus("\n").plus(response)
+                } else {
+                    question
+                }
             }
     }
 
