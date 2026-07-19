@@ -89,22 +89,6 @@ internal class VisitDetailPreviewConfigProvider :
             isDarkMode = false
         ),
         VisitDetailPreviewConfig(
-            configName = "Conversation contains URL",
-            mainActivityUiState = previewMainActivityUiState,
-            householderId = UUID.randomUUID(),
-            uiState = previewVisitDetailUiState.copy(
-                visitList = listOf(
-                    previewFirstVisitUiState.copy(
-                        editable = previewFirstVisitUiState.editable.copy(
-                            subject = "Publishing: (What is God's Kingdom?)[https://www.jw.org/en/bible-teachings/kingdom/]"
-                        ),
-                        canBeRemoved = false
-                    )
-                )
-            ),
-            isDarkMode = false
-        ),
-        VisitDetailPreviewConfig(
             configName = "Next Visit Suggestion",
             mainActivityUiState = previewMainActivityUiState,
             householderId = null,
@@ -247,6 +231,22 @@ internal class VisitDetailPreviewConfigProvider :
                 ),
                 visitList = listOf(previewFirstVisitUiState.copy(canBeRemoved = false)),
                 showPhoneOptionsSheet = true
+            ),
+            isDarkMode = false
+        ),
+        VisitDetailPreviewConfig(
+            configName = "Conversation contains URL",
+            mainActivityUiState = previewMainActivityUiState,
+            householderId = UUID.randomUUID(),
+            uiState = previewVisitDetailUiState.copy(
+                visitList = listOf(
+                    previewFirstVisitUiState.copy(
+                        editable = previewFirstVisitUiState.editable.copy(
+                            subject = "Publishing: (What is God's Kingdom?)[https://www.jw.org/en/bible-teachings/kingdom/]"
+                        ),
+                        canBeRemoved = false
+                    )
+                )
             ),
             isDarkMode = false
         ),
