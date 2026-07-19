@@ -3,8 +3,10 @@ package com.msmobile.visitas.visit
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextDecoration
@@ -83,4 +85,60 @@ private class MarkdownLinkOffsetMapping(private val links: List<MarkdownLink>) :
         }
         return offset + removed
     }
+}
+
+/** Result of [interceptMarkdownLinkEdit]: the value to apply and an optional tapped URL. */
+data class MarkdownLinkEditResult(val value: TextFieldValue, val clickedUrl: String?)
+
+/**
+ * Gives markdown link tokens their atomic behavior. Call first thing in onValueChange:
+ * - a single-character deletion inside a token becomes a whole-token deletion
+ * - a caret landing strictly inside a token (only reachable by tapping the rendered
+ *   label) is treated as a click: the URL is returned and the caret snaps to the end
+ * Everything else passes through untouched.
+ */
+fun interceptMarkdownLinkEdit(
+    previous: TextFieldValue,
+    proposed: TextFieldValue
+): MarkdownLinkEditResult {
+    val links = parseMarkdownLinks(previous.text)
+    if (links.isEmpty()) return MarkdownLinkEditResult(proposed, null)
+
+    singleCharDeletionIndex(previous.text, proposed.text)?.let { index ->
+        val link = links.firstOrNull { index >= it.start && index < it.end }
+        if (link != null) {
+            return MarkdownLinkEditResult(
+                TextFieldValue(
+                    text = previous.text.removeRange(link.start, link.end),
+                    selection = TextRange(link.start)
+                ),
+                clickedUrl = null
+            )
+        }
+    }
+
+    if (proposed.text == previous.text &&
+        proposed.selection.collapsed &&
+        proposed.selection != previous.selection
+    ) {
+        val caret = proposed.selection.start
+        val link = links.firstOrNull { caret > it.start && caret < it.end }
+        if (link != null) {
+            return MarkdownLinkEditResult(
+                proposed.copy(selection = TextRange(link.end)),
+                clickedUrl = link.url
+            )
+        }
+    }
+
+    return MarkdownLinkEditResult(proposed, null)
+}
+
+/** Index of the removed character when [proposed] is [previous] minus one char, else null. */
+private fun singleCharDeletionIndex(previous: String, proposed: String): Int? {
+    if (proposed.length != previous.length - 1) return null
+    val index = previous.indices.firstOrNull { i ->
+        i >= proposed.length || previous[i] != proposed[i]
+    } ?: return null
+    return if (previous.removeRange(index, index + 1) == proposed) index else null
 }
