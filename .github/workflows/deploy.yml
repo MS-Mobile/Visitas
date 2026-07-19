@@ -1,5 +1,6 @@
 # Play Store Deploy — manual deployment from a release branch
-# Downloads artifacts produced by release-build.yml on the specified branch
+# Run from the release branch selected in the "Use workflow from" picker;
+# downloads artifacts produced by release-build.yml on that branch
 # (tagging and the GitHub Release happen in release-build.yml)
 
 name: Deploy
@@ -7,9 +8,6 @@ name: Deploy
 on:
   workflow_dispatch:
     inputs:
-      release_branch:
-        description: 'Release branch to deploy from (e.g. release/1.1.0)'
-        required: true
       release_notes:
         description: 'Release notes (Portuguese)'
         required: false
@@ -28,7 +26,6 @@ jobs:
       - name: Checkout release branch
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.release_branch }}
           fetch-depth: 0
 
       - name: Read version from release branch
@@ -40,7 +37,7 @@ jobs:
 
       - name: Guard — branch must match version.properties
         run: |
-          BRANCH="${{ inputs.release_branch }}"
+          BRANCH="${{ github.ref_name }}"
           NAME="${{ steps.version.outputs.name }}"
           if [ "$BRANCH" != "release/${NAME}" ]; then
             echo "ERROR: Branch '$BRANCH' does not match versionName '$NAME' (expected branch 'release/${NAME}')."
@@ -56,7 +53,7 @@ jobs:
           name: app-bundle
           path: artifacts
           workflow: release-build.yml
-          branch: ${{ inputs.release_branch }}
+          branch: ${{ github.ref_name }}
           workflow_conclusion: success
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -82,10 +79,10 @@ jobs:
         run: |
           SHA="${{ steps.vcode.outputs.sha }}"
           if ! git merge-base --is-ancestor "$SHA" HEAD; then
-            echo "ERROR: Built commit $SHA is not on '${{ inputs.release_branch }}'."
+            echo "ERROR: Built commit $SHA is not on '${{ github.ref_name }}'."
             exit 1
           fi
-          echo "Built commit $SHA is on '${{ inputs.release_branch }}'"
+          echo "Built commit $SHA is on '${{ github.ref_name }}'"
 
       - name: List artifacts
         run: |
