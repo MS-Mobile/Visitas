@@ -1391,16 +1391,11 @@ class VisitDetailViewModel
 
     private val Conversation.asState: ConversationState
         get() {
-            val questionAndResponse = if (response.isNotEmpty()) {
-                question.plus("\n").plus(response)
-            } else {
-                question
-            }
             return ConversationState(
                 id = id,
                 show = false,
                 question = question,
-                questionAndResponse = questionAndResponse,
+                response = response,
                 conversationGroupId = conversationGroupId,
                 orderIndex = orderIndex
             )
@@ -1514,7 +1509,7 @@ class VisitDetailViewModel
     data class ConversationState(
         val id: UUID?,
         val question: String,
-        val questionAndResponse: String,
+        val response: String,
         val show: Boolean,
         val conversationGroupId: UUID?,
         val orderIndex: Int
@@ -1522,6 +1517,15 @@ class VisitDetailViewModel
         val groupIdOrId: UUID?
             get() {
                 return conversationGroupId ?: id
+            }
+
+        val questionAndResponse: String
+            get() {
+                return if (response.isNotEmpty()) {
+                    question.plus("\n").plus(response)
+                } else {
+                    question
+                }
             }
     }
 
