@@ -62,8 +62,8 @@ class MarkdownLinkAnnotatedStringTest {
         assertEquals(0, annotations[0].start)
         assertEquals(1, annotations[0].end)
         assertEquals("x", (annotations[0].item as LinkAnnotation.Clickable).tag)
-        assertEquals(7, annotations[1].start)
-        assertEquals(8, annotations[1].end)
+        assertEquals(6, annotations[1].start)
+        assertEquals(7, annotations[1].end)
         assertEquals("y", (annotations[1].item as LinkAnnotation.Clickable).tag)
     }
 
