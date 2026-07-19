@@ -2,7 +2,9 @@ package com.msmobile.visitas.visit
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.OffsetMapping
@@ -10,6 +12,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 
 /**
@@ -84,6 +87,37 @@ private class MarkdownLinkOffsetMapping(private val links: List<MarkdownLink>) :
             removed += (link.end - link.start) - link.label.length
         }
         return offset + removed
+    }
+}
+
+/**
+ * Read-only counterpart of [MarkdownLinkVisualTransformation] for plain [androidx.compose.material3.Text]:
+ * each `[label](url)` token becomes its label, styled as a hyperlink and carrying a
+ * [LinkAnnotation.Clickable] that invokes [onLinkClicked] with the url. Taps outside link
+ * labels are not consumed, so an enclosing clickable (e.g. a card) still receives them.
+ */
+fun annotateMarkdownLinks(
+    text: String,
+    linkColor: Color,
+    onLinkClicked: (String) -> Unit
+): AnnotatedString {
+    val links = parseMarkdownLinks(text)
+    if (links.isEmpty()) return AnnotatedString(text)
+
+    return buildAnnotatedString {
+        var consumed = 0
+        links.forEach { link ->
+            append(text.substring(consumed, link.start))
+            val annotation = LinkAnnotation.Clickable(
+                tag = link.url,
+                styles = TextLinkStyles(
+                    style = SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline)
+                )
+            ) { onLinkClicked(link.url) }
+            withLink(annotation) { append(link.label) }
+            consumed = link.end
+        }
+        append(text.substring(consumed))
     }
 }
 
