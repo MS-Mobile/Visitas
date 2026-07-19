@@ -90,6 +90,7 @@ import com.msmobile.visitas.extension.bottomSheetListItemColors
 import com.msmobile.visitas.extension.isKeyboardOpen
 import com.msmobile.visitas.extension.launchGoogleMaps
 import com.msmobile.visitas.extension.launchUber
+import com.msmobile.visitas.extension.launchUrl
 import com.msmobile.visitas.extension.textShimmer
 import com.msmobile.visitas.extension.toString
 import com.msmobile.visitas.extension.tonalButtonColors
@@ -786,6 +787,13 @@ private fun VisitCard(
     val locale = LocalConfiguration.current.locales[0]
     val isHouseholderAddressNearby =
         visit.householderAddressDistance is AddressProvider.AddressDistance.Nearby
+    val context = LocalContext.current
+    val linkColor = MaterialTheme.colorScheme.primary
+    val subjectPreview = remember(visit.subjectPreview, linkColor) {
+        annotateMarkdownLinks(visit.subjectPreview, linkColor) { url ->
+            context.launchUrl(url)
+        }
+    }
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -876,7 +884,7 @@ private fun VisitCard(
                     modifier = Modifier
                         .textShimmer(isLoading)
                         .weight(1f),
-                    text = visit.subjectPreview,
+                    text = subjectPreview,
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

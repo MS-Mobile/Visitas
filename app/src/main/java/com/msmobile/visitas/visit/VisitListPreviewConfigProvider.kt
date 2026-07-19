@@ -104,6 +104,20 @@ internal class VisitListPreviewConfigProvider : PreviewParameterProvider<VisitLi
                     address = "12 Olive Tree Street - Near the Garden of Gethsemane"
                 )
             )
+        ),
+        VisitListPreviewConfig(
+            configName = "Markdown link subject",
+            mainActivityUiState = previewMainActivityUiState,
+            summaryUiState = previewSummaryUiState,
+            visitListUiState = previewVisitListUiState.copy(
+                visitList = listOf(
+                    previewVisitListUiState.visitList[0],
+                    previewVisitListUiState.visitList[1],
+                    previewVisitListUiState.visitList[2].copy(
+                        subjectPreview = "[Who is Jesus Christ? — Luke 1:31-33](https://wol.jw.org)"
+                    ),
+                )
+            )
         )
     )
 
