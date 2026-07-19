@@ -17,6 +17,7 @@ import com.msmobile.visitas.util.MainDispatcherRule
 import com.msmobile.visitas.util.MockReferenceHolder
 import com.msmobile.visitas.util.LocaleProvider
 import com.msmobile.visitas.util.PermissionChecker
+import com.msmobile.visitas.util.UrlUtil
 import com.msmobile.visitas.util.VisitDataFormatter
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertFalse
@@ -24,6 +25,7 @@ import junit.framework.TestCase.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -1156,6 +1158,60 @@ class VisitDetailViewModelTest {
         verifyBlocking(visitRepository) { save(committedVisit) }
     }
 
+    @Test
+    fun `selecting a conversation with a url response inserts a markdown link only`() {
+        // Arrange
+        val viewModel = createViewModel(
+            conversations = listOf(
+                Conversation(
+                    id = FIRST_CONVERSATION_ID,
+                    question = "Question 1",
+                    response = "https://example.com/article",
+                    conversationGroupId = null,
+                    orderIndex = 0
+                )
+            )
+        )
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+        val visit = viewModel.uiState.value.visitList.first()
+        val conversation = viewModel.uiState.value.conversationList.first()
+
+        // Act
+        viewModel.onEvent(
+            VisitDetailViewModel.UiEvent.ConversationSelected(
+                visit = visit,
+                conversation = conversation,
+                caretPosition = 0
+            )
+        )
+
+        // Assert — the subject line is the link alone, not question + link
+        val updatedVisit = viewModel.uiState.value.visitList.first()
+        assertEquals("[Question 1](https://example.com/article)", updatedVisit.subject)
+    }
+
+    @Test
+    fun `selecting a conversation with a plain response inserts question and response`() {
+        // Arrange — default fixtures have non-url responses
+        val viewModel = createViewModel()
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+        val visit = viewModel.uiState.value.visitList.first()
+        val conversation = viewModel.uiState.value.conversationList.first()
+
+        // Act
+        viewModel.onEvent(
+            VisitDetailViewModel.UiEvent.ConversationSelected(
+                visit = visit,
+                conversation = conversation,
+                caretPosition = 0
+            )
+        )
+
+        // Assert
+        val updatedVisit = viewModel.uiState.value.visitList.first()
+        assertEquals("Question 1\nResponse 1", updatedVisit.subject)
+    }
+
     private fun createViewModel(
         conversationRepositoryRef: MockReferenceHolder<ConversationRepository>? = null,
         householderRepositoryRef: MockReferenceHolder<HouseholderRepository>? = null,
@@ -1173,13 +1229,14 @@ class VisitDetailViewModelTest {
         householderPreferredTime: VisitPreferredTime = VisitPreferredTime.ANY,
         householderNotes: String = "Test Notes",
         householderPhoneNumber: String? = null,
-        visitTimeValidResult: Boolean = true
+        visitTimeValidResult: Boolean = true,
+        conversations: List<Conversation>? = null
     ): VisitDetailViewModel {
         val dispatchers = DispatcherProvider(
             io = mainDispatcherRule.dispatcher
         )
         val conversationRepository = mock<ConversationRepository> {
-            on { listAll() } doReturn createConversationList()
+            on { listAll() } doReturn (conversations ?: createConversationList())
         }
         conversationRepositoryRef?.value = conversationRepository
 
@@ -1240,6 +1297,14 @@ class VisitDetailViewModelTest {
         val clipboardHandler = mock<ClipboardHandler>()
         val visitDataFormatter = VisitDataFormatter(LocaleProvider())
         clipboardHandlerRef?.value = clipboardHandler
+        // android.webkit.URLUtil is a framework stub on the JVM, so mirror its
+        // on-device contract (scheme-prefixed urls are valid) with a mock
+        val urlUtil = mock<UrlUtil> {
+            on { isValidUrl(any()) } doAnswer { invocation ->
+                val url = invocation.getArgument<String>(0)
+                url.startsWith("http://") || url.startsWith("https://")
+            }
+        }
 
         return VisitDetailViewModel(
             dispatchers = dispatchers,
@@ -1256,7 +1321,8 @@ class VisitDetailViewModelTest {
             dateTimeProvider = dateTimeProvider,
             latLongParser = latLongParser,
             clipboardHandler = clipboardHandler,
-            visitDataFormatter = visitDataFormatter
+            visitDataFormatter = visitDataFormatter,
+            urlUtil = urlUtil
         )
     }
 

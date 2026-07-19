@@ -13,7 +13,6 @@ import com.msmobile.visitas.householder.HouseholderRepository
 import com.msmobile.visitas.householder.HouseholderSnapshot
 import com.msmobile.visitas.util.AddressProvider
 import com.msmobile.visitas.util.CalendarEventManager
-import com.msmobile.visitas.util.SyncVisitCalendarEventUseCase
 import com.msmobile.visitas.util.ClipboardHandler
 import com.msmobile.visitas.util.DateTimeProvider
 import com.msmobile.visitas.util.DispatcherProvider
@@ -21,6 +20,8 @@ import com.msmobile.visitas.util.IdProvider
 import com.msmobile.visitas.util.LatLongParser
 import com.msmobile.visitas.util.PermissionChecker
 import com.msmobile.visitas.util.StringResource
+import com.msmobile.visitas.util.SyncVisitCalendarEventUseCase
+import com.msmobile.visitas.util.UrlUtil
 import com.msmobile.visitas.util.VisitDataFormatter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -53,7 +54,8 @@ class VisitDetailViewModel
     private val dateTimeProvider: DateTimeProvider,
     private val latLongParser: LatLongParser,
     private val clipboardHandler: ClipboardHandler,
-    private val visitDataFormatter: VisitDataFormatter
+    private val visitDataFormatter: VisitDataFormatter,
+    private val urlUtil: UrlUtil
 ) : ViewModel() {
     private val didEditableDataChange: Boolean
         get() {
@@ -705,7 +707,16 @@ class VisitDetailViewModel
     ) {
         newState {
             val updatedList = visitList.toMutableList()
-            val selectedConversation = conversation.questionAndResponse
+            // A URL response becomes a single clickable line labeled with the question;
+            // repeating the question above it would render the same text twice
+            val selectedConversation = if (urlUtil.isValidUrl(conversation.response)) {
+                visitDataFormatter.formatAsMarkdownHyperlink(
+                    text = conversation.question,
+                    url = conversation.response
+                )
+            } else {
+                conversation.questionAndResponse
+            }
             val nextConversationSuggestion = conversationList.findNextConversation(
                 conversation.groupIdOrId,
                 conversation.orderIndex
