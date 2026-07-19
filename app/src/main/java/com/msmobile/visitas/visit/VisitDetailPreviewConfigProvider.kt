@@ -242,7 +242,7 @@ internal class VisitDetailPreviewConfigProvider :
                 visitList = listOf(
                     previewFirstVisitUiState.copy(
                         editable = previewFirstVisitUiState.editable.copy(
-                            subject = "Publishing: (What is God's Kingdom?)[https://www.jw.org/en/bible-teachings/kingdom/]"
+                            subject = "Publishing: [What is God's Kingdom?](https://www.jw.org/en/bible-teachings/kingdom/)"
                         ),
                         canBeRemoved = false
                     )
