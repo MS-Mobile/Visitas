@@ -21,6 +21,7 @@ import com.msmobile.visitas.util.UrlUtil
 import com.msmobile.visitas.util.VisitDataFormatter
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertFalse
+import junit.framework.TestCase.assertNotNull
 import junit.framework.TestCase.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -1188,6 +1189,48 @@ class VisitDetailViewModelTest {
         // Assert — the subject line is the link alone, not question + link
         val updatedVisit = viewModel.uiState.value.visitList.first()
         assertEquals("[Question 1](https://example.com/article)", updatedVisit.subject)
+    }
+
+    @Test
+    fun `accepting a next visit suggestion with a url response uses a markdown link subject`() {
+        // Arrange — selecting the first conversation makes the second one the suggestion
+        val viewModel = createViewModel(
+            conversations = listOf(
+                Conversation(
+                    id = FIRST_CONVERSATION_ID,
+                    question = "Question 1",
+                    response = "Response 1",
+                    conversationGroupId = null,
+                    orderIndex = 0
+                ),
+                Conversation(
+                    id = SECOND_CONVERSATION_ID,
+                    question = "Question 2",
+                    response = "https://example.com/next",
+                    conversationGroupId = FIRST_CONVERSATION_ID,
+                    orderIndex = 1
+                )
+            )
+        )
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+        viewModel.onEvent(
+            VisitDetailViewModel.UiEvent.ConversationSelected(
+                visit = viewModel.uiState.value.visitList.first(),
+                conversation = viewModel.uiState.value.conversationList.first(),
+                caretPosition = 0
+            )
+        )
+        val visitWithSuggestion = viewModel.uiState.value.visitList.first()
+        assertNotNull(visitWithSuggestion.nextConversationSuggestion)
+
+        // Act
+        viewModel.onEvent(
+            VisitDetailViewModel.UiEvent.NextVisitSuggestionAccepted(visitWithSuggestion)
+        )
+
+        // Assert — the new visit's subject is the link alone, not question + raw url
+        val newVisit = viewModel.uiState.value.visitList.first()
+        assertEquals("[Question 2](https://example.com/next)", newVisit.subject)
     }
 
     @Test

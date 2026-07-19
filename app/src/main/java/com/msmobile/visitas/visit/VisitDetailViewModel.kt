@@ -486,7 +486,7 @@ class VisitDetailViewModel
                     )
                 )
             }
-            val nextSubject = visit.nextConversationSuggestion?.questionAndResponse ?: ""
+            val nextSubject = visit.nextConversationSuggestion?.asSubjectText() ?: ""
             val nextConversationId = visit.nextConversationSuggestion?.groupIdOrId
             val nextOrderIndex = visit.nextConversationSuggestion?.orderIndex
             val nextConversationSuggestion = conversationList.findNextConversation(
@@ -700,6 +700,19 @@ class VisitDetailViewModel
         }
     }
 
+    /**
+     * Text this conversation contributes to a visit subject: a single `[question](url)`
+     * markdown line when the response is a url (repeating the question above the link
+     * would render the same text twice), otherwise question + response.
+     */
+    private fun ConversationState.asSubjectText(): String {
+        return if (urlUtil.isValidUrl(response)) {
+            visitDataFormatter.formatAsMarkdownHyperlink(text = question, url = response)
+        } else {
+            questionAndResponse
+        }
+    }
+
     private fun conversationSelected(
         visit: VisitState,
         conversation: ConversationState,
@@ -707,16 +720,7 @@ class VisitDetailViewModel
     ) {
         newState {
             val updatedList = visitList.toMutableList()
-            // A URL response becomes a single clickable line labeled with the question;
-            // repeating the question above it would render the same text twice
-            val selectedConversation = if (urlUtil.isValidUrl(conversation.response)) {
-                visitDataFormatter.formatAsMarkdownHyperlink(
-                    text = conversation.question,
-                    url = conversation.response
-                )
-            } else {
-                conversation.questionAndResponse
-            }
+            val selectedConversation = conversation.asSubjectText()
             val nextConversationSuggestion = conversationList.findNextConversation(
                 conversation.groupIdOrId,
                 conversation.orderIndex
