@@ -81,6 +81,14 @@ fun Context.launchWhatsApp(phone: String) {
     startActivitySafely(intent)
 }
 
+/** Opens [url] with the default handler (browser). Scheme-less URLs get https:// prefixed. */
+fun Context.launchUrl(url: String) {
+    val uri = Uri.parse(url).let { parsed ->
+        if (parsed.scheme == null) Uri.parse("https://$url") else parsed
+    }
+    startActivitySafely(Intent(Intent.ACTION_VIEW, uri))
+}
+
 private fun Context.startActivitySafely(intent: Intent) {
     try {
         startActivity(intent)
