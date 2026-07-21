@@ -247,17 +247,21 @@ internal fun DateTimePickerPreview(@PreviewParameter(DateTimePickerPreviewConfig
     )
 
     VisitasTheme(config.isDarkMode) {
-        DateTimePickerContent(
-            now = config.now,
-            selectedTabIndex = config.selectedTabIndex,
-            datePickerState = datePickerState,
-            timePickerState = timePickerState,
-            onTabSelected = {},
-            onDatePresetSelected = {},
-            onTimePresetSelected = {},
-            onConfirm = {},
-            onDismiss = {}
-        )
+        // Preview-only: hosts the expanded overlays (filter menu) above the app bar, which would
+        // otherwise clip them in screenshots. No-op / absent in production (see PreviewOverlayHost).
+        PreviewOverlayHost {
+            DateTimePickerContent(
+                now = config.now,
+                selectedTabIndex = config.selectedTabIndex,
+                datePickerState = datePickerState,
+                timePickerState = timePickerState,
+                onTabSelected = {},
+                onDatePresetSelected = {},
+                onTimePresetSelected = {},
+                onConfirm = {},
+                onDismiss = {}
+            )
+        }
     }
 }
 
