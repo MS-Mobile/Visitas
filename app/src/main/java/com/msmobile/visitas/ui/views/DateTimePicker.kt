@@ -121,6 +121,32 @@ fun DateTimePicker(
     val onTabSelected = { tabIndex: Int ->
         selectedTabIndex = tabIndex
     }
+    DateTimePickerContent(
+        now = now,
+        selectedTabIndex = selectedTabIndex,
+        datePickerState = datePickerState,
+        timePickerState = timePickerState,
+        onTabSelected = onTabSelected,
+        onDatePresetSelected = onDatePresetSelected,
+        onTimePresetSelected = onTimePresetSelected,
+        onConfirm = onConfirm,
+        onDismiss = onDismiss
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DateTimePickerContent(
+    now: LocalDateTime,
+    selectedTabIndex: Int,
+    datePickerState: DatePickerState,
+    timePickerState: TimePickerState,
+    onTabSelected: (Int) -> Unit,
+    onDatePresetSelected: (LocalDate) -> Unit,
+    onTimePresetSelected: (LocalDateTime) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
     DatePickerDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
@@ -133,7 +159,10 @@ fun DateTimePicker(
                 horizontalArrangement = Arrangement.spacedBy(horizontalFieldPadding)
             ) {
                 if (selectedTabIndex == DATE_PICKER_TAB) {
-                    SelectTodayButton(today = now.toLocalDate(), onPresetSelected = onDatePresetSelected)
+                    SelectTodayButton(
+                        today = now.toLocalDate(),
+                        onPresetSelected = onDatePresetSelected
+                    )
                 } else {
                     SelectNowButton(now = now, onPresetSelected = onTimePresetSelected)
                 }
@@ -144,60 +173,45 @@ fun DateTimePicker(
             }
         }
     ) {
-        DateTimePickerContent(
-            selectedTabIndex = selectedTabIndex,
-            datePickerState = datePickerState,
-            timePickerState = timePickerState,
-            onTabSelected = onTabSelected
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun DateTimePickerContent(
-    selectedTabIndex: Int,
-    datePickerState: DatePickerState,
-    timePickerState: TimePickerState,
-    onTabSelected: (Int) -> Unit
-) {
-    Column(modifier = Modifier.background(color = DatePickerDefaults.colors().containerColor)) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-        ) {
-            PrimaryTabRow(
-                containerColor = DatePickerDefaults.colors().containerColor,
-                selectedTabIndex = selectedTabIndex
+        Column(modifier = Modifier.background(color = DatePickerDefaults.colors().containerColor)) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
             ) {
-                Tab(
-                    selected = selectedTabIndex == DATE_PICKER_TAB,
-                    onClick = { onTabSelected(DATE_PICKER_TAB) },
-                    text = {
-                        Text(text = stringResource(id = R.string.date))
-                    }
-                )
-                Tab(
-                    selected = selectedTabIndex == TIME_PICKER_TAB,
-                    onClick = { onTabSelected(TIME_PICKER_TAB) },
-                    text = {
-                        Text(text = stringResource(id = R.string.time))
-                    }
-                )
-            }
-            when (selectedTabIndex) {
-                DATE_PICKER_TAB -> {
-                    DatePicker(
-                        modifier = Modifier.padding(borderPadding),
-                        state = datePickerState,
-                        title = null
+                PrimaryTabRow(
+                    containerColor = DatePickerDefaults.colors().containerColor,
+                    selectedTabIndex = selectedTabIndex
+                ) {
+                    Tab(
+                        selected = selectedTabIndex == DATE_PICKER_TAB,
+                        onClick = { onTabSelected(DATE_PICKER_TAB) },
+                        text = {
+                            Text(text = stringResource(id = R.string.date))
+                        }
+                    )
+                    Tab(
+                        selected = selectedTabIndex == TIME_PICKER_TAB,
+                        onClick = { onTabSelected(TIME_PICKER_TAB) },
+                        text = {
+                            Text(text = stringResource(id = R.string.time))
+                        }
                     )
                 }
-                TIME_PICKER_TAB -> {
-                    TimePicker(
-                        modifier = Modifier.padding(borderPadding),
-                        state = timePickerState
-                    )
+                when (selectedTabIndex) {
+                    DATE_PICKER_TAB -> {
+                        DatePicker(
+                            modifier = Modifier.padding(borderPadding),
+                            state = datePickerState,
+                            title = null
+                        )
+                    }
+
+                    TIME_PICKER_TAB -> {
+                        TimePicker(
+                            modifier = Modifier.padding(borderPadding),
+                            state = timePickerState
+                        )
+                    }
                 }
             }
         }
@@ -221,7 +235,6 @@ private fun SelectNowButton(now: LocalDateTime, onPresetSelected: (LocalDateTime
 @OptIn(ExperimentalMaterial3Api::class)
 @VisibleForTesting
 @PreviewPhone
-@PreviewFoldable
 @Composable
 internal fun DateTimePickerPreview(@PreviewParameter(DateTimePickerPreviewConfigProvider::class) config: DateTimePickerPreviewConfig) {
     val datePickerState = rememberDatePickerState(
@@ -235,10 +248,15 @@ internal fun DateTimePickerPreview(@PreviewParameter(DateTimePickerPreviewConfig
 
     VisitasTheme(config.isDarkMode) {
         DateTimePickerContent(
+            now = config.now,
             selectedTabIndex = config.selectedTabIndex,
             datePickerState = datePickerState,
             timePickerState = timePickerState,
             onTabSelected = {},
+            onDatePresetSelected = {},
+            onTimePresetSelected = {},
+            onConfirm = {},
+            onDismiss = {}
         )
     }
 }
