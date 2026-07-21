@@ -48,7 +48,7 @@ internal class VisitDetailPreviewConfigProvider :
             householderId = UUID.randomUUID(),
             uiState = previewVisitDetailUiState.copy(
                 visitList = listOf(
-                    previewFirstVisitUiState.copy(canBeRemoved = false)
+                    previewFirstVisitUiState
                 )
             ),
             isDarkMode = false
@@ -59,7 +59,7 @@ internal class VisitDetailPreviewConfigProvider :
             householderId = UUID.randomUUID(),
             uiState = previewVisitDetailUiState.copy(
                 visitList = listOf(
-                    previewFirstVisitUiState.copy(canBeRemoved = false, isDraft = true)
+                    previewFirstVisitUiState.copy(isDraft = true)
                 )
             ),
             isDarkMode = false
@@ -96,7 +96,6 @@ internal class VisitDetailPreviewConfigProvider :
                 visitList = listOf(
                     previewFirstVisitUiState.copy(
                         editable = previewFirstVisitUiState.editable.copy(isDone = true),
-                        canBeRemoved = false,
                         nextConversationSuggestion = previewConversationSuggestion,
                         showNextVisitSuggestion = true
                     ),
@@ -118,7 +117,6 @@ internal class VisitDetailPreviewConfigProvider :
                 visitList = listOf(
                     previewFirstVisitUiState.copy(
                         editable = previewFirstVisitUiState.editable.copy(isDone = false),
-                        canBeRemoved = false,
                         hasVisitTimeError = true
                     )
                 ),
@@ -138,7 +136,7 @@ internal class VisitDetailPreviewConfigProvider :
                     showClearNotes = true,
                     isNotesExpanded = true
                 ),
-                visitList = listOf(previewFirstVisitUiState.copy(canBeRemoved = false))
+                visitList = listOf(previewFirstVisitUiState)
             ),
             isDarkMode = false
         ),
@@ -147,7 +145,7 @@ internal class VisitDetailPreviewConfigProvider :
             mainActivityUiState = previewMainActivityUiState,
             householderId = UUID.randomUUID(),
             uiState = previewVisitDetailUiState.copy(
-                visitList = listOf(previewFirstVisitUiState.copy(canBeRemoved = false)),
+                visitList = listOf(previewFirstVisitUiState),
                 showDeleteButton = true
             ),
             isDarkMode = false
@@ -157,7 +155,7 @@ internal class VisitDetailPreviewConfigProvider :
             mainActivityUiState = previewMainActivityUiState,
             householderId = UUID.randomUUID(),
             uiState = previewVisitDetailUiState.copy(
-                visitList = listOf(previewFirstVisitUiState.copy(canBeRemoved = false)),
+                visitList = listOf(previewFirstVisitUiState),
                 eventState = VisitDetailViewModel.UiEventState.NoAddressFound
             ),
             isDarkMode = false
@@ -167,7 +165,7 @@ internal class VisitDetailPreviewConfigProvider :
             mainActivityUiState = previewMainActivityUiState,
             householderId = UUID.randomUUID(),
             uiState = previewVisitDetailUiState.copy(
-                visitList = listOf(previewFirstVisitUiState.copy(canBeRemoved = false)),
+                visitList = listOf(previewFirstVisitUiState),
                 eventState = VisitDetailViewModel.UiEventState.CopiedToClipboard
             ),
             isDarkMode = false
@@ -184,7 +182,7 @@ internal class VisitDetailPreviewConfigProvider :
                     showClearNotes = false,
                     isNotesExpanded = false
                 ),
-                visitList = listOf(previewFirstVisitUiState.copy(canBeRemoved = false))
+                visitList = listOf(previewFirstVisitUiState)
             ),
             isDarkMode = false
         ),
@@ -200,7 +198,7 @@ internal class VisitDetailPreviewConfigProvider :
                     showClearNotes = false,
                     isNotesExpanded = true
                 ),
-                visitList = listOf(previewFirstVisitUiState.copy(canBeRemoved = false))
+                visitList = listOf(previewFirstVisitUiState)
             ),
             isDarkMode = false
         ),
@@ -214,7 +212,7 @@ internal class VisitDetailPreviewConfigProvider :
                         phoneNumber = ""
                     )
                 ),
-                visitList = listOf(previewFirstVisitUiState.copy(canBeRemoved = false)),
+                visitList = listOf(previewFirstVisitUiState),
                 showPhoneInputDialog = true
             ),
             isDarkMode = false
@@ -229,7 +227,7 @@ internal class VisitDetailPreviewConfigProvider :
                         phoneNumber = "+55 11 99999-0000"
                     )
                 ),
-                visitList = listOf(previewFirstVisitUiState.copy(canBeRemoved = false)),
+                visitList = listOf(previewFirstVisitUiState),
                 showPhoneOptionsSheet = true
             ),
             isDarkMode = false
@@ -243,8 +241,7 @@ internal class VisitDetailPreviewConfigProvider :
                     previewFirstVisitUiState.copy(
                         editable = previewFirstVisitUiState.editable.copy(
                             subject = "Publishing: [What is God's Kingdom?](https://www.jw.org/en/bible-teachings/kingdom/)"
-                        ),
-                        canBeRemoved = false
+                        )
                     )
                 )
             ),
@@ -326,7 +323,7 @@ private val previewFirstVisitUiState = VisitDetailViewModel.VisitState(
         )
     ),
     householderId = UUID.randomUUID(),
-    canBeRemoved = true,
+    canBeRemoved = false,
     isConversationListExpanded = false,
     isVisitTypeListExpanded = false,
     nextConversationSuggestion = null,
@@ -353,7 +350,7 @@ private val previewReturnVisit = VisitDetailViewModel.VisitState(
         )
     ),
     householderId = UUID.randomUUID(),
-    canBeRemoved = false,
+    canBeRemoved = true,
     isConversationListExpanded = false,
     isVisitTypeListExpanded = false,
     nextConversationSuggestion = null,
