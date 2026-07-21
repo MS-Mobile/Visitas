@@ -120,6 +120,20 @@ private fun createViewModel(
 ### Instrumented Tests (app/src/androidTest/)
 Use `@HiltAndroidTest` + `HiltAndroidRule`. Test runner is `HiltTestRunner`.
 
+### Screenshot Tests (app/src/screenshotTest/)
+Compose Preview screenshot tests (`*ScreenshotTest.kt`) render each case supplied by a
+`PreviewParameterProvider` (e.g. `VisitListPreviewConfigProvider`) and diff against reference
+PNGs in `app/src/screenshotTestDebug/reference/`. The PR build runs `validateDebugScreenshotTest`.
+
+- **To exercise a new rendering, add a new variant at the end of the provider — never edit the
+  shared preview state.** Providers build most variants from one shared `UiState` (e.g.
+  `previewVisitListUiState`), so mutating that shared value ripples into *every* variant's
+  baseline and produces a huge, noisy screenshot diff. Adding a variant (via `.copy(...)` of
+  the shared state) only creates new reference images and leaves existing baselines untouched.
+- Reference PNGs are regenerated and committed by the **Regenerate Screenshots** workflow
+  (`.github/workflows/regenerate-screenshots.yml`, runs `updateDebugScreenshotTest`), dispatched
+  per branch. Dispatch it after any intended UI change so `validateDebugScreenshotTest` passes.
+
 ## Pre-commit Hook
 Modifying `VisitasDatabase.kt` triggers `BackupHandlerTest` automatically (requires a connected device). Run `./gradlew installGitHooks` once after cloning.
 
