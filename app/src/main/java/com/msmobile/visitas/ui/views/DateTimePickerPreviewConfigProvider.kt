@@ -2,6 +2,7 @@ package com.msmobile.visitas.ui.views
 
 import androidx.annotation.VisibleForTesting
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import java.time.LocalDateTime
 
 @VisibleForTesting
 internal class DateTimePickerPreviewConfigProvider : PreviewParameterProvider<DateTimePickerPreviewConfig> {
@@ -15,6 +16,7 @@ internal class DateTimePickerPreviewConfigProvider : PreviewParameterProvider<Da
             initialHour = 10,
             initialMinute = 12,
             is24Hour = true,
+            now = LocalDateTime.now()
         ),
         DateTimePickerPreviewConfig(
             configName = "Time Tab",
@@ -23,7 +25,8 @@ internal class DateTimePickerPreviewConfigProvider : PreviewParameterProvider<Da
             initialSelectedDateMillis = 1705312800000,
             initialHour = 10,
             initialMinute = 12,
-            is24Hour = true
+            is24Hour = true,
+            now = LocalDateTime.now()
         )
     )
 
@@ -50,5 +53,6 @@ internal data class DateTimePickerPreviewConfig(
     val initialHour: Int,
     val initialMinute: Int,
     val is24Hour: Boolean,
+    val now: LocalDateTime
 )
 
