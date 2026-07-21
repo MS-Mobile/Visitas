@@ -250,6 +250,18 @@ internal class VisitDetailPreviewConfigProvider :
             ),
             isDarkMode = false
         ),
+        VisitDetailPreviewConfig(
+            configName = "Expanded visit date picker",
+            mainActivityUiState = previewMainActivityUiState,
+            householderId = UUID.randomUUID(),
+            uiState = previewVisitDetailUiState.copy(
+                visitList = listOf(
+                    previewFirstVisitUiState
+                ),
+                eventState = VisitDetailViewModel.UiEventState.VisitDateExpanded(previewFirstVisitUiState)
+            ),
+            isDarkMode = false,
+        ),
     )
 
     override fun getDisplayName(index: Int): String {
