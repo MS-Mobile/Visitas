@@ -110,6 +110,8 @@ import com.msmobile.visitas.extension.textField
 import com.msmobile.visitas.extension.toString
 import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
+import com.msmobile.visitas.ui.views.AddToCalendarState
+import com.msmobile.visitas.ui.views.CalendarColor
 import com.msmobile.visitas.ui.views.DateTimePicker
 import com.msmobile.visitas.ui.views.LazyColumnWithScrollbar
 import com.msmobile.visitas.ui.views.PermissionRationaleSheet
@@ -211,7 +213,12 @@ private fun VisitDetailScreenContent(
         }
     }
     if (uiState.showCalendarPermissionDialog) {
-        RequestCalendarPermission {
+        RequestCalendarPermission(
+            onPermissionDenied = {
+                onEvent(VisitDetailViewModel.UiEvent.CalendarPermissionDialogShown)
+                onEvent(VisitDetailViewModel.UiEvent.CalendarPermissionDenied)
+            }
+        ) {
             onEvent(VisitDetailViewModel.UiEvent.CalendarPermissionDialogShown)
             onEvent(VisitDetailViewModel.UiEvent.CalendarPermissionGranted)
         }
@@ -1146,14 +1153,20 @@ private fun StateHandler(
         is VisitDetailViewModel.UiEventState.VisitDateExpanded -> {
             DateTimePicker(
                 dateTime = eventState.visit.date,
-                onDateSelected = { dateTime ->
+                addToCalendarState = uiState.addToCalendarState(eventState.visit),
+                onDateSelected = { dateTime, calendarColorKey ->
                     onEvent(
                         VisitDetailViewModel.UiEvent.VisitDateAccepted(
                             eventState.visit,
-                            dateTime
+                            dateTime,
+                            calendarColorKey
                         )
                     )
-                }, onDismiss = {
+                },
+                onCalendarAccessRequested = {
+                    onEvent(VisitDetailViewModel.UiEvent.CalendarColorClicked)
+                },
+                onDismiss = {
                     onEvent(VisitDetailViewModel.UiEvent.VisitDateDismissed)
                 }
             )
@@ -1220,6 +1233,30 @@ private fun StateHandler(
                 }
             )
         }
+
+        is VisitDetailViewModel.UiEventState.CalendarPermissionDenied -> {
+            CalendarPermissionDeniedSnackbar(
+                modifier = Modifier.snackbarPadding(),
+                onSnackbarDismissed = {
+                    onEvent(VisitDetailViewModel.UiEvent.SnackbarDismissed)
+                }
+            )
+        }
+    }
+}
+
+private fun VisitDetailViewModel.UiState.addToCalendarState(
+    visit: VisitDetailViewModel.VisitState
+): AddToCalendarState {
+    return when {
+        !hasCalendarPermission -> AddToCalendarState.PermissionMissing
+        calendarColors.isEmpty() -> AddToCalendarState.NoEventColors
+        else -> AddToCalendarState.EventColors(
+            colors = calendarColors.map { color ->
+                CalendarColor(key = color.key, argb = color.argb)
+            },
+            selectedKey = visit.calendarColorKey ?: calendarDefaultColorKey
+        )
     }
 }
 
@@ -1276,6 +1313,32 @@ private fun NoAddressFoundSnackbar(
             }) {
             Text(
                 text = stringResource(R.string.houlseholder_no_address_found),
+                color = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+        }
+    }
+}
+
+@Composable
+private fun CalendarPermissionDeniedSnackbar(
+    modifier: Modifier,
+    onSnackbarDismissed: () -> Unit
+) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+        Snackbar(
+            modifier = modifier,
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            dismissAction = {
+                IconButton(onClick = onSnackbarDismissed) {
+                    Icon(
+                        imageVector = Icons.Rounded.Close,
+                        contentDescription = stringResource(R.string.close_icon_content_description),
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }) {
+            Text(
+                text = stringResource(R.string.calendar_permission_denied),
                 color = MaterialTheme.colorScheme.onSecondaryContainer
             )
         }

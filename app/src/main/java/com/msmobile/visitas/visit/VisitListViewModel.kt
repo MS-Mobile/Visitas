@@ -264,7 +264,8 @@ constructor(
                 subject = visitModel.subject,
                 date = visitModel.date,
                 isDone = visitModel.isDone,
-                householderName = visit.householderName
+                householderName = visit.householderName,
+                colorKey = visitModel.calendarColorKey
             )
             val updatedVisitModel = visitModel.copy(calendarEventId = calendarEventId)
             visitRepository.save(updatedVisitModel)

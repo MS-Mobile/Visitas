@@ -95,7 +95,11 @@ class VisitDetailViewModel
 
             is UiEvent.VisitDoneChanged -> visitDoneChanged(uiEvent.value, uiEvent.visit)
             is UiEvent.VisitDateClicked -> visitDateClicked(uiEvent.visit)
-            is UiEvent.VisitDateAccepted -> visitDateAccepted(uiEvent.visit, uiEvent.dateTime)
+            is UiEvent.VisitDateAccepted -> visitDateAccepted(
+                uiEvent.visit,
+                uiEvent.dateTime,
+                uiEvent.calendarColorKey
+            )
             is UiEvent.RemoveVisitClicked -> removeVisitClicked(uiEvent.visit)
             is UiEvent.ConversationListDismissed -> conversationListDismissed(uiEvent.visit)
             is UiEvent.VisitTypeListDismissed -> visitTypeListDismissed(uiEvent.visit)
@@ -149,9 +153,11 @@ class VisitDetailViewModel
             UiEvent.LocationRationaleDismissed -> handleLocationRationaleDismissed()
             UiEvent.LocationPermissionGranted -> handleLocationPermissionGranted()
             UiEvent.LocationPermissionDialogShown -> handleLocationPermissionDialogShown()
+            UiEvent.CalendarColorClicked -> handleCalendarColorClicked()
             UiEvent.CalendarRationaleAccepted -> handleCalendarRationaleAccepted()
             UiEvent.CalendarRationaleDismissed -> handleCalendarRationaleDismissed()
             UiEvent.CalendarPermissionGranted -> handleCalendarPermissionGranted()
+            UiEvent.CalendarPermissionDenied -> handleCalendarPermissionDenied()
             UiEvent.CalendarPermissionDialogShown -> handleCalendarPermissionDialogShown()
             UiEvent.CopyVisitDataClicked -> copyVisitDataClicked()
             UiEvent.PhoneClicked -> phoneClicked()
@@ -339,6 +345,12 @@ class VisitDetailViewModel
         }
     }
 
+    private fun handleCalendarColorClicked() {
+        newState {
+            copy(showCalendarRationale = true)
+        }
+    }
+
     private fun handleCalendarRationaleAccepted() {
         newState {
             copy(
@@ -355,17 +367,47 @@ class VisitDetailViewModel
                 showCalendarPermissionDialog = false
             )
         }
-        // Continue saving without calendar integration
-        performSave()
     }
 
     private fun handleCalendarPermissionGranted() {
-        performSave()
+        viewModelScope.launch(dispatchers.io) {
+            refreshCalendarPalette()
+        }
+    }
+
+    private fun handleCalendarPermissionDenied() {
+        newState {
+            copy(eventState = UiEventState.CalendarPermissionDenied)
+        }
     }
 
     private fun handleCalendarPermissionDialogShown() {
         newState {
             copy(showCalendarPermissionDialog = false)
+        }
+    }
+
+    /**
+     * Mirrors the calendar permission state and the account's synced event color
+     * palette into the UI state, so the date picker can render the color row
+     * without touching the content provider from the composition.
+     */
+    private suspend fun refreshCalendarPalette() {
+        if (!calendarEventManager.hasCalendarPermission()) {
+            newState {
+                copy(hasCalendarPermission = false, calendarColors = emptyList())
+            }
+            return
+        }
+        val colors = calendarEventManager.getAvailableColors()
+        newState {
+            copy(
+                hasCalendarPermission = true,
+                calendarColors = colors.map { color ->
+                    CalendarColorState(key = color.key.value, argb = color.argb)
+                },
+                calendarDefaultColorKey = calendarEventManager.getDefaultColorKey().value
+            )
         }
     }
 
@@ -645,12 +687,24 @@ class VisitDetailViewModel
         }
     }
 
-    private fun visitDateAccepted(visit: VisitState, dateTime: LocalDateTime) {
+    private fun visitDateAccepted(
+        visit: VisitState,
+        dateTime: LocalDateTime,
+        calendarColorKey: String?
+    ) {
         newState {
             val updatedList = visitList.toMutableList().apply {
                 set(
                     this@apply.indexOfById(visit),
-                    visit.copy(editable = visit.editable.copy(date = dateTime))
+                    visit.copy(
+                        editable = visit.editable.copy(
+                            date = dateTime,
+                            // Null means the user didn't touch the color row
+                            // (e.g. no permission yet), so keep the stored choice.
+                            calendarColorKey = calendarColorKey
+                                ?: visit.editable.calendarColorKey
+                        )
+                    )
                 )
             }.revalidatePendingVisits(householder)
             copy(
@@ -897,17 +951,9 @@ class VisitDetailViewModel
     }
 
     private fun saveClicked() {
-        // Check if there are pending visits that need calendar integration
-        val hasPendingVisits = _uiState.value.visitList.any { !it.isDone && !it.wasRemoved }
-
-        // If there are pending visits and no calendar permission, show rationale
-        if (hasPendingVisits && !calendarEventManager.hasCalendarPermission()) {
-            newState {
-                copy(showCalendarRationale = true)
-            }
-            return
-        }
-
+        // Calendar permission is requested only from the date picker's
+        // "Add to calendar" row, never as a side effect of saving. Without the
+        // permission the sync use case is a no-op and the visit saves normally.
         performSave()
     }
 
@@ -1064,7 +1110,8 @@ class VisitDetailViewModel
                 subject = visitState.subject,
                 date = visitState.date,
                 isDone = visitState.isDone,
-                householderName = householderName
+                householderName = householderName,
+                colorKey = visitState.calendarColorKey
             )
             val updatedVisitState = visitState.copy(calendarEventId = calendarEventId)
             val visitModel = updatedVisitState.asModel(householderId)
@@ -1241,6 +1288,7 @@ class VisitDetailViewModel
     private fun viewCreated(householderId: UUID?) {
         this.isUpdatingVisit = householderId != null
         viewModelScope.launch(dispatchers.io) {
+            refreshCalendarPalette()
             conversations = conversationRepository.listAll()
             val conversationList = conversations.map { conversation ->
                 conversation.asState
@@ -1332,7 +1380,8 @@ class VisitDetailViewModel
                 date = date,
                 isDone = isDone,
                 orderIndex = orderIndex,
-                visitType = visitType.asState
+                visitType = visitType.asState,
+                calendarColorKey = calendarColorKey
             ),
             householderId = householderId,
             canBeRemoved = isAllowedRemoveVisit(orderIndex),
@@ -1431,7 +1480,8 @@ class VisitDetailViewModel
             orderIndex = orderIndex,
             visitType = visitType.type,
             nextConversationId = nextConversationSuggestion?.id,
-            calendarEventId = calendarEventId
+            calendarEventId = calendarEventId,
+            calendarColorKey = calendarColorKey
         )
     }
 
@@ -1519,6 +1569,7 @@ class VisitDetailViewModel
         val isDone get() = editable.isDone
         val orderIndex get() = editable.orderIndex
         val visitType get() = editable.visitType
+        val calendarColorKey get() = editable.calendarColorKey
     }
 
     data class ConversationState(
@@ -1590,8 +1641,11 @@ class VisitDetailViewModel
         val date: LocalDateTime,
         val isDone: Boolean,
         val orderIndex: Int,
-        val visitType: VisitTypeState
+        val visitType: VisitTypeState,
+        val calendarColorKey: String? = null
     )
+
+    data class CalendarColorState(val key: String, val argb: Int)
 
     private data class EditableDataSnapshot(
         val householder: EditableHouseholderData,
@@ -1612,7 +1666,11 @@ class VisitDetailViewModel
 
         data class VisitDoneChanged(val visit: VisitState, val value: Boolean) : UiEvent()
         data class VisitDateClicked(val visit: VisitState) : UiEvent()
-        data class VisitDateAccepted(val visit: VisitState, val dateTime: LocalDateTime) : UiEvent()
+        data class VisitDateAccepted(
+            val visit: VisitState,
+            val dateTime: LocalDateTime,
+            val calendarColorKey: String? = null
+        ) : UiEvent()
         data class RemoveVisitClicked(val visit: VisitState) : UiEvent()
         data class ConversationSelected(
             val visit: VisitState,
@@ -1662,9 +1720,11 @@ class VisitDetailViewModel
         data object LocationRationaleDismissed : UiEvent()
         data object LocationPermissionGranted : UiEvent()
         data object LocationPermissionDialogShown : UiEvent()
+        data object CalendarColorClicked : UiEvent()
         data object CalendarRationaleAccepted : UiEvent()
         data object CalendarRationaleDismissed : UiEvent()
         data object CalendarPermissionGranted : UiEvent()
+        data object CalendarPermissionDenied : UiEvent()
         data object CalendarPermissionDialogShown : UiEvent()
         data object CopyVisitDataClicked : UiEvent()
         data object PhoneClicked : UiEvent()
@@ -1687,6 +1747,7 @@ class VisitDetailViewModel
         data object Deleted : UiEventState()
         data class NextVisitSuggestionShowing(val visit: VisitState) : UiEventState()
         data object CopiedToClipboard : UiEventState()
+        data object CalendarPermissionDenied : UiEventState()
     }
 
     data class UiState(
@@ -1701,7 +1762,10 @@ class VisitDetailViewModel
         val showCalendarRationale: Boolean = false,
         val showCalendarPermissionDialog: Boolean = false,
         val showPhoneInputDialog: Boolean = false,
-        val showPhoneOptionsSheet: Boolean = false
+        val showPhoneOptionsSheet: Boolean = false,
+        val hasCalendarPermission: Boolean = false,
+        val calendarColors: List<CalendarColorState> = emptyList(),
+        val calendarDefaultColorKey: String? = null
     ) {
         val hasDrafts: Boolean
             get() = householder.isDraft || visitList.any { !it.wasRemoved && it.isDraft }

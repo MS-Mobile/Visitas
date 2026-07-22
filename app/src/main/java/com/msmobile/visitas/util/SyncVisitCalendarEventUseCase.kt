@@ -15,7 +15,8 @@ class SyncVisitCalendarEventUseCase @Inject constructor(
         subject: String,
         date: LocalDateTime,
         isDone: Boolean,
-        householderName: String
+        householderName: String,
+        colorKey: String? = null
     ): Long? {
         if (!calendarEventManager.hasCalendarPermission()) return calendarEventId
         if (visitType == VisitType.FIRST_VISIT) return null
@@ -29,7 +30,10 @@ class SyncVisitCalendarEventUseCase @Inject constructor(
             title = title,
             description = subject,
             startTime = date,
-            isDone = isDone
+            isDone = isDone,
+            color = colorKey
+                ?.let { CalendarEventManager.ColorKey(it) }
+                ?: calendarEventManager.getDefaultColorKey()
         )
     }
 }
