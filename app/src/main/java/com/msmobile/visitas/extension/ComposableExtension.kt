@@ -126,7 +126,10 @@ fun RequestLocationPermission(onPermissionGranted: () -> Unit) {
 }
 
 @Composable
-fun RequestCalendarPermission(onPermissionGranted: () -> Unit) {
+fun RequestCalendarPermission(
+    onPermissionDenied: () -> Unit = {},
+    onPermissionGranted: () -> Unit
+) {
     val calendarPermissions = arrayOf(
         Manifest.permission.READ_CALENDAR,
         Manifest.permission.WRITE_CALENDAR
@@ -136,6 +139,8 @@ fun RequestCalendarPermission(onPermissionGranted: () -> Unit) {
     ) { permissions ->
         if (permissions.values.all { permission -> permission }) {
             onPermissionGranted()
+        } else {
+            onPermissionDenied()
         }
     }
 

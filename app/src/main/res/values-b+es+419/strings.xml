@@ -101,6 +101,8 @@
     <string name="invalid_install_source">Fuente de instalación no válida. Use Google Play Store.</string>
     <string name="date_time_picker_today">Hoy</string>
     <string name="date_time_picker_now">Ahora</string>
+    <string name="add_to_calendar">Agregar al calendario</string>
+    <string name="date_time_picker_choose_color">Elegir color</string>
     <string name="current_location">Ubicación actual</string>
     <string name="no_visits_to_show_on_the_map">No hay visitas para mostrar en el mapa</string>
     <string name="error_loading_visits_map">Error al cargar el mapa de visitas.</string>
@@ -121,7 +123,8 @@
     <string name="preferred_time_afternoon">Tarde</string>
     <string name="preferred_time_evening">Noche</string>
     <string name="visit_time_error">El horario de la visita no coincide con la preferencia del residente</string>
-    <string name="calendar_permission_message">Se necesita permiso de calendario para programar recordatorios de visitas.</string>
+    <string name="calendar_permission_message">Permite el acceso al calendario para agregar visitas a tu calendario y elegir su color.</string>
+    <string name="calendar_permission_denied">Acceso al calendario denegado. Puedes concederlo cuando quieras desde la configuración del sistema.</string>
     <string name="update_downloaded_restart">Actualización descargada. Reiniciando la aplicación…</string>
     <string name="copied_to_clipboard">Copiado al portapapeles</string>
 
@@ -142,6 +145,7 @@
     <string name="restore_backup_icon_content_description">Restaurar copia de seguridad</string>
     <string name="expand_text_content_description">Expandir texto</string>
     <string name="collapse_text_content_description">Contraer texto</string>
+    <string name="calendar_color_content_description">Color del evento del calendario</string>
     <string name="settings">Configuración</string>
     <string name="navigate_back_content_description">Volver</string>
     <string name="app_version">Versión %1$s</string>

@@ -30,5 +30,6 @@ data class Visit(
     val visitType: VisitType,
     val nextConversationId: UUID?,
     val calendarEventId: Long? = null,
+    val calendarColorKey: String? = null,
     val isDraft: Boolean = false
 )

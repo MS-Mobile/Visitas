@@ -278,10 +278,7 @@ class VisitDetailViewModelTest {
         mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
         assertTrue(viewModel.uiState.value.householder.isDraft)
 
-        // Act — calendar permission is mocked false, but there are no pending visits requiring it
-        //       after we mark the single visit done to avoid the calendar rationale path.
-        val visit = viewModel.uiState.value.visitList.first()
-        viewModel.onEvent(VisitDetailViewModel.UiEvent.VisitDoneChanged(value = true, visit = visit))
+        // Act
         viewModel.onEvent(VisitDetailViewModel.UiEvent.SaveClicked)
         mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
 
@@ -291,6 +288,182 @@ class VisitDetailViewModelTest {
         verifyBlocking(snapshotRepository) { deleteVisitSnapshots(HOUSEHOLDER_ID) }
         assertFalse(viewModel.uiState.value.householder.isDraft)
         assertFalse(viewModel.uiState.value.hasDrafts)
+    }
+
+    @Test
+    fun `save without calendar permission saves directly without showing rationale`() {
+        // Arrange — the fixture visit is pending and calendar permission is denied
+        val viewModel = createViewModel()
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.SaveClicked)
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert
+        val state = viewModel.uiState.value
+        assertFalse(state.showCalendarRationale)
+        assertEquals(VisitDetailViewModel.UiEventState.SaveSucceeded, state.eventState)
+    }
+
+    @Test
+    fun `calendar color clicked shows the calendar rationale sheet`() {
+        // Arrange
+        val viewModel = createViewModel()
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.CalendarColorClicked)
+
+        // Assert
+        assertTrue(viewModel.uiState.value.showCalendarRationale)
+    }
+
+    @Test
+    fun `calendar rationale accepted opens the system permission dialog`() {
+        // Arrange
+        val viewModel = createViewModel()
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.CalendarColorClicked)
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.CalendarRationaleAccepted)
+
+        // Assert
+        val state = viewModel.uiState.value
+        assertFalse(state.showCalendarRationale)
+        assertTrue(state.showCalendarPermissionDialog)
+    }
+
+    @Test
+    fun `calendar rationale dismissed does not trigger a save`() {
+        // Arrange
+        val viewModel = createViewModel()
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.CalendarColorClicked)
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.CalendarRationaleDismissed)
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert
+        val state = viewModel.uiState.value
+        assertFalse(state.showCalendarRationale)
+        assertFalse(state.showCalendarPermissionDialog)
+        assertEquals(VisitDetailViewModel.UiEventState.Idle, state.eventState)
+    }
+
+    @Test
+    fun `view created with calendar permission loads the event color palette`() {
+        // Arrange
+        val viewModel = createViewModel(
+            calendarPermissionGranted = true,
+            calendarEventColors = listOf(
+                CalendarEventManager.EventColor(
+                    key = CalendarEventManager.ColorKey("5"),
+                    argb = 0xFFF6BF26.toInt()
+                )
+            )
+        )
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert
+        val state = viewModel.uiState.value
+        assertTrue(state.hasCalendarPermission)
+        assertEquals(
+            listOf(VisitDetailViewModel.CalendarColorState(key = "5", argb = 0xFFF6BF26.toInt())),
+            state.calendarColors
+        )
+        assertEquals("2", state.calendarDefaultColorKey)
+    }
+
+    @Test
+    fun `calendar permission granted loads the event color palette`() {
+        // Arrange
+        val viewModel = createViewModel(
+            calendarPermissionGranted = true,
+            calendarEventColors = listOf(
+                CalendarEventManager.EventColor(
+                    key = CalendarEventManager.ColorKey("7"),
+                    argb = 0xFF039BE5.toInt()
+                )
+            )
+        )
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.CalendarPermissionGranted)
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert
+        val state = viewModel.uiState.value
+        assertTrue(state.hasCalendarPermission)
+        assertEquals(1, state.calendarColors.size)
+        assertEquals("7", state.calendarColors.first().key)
+    }
+
+    @Test
+    fun `calendar permission denied shows the denied snackbar state`() {
+        // Arrange
+        val viewModel = createViewModel()
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.CalendarPermissionDenied)
+
+        // Assert
+        assertEquals(
+            VisitDetailViewModel.UiEventState.CalendarPermissionDenied,
+            viewModel.uiState.value.eventState
+        )
+    }
+
+    @Test
+    fun `visit date accepted stores the picked calendar color key`() {
+        // Arrange
+        val viewModel = createViewModel()
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+        val visit = viewModel.uiState.value.visitList.first()
+
+        // Act
+        viewModel.onEvent(
+            VisitDetailViewModel.UiEvent.VisitDateAccepted(
+                visit = visit,
+                dateTime = TEST_DATE_TIME.plusDays(1),
+                calendarColorKey = "7"
+            )
+        )
+
+        // Assert
+        assertEquals("7", viewModel.uiState.value.visitList.first().calendarColorKey)
+    }
+
+    @Test
+    fun `visit date accepted without a color keeps the stored color key`() {
+        // Arrange — store a color first
+        val viewModel = createViewModel()
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+        val visit = viewModel.uiState.value.visitList.first()
+        viewModel.onEvent(
+            VisitDetailViewModel.UiEvent.VisitDateAccepted(
+                visit = visit,
+                dateTime = TEST_DATE_TIME.plusDays(1),
+                calendarColorKey = "7"
+            )
+        )
+
+        // Act — accept a new date with an untouched color row
+        val updatedVisit = viewModel.uiState.value.visitList.first()
+        viewModel.onEvent(
+            VisitDetailViewModel.UiEvent.VisitDateAccepted(
+                visit = updatedVisit,
+                dateTime = TEST_DATE_TIME.plusDays(2),
+                calendarColorKey = null
+            )
+        )
+
+        // Assert
+        assertEquals("7", viewModel.uiState.value.visitList.first().calendarColorKey)
     }
 
     @Test
@@ -1273,7 +1446,9 @@ class VisitDetailViewModelTest {
         householderNotes: String = "Test Notes",
         householderPhoneNumber: String? = null,
         visitTimeValidResult: Boolean = true,
-        conversations: List<Conversation>? = null
+        conversations: List<Conversation>? = null,
+        calendarPermissionGranted: Boolean = false,
+        calendarEventColors: List<CalendarEventManager.EventColor> = emptyList()
     ): VisitDetailViewModel {
         val dispatchers = DispatcherProvider(
             io = mainDispatcherRule.dispatcher
@@ -1327,7 +1502,9 @@ class VisitDetailViewModelTest {
             on { hasPermissions(any(), any()) } doReturn false
         }
         val calendarEventManager = mock<CalendarEventManager> {
-            on { hasCalendarPermission() } doReturn false
+            on { hasCalendarPermission() } doReturn calendarPermissionGranted
+            onBlocking { getAvailableColors() } doReturn calendarEventColors
+            on { getDefaultColorKey() } doReturn CalendarEventManager.ColorKey("2")
         }
         val syncVisitCalendarEvent = mock<SyncVisitCalendarEventUseCase>()
         val visitTimeValidator = mock<VisitTimeValidator> {
