@@ -138,6 +138,11 @@ class VisitDetailViewModel
                 uiEvent.checked
             )
 
+            is UiEvent.AddVisitToCalendarColorSelected -> addVisitToCalendarColorSelected(
+                uiEvent.visit,
+                uiEvent.color
+            )
+
             UiEvent.LoadAddressClicked -> loadAddressClicked()
             UiEvent.LookUpAddressFromLatLongClicked -> lookUpAddressFromLatLongClicked()
             UiEvent.CancelClicked -> cancelClicked()
@@ -1175,19 +1180,69 @@ class VisitDetailViewModel
     }
 
     private fun addVisitToCalendarChecked(visit: VisitState, checked: Boolean) {
+        val hasPermission = calendarEventManager.hasCalendarPermission()
+        val shouldCheck = checked && hasPermission
         newState {
-            val shouldCheck = checked && calendarEventManager.hasCalendarPermission()
-            val showCalendarRationale = checked && !calendarEventManager.hasCalendarPermission()
-            val updatedList = visitList.toMutableList().apply {
-                set(
-                    this@apply.indexOfById(visit),
-                    visit.copy(
-                        addToCalendarState = visit.addToCalendarState.copy(checked = shouldCheck)
-                    )
+            withUpdatedVisit(visit) { current ->
+                current.copy(
+                    addToCalendarState = current.addToCalendarState.copy(checked = shouldCheck)
+                )
+            }.copy(showCalendarRationale = checked && !hasPermission)
+        }
+        // Populate the color palette for the picker only once the box is actually checked and we
+        // have permission to read it.
+        if (shouldCheck) {
+            loadAvailableCalendarColors(visit)
+        }
+    }
+
+    private fun addVisitToCalendarColorSelected(visit: VisitState, @ColorInt color: Int) {
+        newState {
+            withUpdatedVisit(visit) { current ->
+                current.copy(
+                    addToCalendarState = current.addToCalendarState.copy(selectedColor = color)
                 )
             }
-            copy(visitList = updatedList, showCalendarRationale = showCalendarRationale)
         }
+    }
+
+    private fun loadAvailableCalendarColors(visit: VisitState) {
+        viewModelScope.launch(dispatchers.io) {
+            val colors = calendarEventManager.getAvailableColors().map { it.argb }
+            newState {
+                withUpdatedVisit(visit) { current ->
+                    current.copy(
+                        addToCalendarState = current.addToCalendarState.copy(
+                            availableColors = colors
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * Applies [transform] to the visit matching [visit]'s id in [UiState.visitList], keeping the
+     * open date-time picker ([UiEventState.VisitDateExpanded]) in sync so the dialog reflects the
+     * change. Returns the state unchanged when the visit is no longer present.
+     */
+    private fun UiState.withUpdatedVisit(
+        visit: VisitState,
+        transform: (VisitState) -> VisitState
+    ): UiState {
+        val index = visitList.indexOfById(visit)
+        if (index < 0) return this
+        val updatedVisit = transform(visitList[index])
+        val updatedList = visitList.toMutableList().apply { set(index, updatedVisit) }
+        val expanded = eventState
+        val updatedEventState = if (
+            expanded is UiEventState.VisitDateExpanded && expanded.visit.id == visit.id
+        ) {
+            expanded.copy(visit = updatedVisit)
+        } else {
+            eventState
+        }
+        return copy(visitList = updatedList, eventState = updatedEventState)
     }
 
     @ColorInt
@@ -1675,6 +1730,9 @@ class VisitDetailViewModel
         data class PreferredDayChanged(val value: VisitPreferredDay) : UiEvent()
         data class PreferredTimeChanged(val value: VisitPreferredTime) : UiEvent()
         data class AddVisitToCalendarChecked(val visit: VisitState, val checked: Boolean) :
+            UiEvent()
+
+        data class AddVisitToCalendarColorSelected(val visit: VisitState, val color: Int) :
             UiEvent()
 
         data object LoadAddressClicked : UiEvent()

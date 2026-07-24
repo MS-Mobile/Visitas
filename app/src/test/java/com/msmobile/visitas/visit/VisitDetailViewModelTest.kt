@@ -1255,6 +1255,121 @@ class VisitDetailViewModelTest {
         assertEquals("Question 1\nResponse 1", updatedVisit.subject)
     }
 
+    @Test
+    fun `checking add to calendar with permission checks the box and syncs the open picker`() {
+        // Arrange
+        val viewModel = createViewModel(hasCalendarPermission = true)
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+        val visit = viewModel.uiState.value.visitList.first()
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.VisitDateClicked(visit))
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.AddVisitToCalendarChecked(visit, checked = true))
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert — both the list and the open date-time picker reflect the checked box.
+        val state = viewModel.uiState.value
+        assertTrue(state.visitList.first().addToCalendarState.checked)
+        assertFalse(state.showCalendarRationale)
+        val expanded = state.eventState as VisitDetailViewModel.UiEventState.VisitDateExpanded
+        assertTrue(expanded.visit.addToCalendarState.checked)
+    }
+
+    @Test
+    fun `checking add to calendar without permission keeps it unchecked and shows the rationale`() {
+        // Arrange
+        val viewModel = createViewModel(hasCalendarPermission = false)
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+        val visit = viewModel.uiState.value.visitList.first()
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.VisitDateClicked(visit))
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.AddVisitToCalendarChecked(visit, checked = true))
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert
+        val state = viewModel.uiState.value
+        assertFalse(state.visitList.first().addToCalendarState.checked)
+        assertTrue(state.showCalendarRationale)
+    }
+
+    @Test
+    fun `checking add to calendar with permission loads the available colors into the picker`() {
+        // Arrange
+        val colors = listOf(
+            CalendarEventManager.EventColor(CalendarEventManager.ColorKey("1"), 0xFFD50000.toInt()),
+            CalendarEventManager.EventColor(CalendarEventManager.ColorKey("2"), 0xFF33B679.toInt())
+        )
+        val viewModel = createViewModel(
+            hasCalendarPermission = true,
+            availableCalendarColors = colors
+        )
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+        val visit = viewModel.uiState.value.visitList.first()
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.VisitDateClicked(visit))
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.AddVisitToCalendarChecked(visit, checked = true))
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert
+        val expanded = viewModel.uiState.value.eventState
+            as VisitDetailViewModel.UiEventState.VisitDateExpanded
+        assertEquals(
+            listOf(0xFFD50000.toInt(), 0xFF33B679.toInt()),
+            expanded.visit.addToCalendarState.availableColors
+        )
+    }
+
+    @Test
+    fun `selecting a calendar color updates the selected color and syncs the open picker`() {
+        // Arrange
+        val viewModel = createViewModel(hasCalendarPermission = true)
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+        val visit = viewModel.uiState.value.visitList.first()
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.VisitDateClicked(visit))
+
+        // Act
+        val chosen = 0xFF039BE5.toInt()
+        viewModel.onEvent(
+            VisitDetailViewModel.UiEvent.AddVisitToCalendarColorSelected(visit, chosen)
+        )
+
+        // Assert
+        val state = viewModel.uiState.value
+        assertEquals(chosen, state.visitList.first().addToCalendarState.selectedColor)
+        val expanded = state.eventState as VisitDetailViewModel.UiEventState.VisitDateExpanded
+        assertEquals(chosen, expanded.visit.addToCalendarState.selectedColor)
+    }
+
+    @Test
+    fun `unchecking add to calendar clears the checked state without showing the rationale`() {
+        // Arrange
+        val viewModel = createViewModel(hasCalendarPermission = true)
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+        val visit = viewModel.uiState.value.visitList.first()
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.VisitDateClicked(visit))
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.AddVisitToCalendarChecked(visit, checked = true))
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Act
+        val checkedVisit = viewModel.uiState.value.visitList.first()
+        viewModel.onEvent(
+            VisitDetailViewModel.UiEvent.AddVisitToCalendarChecked(checkedVisit, checked = false)
+        )
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert
+        val state = viewModel.uiState.value
+        assertFalse(state.visitList.first().addToCalendarState.checked)
+        assertFalse(state.showCalendarRationale)
+    }
+
     private fun createViewModel(
         conversationRepositoryRef: MockReferenceHolder<ConversationRepository>? = null,
         householderRepositoryRef: MockReferenceHolder<HouseholderRepository>? = null,
@@ -1273,7 +1388,9 @@ class VisitDetailViewModelTest {
         householderNotes: String = "Test Notes",
         householderPhoneNumber: String? = null,
         visitTimeValidResult: Boolean = true,
-        conversations: List<Conversation>? = null
+        conversations: List<Conversation>? = null,
+        hasCalendarPermission: Boolean = false,
+        availableCalendarColors: List<CalendarEventManager.EventColor> = emptyList()
     ): VisitDetailViewModel {
         val dispatchers = DispatcherProvider(
             io = mainDispatcherRule.dispatcher
@@ -1327,7 +1444,8 @@ class VisitDetailViewModelTest {
             on { hasPermissions(any(), any()) } doReturn false
         }
         val calendarEventManager = mock<CalendarEventManager> {
-            on { hasCalendarPermission() } doReturn false
+            on { hasCalendarPermission() } doReturn hasCalendarPermission
+            onBlocking { getAvailableColors() } doReturn availableCalendarColors
         }
         val syncVisitCalendarEvent = mock<SyncVisitCalendarEventUseCase>()
         val visitTimeValidator = mock<VisitTimeValidator> {

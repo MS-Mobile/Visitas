@@ -1155,6 +1155,14 @@ private fun StateHandler(
                         )
                     )
                 },
+                onAddToCalendarColorSelected = { color ->
+                    onEvent(
+                        VisitDetailViewModel.UiEvent.AddVisitToCalendarColorSelected(
+                            eventState.visit,
+                            color
+                        )
+                    )
+                },
                 onDateSelected = { dateTime ->
                     onEvent(
                         VisitDetailViewModel.UiEvent.VisitDateAccepted(
