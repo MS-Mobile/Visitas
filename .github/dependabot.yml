@@ -5,6 +5,8 @@ updates:
     target-branch: "master"
     schedule:
       interval: "daily"
+    cooldown:
+      default-days: 14
     rebase-strategy: "auto"
     allow:
       - dependency-type: "all"
