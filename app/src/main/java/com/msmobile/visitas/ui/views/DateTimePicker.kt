@@ -1,16 +1,23 @@
 package com.msmobile.visitas.ui.views
 
+import androidx.annotation.ColorInt
 import androidx.annotation.VisibleForTesting
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DatePickerState
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
@@ -30,14 +37,22 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.unit.dp
+import androidx.core.graphics.drawable.toDrawable
+import androidx.core.graphics.toColor
+import androidx.core.graphics.toColorLong
 import com.msmobile.visitas.R
+import com.msmobile.visitas.extension.toComposeColor
 import com.msmobile.visitas.ui.theme.PreviewFoldable
 import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.util.borderPadding
+import com.msmobile.visitas.util.cardInnerPadding
 import com.msmobile.visitas.util.horizontalFieldPadding
+import com.msmobile.visitas.util.verticalFieldPadding
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -50,6 +65,8 @@ private const val TIME_PICKER_TAB = 1
 @Composable
 fun DateTimePicker(
     dateTime: LocalDateTime,
+    addToCalendarState: AddToCalendarState,
+    onAddToCalendarChecked: (Boolean) -> Unit,
     onDateSelected: (LocalDateTime) -> Unit,
     onDismiss: () -> Unit,
     now: LocalDateTime = LocalDateTime.now()
@@ -126,11 +143,13 @@ fun DateTimePicker(
         selectedTabIndex = selectedTabIndex,
         datePickerState = datePickerState,
         timePickerState = timePickerState,
+        onAddToCalendarChecked = onAddToCalendarChecked,
         onTabSelected = onTabSelected,
         onDatePresetSelected = onDatePresetSelected,
         onTimePresetSelected = onTimePresetSelected,
         onConfirm = onConfirm,
-        onDismiss = onDismiss
+        onDismiss = onDismiss,
+        addToCalendarState = addToCalendarState
     )
 }
 
@@ -141,6 +160,8 @@ private fun DateTimePickerContent(
     selectedTabIndex: Int,
     datePickerState: DatePickerState,
     timePickerState: TimePickerState,
+    addToCalendarState: AddToCalendarState,
+    onAddToCalendarChecked: (Boolean) -> Unit,
     onTabSelected: (Int) -> Unit,
     onDatePresetSelected: (LocalDate) -> Unit,
     onTimePresetSelected: (LocalDateTime) -> Unit,
@@ -171,51 +192,58 @@ private fun DateTimePickerContent(
                     Text(text = stringResource(id = R.string.cancel))
                 }
             }
-        }
-    ) {
-        Column(modifier = Modifier.background(color = DatePickerDefaults.colors().containerColor)) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-            ) {
-                PrimaryTabRow(
-                    containerColor = DatePickerDefaults.colors().containerColor,
-                    selectedTabIndex = selectedTabIndex
+        },
+        content = {
+            Column(modifier = Modifier.background(color = DatePickerDefaults.colors().containerColor)) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
                 ) {
-                    Tab(
-                        selected = selectedTabIndex == DATE_PICKER_TAB,
-                        onClick = { onTabSelected(DATE_PICKER_TAB) },
-                        text = {
-                            Text(text = stringResource(id = R.string.date))
-                        }
-                    )
-                    Tab(
-                        selected = selectedTabIndex == TIME_PICKER_TAB,
-                        onClick = { onTabSelected(TIME_PICKER_TAB) },
-                        text = {
-                            Text(text = stringResource(id = R.string.time))
-                        }
-                    )
-                }
-                when (selectedTabIndex) {
-                    DATE_PICKER_TAB -> {
-                        DatePicker(
-                            modifier = Modifier.padding(borderPadding),
-                            state = datePickerState,
-                            title = null
+                    PrimaryTabRow(
+                        containerColor = DatePickerDefaults.colors().containerColor,
+                        selectedTabIndex = selectedTabIndex
+                    ) {
+                        Tab(
+                            selected = selectedTabIndex == DATE_PICKER_TAB,
+                            onClick = { onTabSelected(DATE_PICKER_TAB) },
+                            text = {
+                                Text(text = stringResource(id = R.string.date))
+                            }
+                        )
+                        Tab(
+                            selected = selectedTabIndex == TIME_PICKER_TAB,
+                            onClick = { onTabSelected(TIME_PICKER_TAB) },
+                            text = {
+                                Text(text = stringResource(id = R.string.time))
+                            }
                         )
                     }
+                    when (selectedTabIndex) {
+                        DATE_PICKER_TAB -> {
+                            DatePicker(
+                                modifier = Modifier.padding(borderPadding),
+                                state = datePickerState,
+                                title = null
+                            )
+                        }
 
-                    TIME_PICKER_TAB -> {
-                        TimePicker(
-                            modifier = Modifier.padding(borderPadding),
-                            state = timePickerState
-                        )
+                        TIME_PICKER_TAB -> {
+                            TimePicker(
+                                modifier = Modifier.padding(borderPadding),
+                                state = timePickerState
+                            )
+                        }
                     }
                 }
+                AddToCalendarRow(
+                    modifier = Modifier.padding(horizontal = borderPadding + cardInnerPadding),
+                    addToCalendarState = addToCalendarState,
+                    addToCalendarChecked = onAddToCalendarChecked
+                )
+                Spacer(modifier = Modifier.padding(verticalFieldPadding))
             }
         }
-    }
+    )
 }
 
 @Composable
@@ -229,6 +257,34 @@ private fun SelectTodayButton(today: LocalDate, onPresetSelected: (LocalDate) ->
 private fun SelectNowButton(now: LocalDateTime, onPresetSelected: (LocalDateTime) -> Unit) {
     OutlinedButton(onClick = { onPresetSelected(now) }) {
         Text(text = stringResource(id = R.string.date_time_picker_now))
+    }
+}
+
+@Composable
+private fun AddToCalendarRow(
+    modifier: Modifier = Modifier,
+    addToCalendarState: AddToCalendarState,
+    addToCalendarChecked: (Boolean) -> Unit
+) {
+    when (addToCalendarState) {
+        is AddToCalendarState.Visible -> {
+            Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(
+                    checked = addToCalendarState.checked,
+                    onCheckedChange = addToCalendarChecked
+                )
+                Text(text = stringResource(id = R.string.date_time_picker_add_to_calendar))
+
+                Box(
+                    modifier = Modifier.background(
+                        color = addToCalendarState.selectedColor.toComposeColor(),
+                        shape = MaterialTheme.shapes.extraSmall
+                    ).size(28.dp)
+                )
+            }
+        }
+
+        AddToCalendarState.Gone -> {}
     }
 }
 
@@ -255,6 +311,8 @@ internal fun DateTimePickerPreview(@PreviewParameter(DateTimePickerPreviewConfig
                 selectedTabIndex = config.selectedTabIndex,
                 datePickerState = datePickerState,
                 timePickerState = timePickerState,
+                addToCalendarState = config.addToCalendarState,
+                onAddToCalendarChecked = {},
                 onTabSelected = {},
                 onDatePresetSelected = {},
                 onTimePresetSelected = {},
@@ -265,3 +323,11 @@ internal fun DateTimePickerPreview(@PreviewParameter(DateTimePickerPreviewConfig
     }
 }
 
+sealed class AddToCalendarState {
+    object Gone : AddToCalendarState()
+
+    data class Visible(
+        val checked: Boolean,
+        @ColorInt val selectedColor: Int
+    ) : AddToCalendarState()
+}

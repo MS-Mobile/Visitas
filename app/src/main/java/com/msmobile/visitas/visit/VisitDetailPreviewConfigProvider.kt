@@ -1,9 +1,12 @@
 package com.msmobile.visitas.visit
 
 import androidx.annotation.VisibleForTesting
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import com.msmobile.visitas.MainActivityViewModel
 import com.msmobile.visitas.R
+import com.msmobile.visitas.ui.views.AddToCalendarState
 import com.msmobile.visitas.util.IntentState
 import com.msmobile.visitas.util.StringResource
 import java.time.LocalDateTime
@@ -255,7 +258,9 @@ internal class VisitDetailPreviewConfigProvider :
                 visitList = listOf(
                     previewFirstVisitUiState
                 ),
-                eventState = VisitDetailViewModel.UiEventState.VisitDateExpanded(previewFirstVisitUiState)
+                eventState = VisitDetailViewModel.UiEventState.VisitDateExpanded(
+                    previewFirstVisitUiState
+                )
             ),
             isDarkMode = false,
         ),
@@ -278,6 +283,11 @@ internal data class VisitDetailPreviewConfig(
 private val previewMainActivityUiState = MainActivityViewModel.UiState(
     eventState = MainActivityViewModel.UiEventState.Idle,
     intentState = IntentState.None
+)
+
+private val previewAddToDateCalendarState = AddToCalendarState.Visible(
+    checked = false,
+    selectedColor = Color.Blue.toArgb()
 )
 
 private val previewNewVisitUiState = VisitDetailViewModel.VisitState(
@@ -305,6 +315,7 @@ private val previewNewVisitUiState = VisitDetailViewModel.VisitState(
     wasRemoved = false,
     caretPosition = 0,
     isDraft = false,
+    addToCalendarState = previewAddToDateCalendarState
 )
 
 private val previewFirstVisitUiState = VisitDetailViewModel.VisitState(
@@ -332,6 +343,7 @@ private val previewFirstVisitUiState = VisitDetailViewModel.VisitState(
     wasRemoved = false,
     caretPosition = 0,
     isDraft = false,
+    addToCalendarState = previewAddToDateCalendarState
 )
 
 private val previewReturnVisit = VisitDetailViewModel.VisitState(
@@ -359,6 +371,7 @@ private val previewReturnVisit = VisitDetailViewModel.VisitState(
     wasRemoved = false,
     caretPosition = 0,
     isDraft = false,
+    addToCalendarState = previewAddToDateCalendarState
 )
 
 private val previewConversationSuggestion = VisitDetailViewModel.ConversationState(

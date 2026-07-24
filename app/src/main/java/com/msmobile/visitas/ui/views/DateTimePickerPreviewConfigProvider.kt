@@ -1,6 +1,8 @@
 package com.msmobile.visitas.ui.views
 
 import androidx.annotation.VisibleForTesting
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import java.time.LocalDateTime
 
@@ -16,7 +18,8 @@ internal class DateTimePickerPreviewConfigProvider : PreviewParameterProvider<Da
             initialHour = 10,
             initialMinute = 12,
             is24Hour = true,
-            now = LocalDateTime.now()
+            now = LocalDateTime.now(),
+            addToCalendarState = AddToCalendarState.Visible(checked = false, selectedColor = -1)
         ),
         DateTimePickerPreviewConfig(
             configName = "Time Tab",
@@ -26,7 +29,30 @@ internal class DateTimePickerPreviewConfigProvider : PreviewParameterProvider<Da
             initialHour = 10,
             initialMinute = 12,
             is24Hour = true,
-            now = LocalDateTime.now()
+            now = LocalDateTime.now(),
+            addToCalendarState = AddToCalendarState.Visible(checked = false, selectedColor = -1)
+        ),
+        DateTimePickerPreviewConfig(
+            configName = "Date Tab - Add to Calendar Checked",
+            selectedTabIndex = 0,
+            isDarkMode = false,
+            initialSelectedDateMillis = 1705312800000,
+            initialHour = 10,
+            initialMinute = 12,
+            is24Hour = true,
+            now = LocalDateTime.now(),
+            addToCalendarState = AddToCalendarState.Visible(checked = true, selectedColor = Color.Green.toArgb())
+        ),
+        DateTimePickerPreviewConfig(
+            configName = "Time Tab - Add to Calendar Checked",
+            selectedTabIndex = 1,
+            isDarkMode = false,
+            initialSelectedDateMillis = 1705312800000,
+            initialHour = 10,
+            initialMinute = 12,
+            is24Hour = true,
+            now = LocalDateTime.now(),
+            addToCalendarState = AddToCalendarState.Visible(checked = true, selectedColor = Color.Blue.toArgb())
         )
     )
 
@@ -53,6 +79,7 @@ internal data class DateTimePickerPreviewConfig(
     val initialHour: Int,
     val initialMinute: Int,
     val is24Hour: Boolean,
-    val now: LocalDateTime
+    val now: LocalDateTime,
+    val addToCalendarState: AddToCalendarState
 )
 

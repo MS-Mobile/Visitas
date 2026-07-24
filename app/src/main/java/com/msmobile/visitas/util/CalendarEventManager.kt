@@ -24,6 +24,36 @@ class CalendarEventManager(
         )
     }
 
+    fun getEventColor(eventId: Long): EventColor? {
+        if (!hasCalendarPermission()) {
+            return null
+        }
+
+        val uri = ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI, eventId)
+        val colorKey = try {
+            context.contentResolver.query(
+                uri,
+                arrayOf(CalendarContract.Events.EVENT_COLOR_KEY),
+                null,
+                null,
+                null
+            )?.use { cursor ->
+                val keyIndex = cursor.getColumnIndex(CalendarContract.Events.EVENT_COLOR_KEY)
+                if (keyIndex < 0 || !cursor.moveToFirst()) return@use null
+                cursor.getString(keyIndex)?.let { ColorKey(it) }
+            }
+        } catch (e: Exception) {
+            if (e is CancellationException) {
+                throw e
+            }
+            logger.error(TAG, "Failed to query color key for calendar event $eventId", e)
+            null
+        } ?: return null
+
+        val calendar = getFirstCalendar() ?: return null
+        return queryEventColors(calendar).firstOrNull { it.key == colorKey }
+    }
+
     suspend fun saveEvent(
         eventId: Long? = null,
         title: String,

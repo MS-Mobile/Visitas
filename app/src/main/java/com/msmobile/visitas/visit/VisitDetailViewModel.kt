@@ -1,5 +1,7 @@
 package com.msmobile.visitas.visit
 
+import android.Manifest
+import androidx.annotation.ColorInt
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.msmobile.visitas.R
@@ -11,6 +13,7 @@ import com.msmobile.visitas.extension.subListInclusive
 import com.msmobile.visitas.householder.Householder
 import com.msmobile.visitas.householder.HouseholderRepository
 import com.msmobile.visitas.householder.HouseholderSnapshot
+import com.msmobile.visitas.ui.views.AddToCalendarState
 import com.msmobile.visitas.util.AddressProvider
 import com.msmobile.visitas.util.CalendarEventManager
 import com.msmobile.visitas.util.ClipboardHandler
@@ -71,7 +74,9 @@ class VisitDetailViewModel
         )
     )
     private var conversations: List<Conversation> = listOf()
-    @Volatile private var initialEditableData: EditableDataSnapshot? = null
+
+    @Volatile
+    private var initialEditableData: EditableDataSnapshot? = null
     private var loadAddressAfterPermission = false
     private var isUpdatingVisit: Boolean = false
     private var isAddressFieldFocused: Boolean = false
@@ -127,6 +132,11 @@ class VisitDetailViewModel
 
             is UiEvent.PreferredDayChanged -> preferredDayChanged(uiEvent.value)
             is UiEvent.PreferredTimeChanged -> preferredTimeChanged(uiEvent.value)
+
+            is UiEvent.AddVisitToCalendarChecked -> addVisitToCalendarChecked(
+                uiEvent.visit,
+                uiEvent.checked
+            )
 
             UiEvent.LoadAddressClicked -> loadAddressClicked()
             UiEvent.LookUpAddressFromLatLongClicked -> lookUpAddressFromLatLongClicked()
@@ -303,8 +313,8 @@ class VisitDetailViewModel
 
     private fun hasLocationPermission(): Boolean {
         return permissionChecker.hasPermissions(
-            android.Manifest.permission.ACCESS_FINE_LOCATION,
-            android.Manifest.permission.ACCESS_COARSE_LOCATION
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
         )
     }
 
@@ -355,12 +365,10 @@ class VisitDetailViewModel
                 showCalendarPermissionDialog = false
             )
         }
-        // Continue saving without calendar integration
-        performSave()
     }
 
     private fun handleCalendarPermissionGranted() {
-        performSave()
+
     }
 
     private fun handleCalendarPermissionDialogShown() {
@@ -591,7 +599,9 @@ class VisitDetailViewModel
     private fun visitDateClicked(visit: VisitState) {
         newState {
             copy(
-                eventState = UiEventState.VisitDateExpanded(visit)
+                eventState = UiEventState.VisitDateExpanded(
+                    visit = visit
+                )
             )
         }
     }
@@ -889,7 +899,8 @@ class VisitDetailViewModel
                 val conversation = conversationList.firstOrNull { conversation ->
                     conversation.id == visit.nextConversationId
                 }
-                visit.asState(conversation)
+                val calendarEventColor = getCalendarEventColor(visit.calendarEventId)
+                visit.asState(conversation, calendarEventColor)
             }
             .reindexIfNeeded()
             .revalidatePendingVisits(householder)
@@ -897,17 +908,6 @@ class VisitDetailViewModel
     }
 
     private fun saveClicked() {
-        // Check if there are pending visits that need calendar integration
-        val hasPendingVisits = _uiState.value.visitList.any { !it.isDone && !it.wasRemoved }
-
-        // If there are pending visits and no calendar permission, show rationale
-        if (hasPendingVisits && !calendarEventManager.hasCalendarPermission()) {
-            newState {
-                copy(showCalendarRationale = true)
-            }
-            return
-        }
-
         performSave()
     }
 
@@ -1068,8 +1068,9 @@ class VisitDetailViewModel
             )
             val updatedVisitState = visitState.copy(calendarEventId = calendarEventId)
             val visitModel = updatedVisitState.asModel(householderId)
+            val calendarEventColor = getCalendarEventColor(calendarEventId)
             visitRepository.save(visitModel)
-            visitModel.asState(visitState.nextConversationSuggestion)
+            visitModel.asState(visitState.nextConversationSuggestion, calendarEventColor)
         }
     }
 
@@ -1173,6 +1174,28 @@ class VisitDetailViewModel
         }
     }
 
+    private fun addVisitToCalendarChecked(visit: VisitState, checked: Boolean) {
+        newState {
+            val shouldCheck = checked && calendarEventManager.hasCalendarPermission()
+            val showCalendarRationale = checked && !calendarEventManager.hasCalendarPermission()
+            val updatedList = visitList.toMutableList().apply {
+                set(
+                    this@apply.indexOfById(visit),
+                    visit.copy(
+                        addToCalendarState = visit.addToCalendarState.copy(checked = shouldCheck)
+                    )
+                )
+            }
+            copy(visitList = updatedList, showCalendarRationale = showCalendarRationale)
+        }
+    }
+
+    @ColorInt
+    private fun getCalendarEventColor(calendarEventId: Long?): Int? {
+        if (calendarEventId == null) return null
+        return calendarEventManager.getEventColor(calendarEventId)?.argb
+    }
+
     private fun List<VisitState>.revalidatePendingVisits(householder: HouseholderState): List<VisitState> {
         return map { visit ->
             if (visit.wasRemoved || visit.isDone) {
@@ -1235,6 +1258,7 @@ class VisitDetailViewModel
             wasRemoved = false,
             caretPosition = 0,
             isDraft = false,
+            addToCalendarState = AddToCalendarState.Visible(checked = false, selectedColor = -1)
         )
     }
 
@@ -1274,7 +1298,10 @@ class VisitDetailViewModel
                 return@launch
             }
 
-            val (householder, visitList) = mapHouseholderStateFromDatabase(householderId, conversationList)
+            val (householder, visitList) = mapHouseholderStateFromDatabase(
+                householderId,
+                conversationList
+            )
             newState {
                 copy(
                     householder = householder,
@@ -1324,7 +1351,10 @@ class VisitDetailViewModel
         }
     }
 
-    private fun Visit.asState(nextConversation: ConversationState?): VisitState {
+    private fun Visit.asState(
+        nextConversation: ConversationState?,
+        calendarEventColor: Int?
+    ): VisitState {
         return VisitState(
             id = id,
             editable = EditableVisitData(
@@ -1345,6 +1375,10 @@ class VisitDetailViewModel
             caretPosition = subject.length,
             calendarEventId = calendarEventId,
             isDraft = isDraft,
+            addToCalendarState = AddToCalendarState.Visible(
+                checked = calendarEventId != null,
+                selectedColor = calendarEventColor ?: -1
+            )
         )
     }
 
@@ -1513,6 +1547,7 @@ class VisitDetailViewModel
         val calendarEventId: Long? = null,
         val hasVisitTimeError: Boolean = false,
         val isDraft: Boolean,
+        val addToCalendarState: AddToCalendarState.Visible
     ) {
         val subject get() = editable.subject
         val date get() = editable.date
@@ -1639,6 +1674,8 @@ class VisitDetailViewModel
         data class NextVisitSuggestionAccepted(val visit: VisitState) : UiEvent()
         data class PreferredDayChanged(val value: VisitPreferredDay) : UiEvent()
         data class PreferredTimeChanged(val value: VisitPreferredTime) : UiEvent()
+        data class AddVisitToCalendarChecked(val visit: VisitState, val checked: Boolean) :
+            UiEvent()
 
         data object LoadAddressClicked : UiEvent()
         data object LookUpAddressFromLatLongClicked : UiEvent()

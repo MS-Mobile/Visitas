@@ -1146,6 +1146,15 @@ private fun StateHandler(
         is VisitDetailViewModel.UiEventState.VisitDateExpanded -> {
             DateTimePicker(
                 dateTime = eventState.visit.date,
+                addToCalendarState = eventState.visit.addToCalendarState,
+                onAddToCalendarChecked = { checked ->
+                    onEvent(
+                        VisitDetailViewModel.UiEvent.AddVisitToCalendarChecked(
+                            eventState.visit,
+                            checked
+                        )
+                    )
+                },
                 onDateSelected = { dateTime ->
                     onEvent(
                         VisitDetailViewModel.UiEvent.VisitDateAccepted(
