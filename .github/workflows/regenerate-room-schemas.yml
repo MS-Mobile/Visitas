@@ -64,20 +64,14 @@ jobs:
             gradle-${{ runner.os }}-
             gradle-
 
-      # kspDebugKotlin is what generates the schemas; the room plugin's copy
-      # task is wired as its finalizer. Assembling the whole APK is not needed.
+      # The script runs the KSP + copyRoomSchemas tasks with --rerun and fails if
+      # the export produced nothing, so a cache hit can't turn this into a silent
+      # no-op. Assembling the whole APK is not needed.
       - name: Regenerate Room schemas
-        run: ./gradlew :app:kspDebugKotlin
+        run: sh scripts/verify-room-schemas.sh --export-only
         env:
           ENCRYPTION_PASSPHRASE: ${{ secrets.ENCRYPTION_PASSPHRASE }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-
-      - name: Fail if no schema was exported
-        run: |
-          if [ -z "$(ls -A app/schemas 2>/dev/null)" ]; then
-            echo "ERROR: app/schemas is empty — the build exported no Room schemas."
-            exit 1
-          fi
 
       - name: Commit and push updated schemas
         run: |

@@ -1,24 +1,38 @@
 #!/usr/bin/env sh
 #
-# Verify that the committed Room schema JSONs under app/schemas match the
-# ones the current sources produce.
+# Regenerate the Room schema JSONs under app/schemas and check they match what
+# is committed.
 #
-# Room exports a schema JSON per database version at *compile* time — the
-# androidx.room Gradle plugin copies them from the KSP output into the
-# `schemaDirectory` configured in app/build.gradle.kts. No device, emulator
-# or app launch is involved, so a plain `./gradlew :app:assembleDebug` on a
-# CI runner regenerates them just as a local build does.
+# Room exports a schema JSON per database version at *compile* time: KSP writes
+# them into a build intermediate directory, and the androidx.room Gradle plugin's
+# copyRoomSchemas task copies them into the `schemaDirectory` configured in
+# app/build.gradle.kts. No device, emulator or app launch is involved.
 #
-# Run this AFTER a debug build in the same workspace. It fails when:
-#   1. no schema exists for the @Database version declared in VisitasDatabase.kt
-#      (i.e. the build did not export schemas at all — which would make the
-#      diff check below vacuously green), or
-#   2. the build changed or added anything under app/schemas, meaning the
-#      generated schema was never committed.
+# Why this forces both tasks to re-run instead of piggybacking on a plain build:
+# the intermediate directory KSP writes to is not a declared, cacheable output
+# of the KSP task, so when kspDebugKotlin is restored FROM-CACHE (the normal case
+# on CI, where ~/.gradle is cached) the intermediate stays empty and
+# copyRoomSchemas reports NO-SOURCE — the export silently does not happen.
+# A check that merely diffed app/schemas after `assembleDebug` would then pass
+# without having regenerated anything. `--rerun` ignores both the up-to-date
+# check and the build cache for the requested tasks, and the freshness assertion
+# below fails loudly if the export still produces nothing.
 #
-# Usage:  ./gradlew :app:assembleDebug && sh scripts/verify-room-schemas.sh
+# Usage:
+#   sh scripts/verify-room-schemas.sh                 # export, then verify committed
+#   sh scripts/verify-room-schemas.sh --export-only   # export only (caller commits)
 
 set -eu
+
+EXPORT_ONLY=0
+case "${1:-}" in
+	--export-only) EXPORT_ONLY=1 ;;
+	'') ;;
+	*)
+		echo "usage: $0 [--export-only]" >&2
+		exit 2
+		;;
+esac
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 cd "$REPO_ROOT"
@@ -40,41 +54,69 @@ fi
 
 echo "VisitasDatabase declares version $DB_VERSION"
 
-# 1. A schema for the declared version must have been exported.
-missing=1
+# Delete the declared version's schema first, so its presence afterwards proves
+# the export actually wrote it. Comparing mtimes instead would be racy: `-nt` in
+# POSIX sh compares whole seconds, so an export finishing in the same second as
+# the reference file reads as "not newer" and the check would flake.
+# Deleting the destination also means a stale copyRoomSchemas up-to-date result
+# cannot keep the task from running.
+for schema_dir in "$SCHEMA_ROOT"/*; do
+	[ -d "$schema_dir" ] || continue
+	rm -f "$schema_dir/$DB_VERSION.json"
+done
+
+# copyRoomSchemas is contributed by the androidx.room plugin. If a Room upgrade
+# ever renames it, Gradle fails here with "task not found" — loudly, which is
+# the point: this check must never silently degrade into a no-op.
+./gradlew :app:kspDebugKotlin :app:copyRoomSchemas --rerun
+
+# 1. The export must have (re)created the declared version's schema.
+exported=1
 for schema_dir in "$SCHEMA_ROOT"/*; do
 	[ -d "$schema_dir" ] || continue
 	if [ -f "$schema_dir/$DB_VERSION.json" ]; then
-		echo "  + $schema_dir/$DB_VERSION.json"
-		missing=0
+		echo "  + $schema_dir/$DB_VERSION.json (exported by this run)"
+		exported=0
 	fi
 done
 
-if [ "$missing" -ne 0 ]; then
+if [ "$exported" -ne 0 ]; then
+	# Nothing was generated, so restore the file we deleted rather than leaving
+	# the working tree damaged. Safe here precisely because the export produced
+	# nothing — there is no new schema to preserve.
+	git checkout -- "$SCHEMA_ROOT" 2>/dev/null || true
 	cat >&2 <<EOF
-error: no schema JSON for database version $DB_VERSION under $SCHEMA_ROOT/.
 
-The build should have exported it. Check that app/build.gradle.kts still has
-the androidx.room plugin applied with room { schemaDirectory(...) }, and that
-this script runs after a debug build in the same workspace.
+error: the export produced no schema for database version $DB_VERSION under $SCHEMA_ROOT/.
+
+The Gradle run above did not write one, so this check cannot verify anything.
+Look for ':app:copyRoomSchemas NO-SOURCE' in its output. Check that
+app/build.gradle.kts still applies the androidx.room plugin with
+room { schemaDirectory(...) }, and that both task names above still exist.
 EOF
 	exit 1
 fi
 
-# 2. The build must not have changed or added anything under app/schemas.
+if [ "$EXPORT_ONLY" -eq 1 ]; then
+	echo "Room schemas exported."
+	exit 0
+fi
+
+# 2. The export must not have changed or added anything under app/schemas.
 #    --porcelain also reports untracked files, so a brand-new N.json that was
 #    never committed is caught too.
 if [ -n "$(git status --porcelain -- "$SCHEMA_ROOT")" ]; then
 	echo >&2
-	echo "error: the build regenerated Room schemas that differ from the committed ones:" >&2
+	echo "error: the exported Room schemas differ from the committed ones:" >&2
 	git status --short -- "$SCHEMA_ROOT" >&2
 	echo >&2
 	git --no-pager diff -- "$SCHEMA_ROOT" >&2
 	cat >&2 <<'EOF'
 
-Commit the regenerated schemas. Either build locally and commit the result:
+Commit the regenerated schemas. Either export locally and commit the result:
 
-  ./gradlew :app:assembleDebug && git add app/schemas && git commit
+  sh scripts/verify-room-schemas.sh --export-only
+  git add app/schemas && git commit
 
 or dispatch the "Regenerate Room Schemas" workflow
 (.github/workflows/regenerate-room-schemas.yml) for this branch and let it
