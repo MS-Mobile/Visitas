@@ -7,7 +7,7 @@ import com.msmobile.visitas.visit.VisitListDistanceFilterOption
 import com.msmobile.visitas.visit.VisitType
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertNull
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
@@ -19,7 +19,7 @@ import java.time.LocalDateTime
 class SyncVisitCalendarEventUseCaseTest {
 
     @Test
-    fun `invoke with the calendar preference disabled leaves the event untouched`() = runTest {
+    fun `invoke with the calendar preference disabled leaves the event untouched`() = runBlocking {
         val calendarEventManagerRef = MockReferenceHolder<CalendarEventManager>()
         val useCase = createUseCase(
             addVisitsToCalendar = false,
@@ -43,7 +43,7 @@ class SyncVisitCalendarEventUseCaseTest {
     }
 
     @Test
-    fun `invoke with the calendar preference enabled saves the event`() = runTest {
+    fun `invoke with the calendar preference enabled saves the event`() = runBlocking {
         val useCase = createUseCase(addVisitsToCalendar = true)
 
         val result = useCase.invokeForVisit()
@@ -52,7 +52,7 @@ class SyncVisitCalendarEventUseCaseTest {
     }
 
     @Test
-    fun `invoke without calendar permission leaves the event untouched`() = runTest {
+    fun `invoke without calendar permission leaves the event untouched`() = runBlocking {
         val useCase = createUseCase(addVisitsToCalendar = true, hasCalendarPermission = false)
 
         val result = useCase.invokeForVisit()
@@ -61,7 +61,7 @@ class SyncVisitCalendarEventUseCaseTest {
     }
 
     @Test
-    fun `invoke for a first visit does not create an event`() = runTest {
+    fun `invoke for a first visit does not create an event`() = runBlocking {
         val useCase = createUseCase(addVisitsToCalendar = true)
 
         val result = useCase.invokeForVisit(visitType = VisitType.FIRST_VISIT)

@@ -1232,7 +1232,7 @@ class VisitDetailViewModel
             // One-time nudge towards the calendar setting, only worth showing while the feature
             // is still off.
             val preference = preferenceRepository.get()
-            val showAddVisitToCalendarMessage =
+            val shouldShowAddVisitToCalendarMessage =
                 !preference.hasSeenAddVisitToCalendarMessage && !preference.addVisitsToCalendar
 
             val visitTypeList = listOf(
@@ -1249,7 +1249,7 @@ class VisitDetailViewModel
                         visitTypeList = visitTypeList,
                         eventState = UiEventState.Idle,
                         showDeleteButton = isUpdatingVisit,
-                        showAddVisitToCalendarMessage = showAddVisitToCalendarMessage
+                        showAddVisitToCalendarMessage = shouldShowAddVisitToCalendarMessage
                     )
                 }
                 initialEditableData = _uiState.value.getEditableDataSnapshot()
@@ -1266,7 +1266,7 @@ class VisitDetailViewModel
                     visitTypeList = visitTypeList,
                     eventState = UiEventState.Idle,
                     showDeleteButton = isUpdatingVisit,
-                    showAddVisitToCalendarMessage = showAddVisitToCalendarMessage
+                    showAddVisitToCalendarMessage = shouldShowAddVisitToCalendarMessage
                 )
             }
             initialEditableData = _uiState.value.getEditableDataSnapshot()
