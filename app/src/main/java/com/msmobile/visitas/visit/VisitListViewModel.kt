@@ -258,14 +258,18 @@ constructor(
         }
         viewModelScope.launch(dispatchers.io) {
             val visitModel = visitRepository.getById(visit.visitId).copy(date = date)
-            val calendarEventId = syncVisitCalendarEvent(
-                calendarEventId = visitModel.calendarEventId,
-                visitType = visitModel.visitType,
-                subject = visitModel.subject,
-                date = visitModel.date,
-                isDone = visitModel.isDone,
-                householderName = visit.householderName
-            )
+            val calendarEventId = if (preferenceRepository.get().addVisitsToCalendar) {
+                syncVisitCalendarEvent(
+                    calendarEventId = visitModel.calendarEventId,
+                    visitType = visitModel.visitType,
+                    subject = visitModel.subject,
+                    date = visitModel.date,
+                    isDone = visitModel.isDone,
+                    householderName = visit.householderName
+                )
+            } else {
+                visitModel.calendarEventId
+            }
             val updatedVisitModel = visitModel.copy(calendarEventId = calendarEventId)
             visitRepository.save(updatedVisitModel)
             refreshVisits()

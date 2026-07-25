@@ -1033,15 +1033,23 @@ class VisitDetailViewModel
         householderName: String,
         visitList: List<VisitState>
     ): List<VisitState> {
+        // Read once for the whole batch rather than per visit. When calendar sync is off the
+        // existing event id is kept, so events already on the calendar are left alone and
+        // re-enabling the setting keeps updating them instead of creating duplicates.
+        val addVisitsToCalendar = preferenceRepository.get().addVisitsToCalendar
         return visitList.map { visitState ->
-            val calendarEventId = syncVisitCalendarEvent(
-                calendarEventId = visitState.calendarEventId,
-                visitType = visitState.visitType.type,
-                subject = visitState.subject,
-                date = visitState.date,
-                isDone = visitState.isDone,
-                householderName = householderName
-            )
+            val calendarEventId = if (addVisitsToCalendar) {
+                syncVisitCalendarEvent(
+                    calendarEventId = visitState.calendarEventId,
+                    visitType = visitState.visitType.type,
+                    subject = visitState.subject,
+                    date = visitState.date,
+                    isDone = visitState.isDone,
+                    householderName = householderName
+                )
+            } else {
+                visitState.calendarEventId
+            }
             val updatedVisitState = visitState.copy(calendarEventId = calendarEventId)
             val visitModel = updatedVisitState.asModel(householderId)
             visitRepository.save(visitModel)

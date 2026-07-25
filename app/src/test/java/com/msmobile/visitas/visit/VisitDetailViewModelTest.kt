@@ -28,10 +28,13 @@ import junit.framework.TestCase.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argThat
+import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyBlocking
 import java.time.LocalDateTime
@@ -354,8 +357,7 @@ class VisitDetailViewModelTest {
         mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
         assertTrue(viewModel.uiState.value.householder.isDraft)
 
-        // Act — calendar permission is mocked false, but there are no pending visits requiring it
-        //       after we mark the single visit done to avoid the calendar rationale path.
+        // Act
         val visit = viewModel.uiState.value.visitList.first()
         viewModel.onEvent(VisitDetailViewModel.UiEvent.VisitDoneChanged(value = true, visit = visit))
         viewModel.onEvent(VisitDetailViewModel.UiEvent.SaveClicked)
@@ -367,6 +369,67 @@ class VisitDetailViewModelTest {
         verifyBlocking(snapshotRepository) { deleteVisitSnapshots(HOUSEHOLDER_ID) }
         assertFalse(viewModel.uiState.value.householder.isDraft)
         assertFalse(viewModel.uiState.value.hasDrafts)
+    }
+
+    @Test
+    fun `save adds visits to the calendar when the preference is enabled`() {
+        // Arrange
+        val syncVisitCalendarEventRef = MockReferenceHolder<SyncVisitCalendarEventUseCase>()
+        val viewModel = createViewModel(
+            addVisitsToCalendar = true,
+            syncVisitCalendarEventRef = syncVisitCalendarEventRef
+        )
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.SaveClicked)
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert
+        verifyBlocking(requireNotNull(syncVisitCalendarEventRef.value)) {
+            invoke(anyOrNull(), any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `save skips the calendar when the preference is disabled`() {
+        // Arrange
+        val syncVisitCalendarEventRef = MockReferenceHolder<SyncVisitCalendarEventUseCase>()
+        val viewModel = createViewModel(
+            addVisitsToCalendar = false,
+            syncVisitCalendarEventRef = syncVisitCalendarEventRef
+        )
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.SaveClicked)
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert
+        verifyBlocking(requireNotNull(syncVisitCalendarEventRef.value), never()) {
+            invoke(anyOrNull(), any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `save keeps existing calendar event ids when the preference is disabled`() {
+        // Arrange
+        val visitRepositoryRef = MockReferenceHolder<VisitRepository>()
+        val viewModel = createViewModel(
+            addVisitsToCalendar = false,
+            liveVisits = createVisitList().map { it.copy(calendarEventId = EXISTING_CALENDAR_EVENT_ID) },
+            visitRepositoryRef = visitRepositoryRef
+        )
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.SaveClicked)
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert — events already on the calendar keep their id instead of being orphaned
+        verifyBlocking(requireNotNull(visitRepositoryRef.value), atLeastOnce()) {
+            save(argThat { calendarEventId == EXISTING_CALENDAR_EVENT_ID })
+        }
     }
 
     @Test
@@ -1352,7 +1415,8 @@ class VisitDetailViewModelTest {
         conversations: List<Conversation>? = null,
         addVisitsToCalendar: Boolean = false,
         hasSeenAddVisitToCalendarMessage: Boolean = false,
-        preferenceRepositoryRef: MockReferenceHolder<PreferenceRepository>? = null
+        preferenceRepositoryRef: MockReferenceHolder<PreferenceRepository>? = null,
+        syncVisitCalendarEventRef: MockReferenceHolder<SyncVisitCalendarEventUseCase>? = null
     ): VisitDetailViewModel {
         val dispatchers = DispatcherProvider(
             io = mainDispatcherRule.dispatcher
@@ -1419,6 +1483,7 @@ class VisitDetailViewModelTest {
             on { hasCalendarPermission() } doReturn false
         }
         val syncVisitCalendarEvent = mock<SyncVisitCalendarEventUseCase>()
+        syncVisitCalendarEventRef?.value = syncVisitCalendarEvent
         val visitTimeValidator = mock<VisitTimeValidator> {
             on { isValidVisitTime(any(), any(), any()) } doReturn visitTimeValidResult
         }
@@ -1532,5 +1597,6 @@ class VisitDetailViewModelTest {
         private val FIRST_VISIT_ID = UUID.fromString("9e8d7c6b-5a4f-3e2d-1c0b-a9e8d7c6b5a4")
         private val NEW_UUID = UUID.fromString("1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d")
         private val TEST_DATE_TIME = LocalDateTime.of(2024, 1, 15, 10, 30)
+        private const val EXISTING_CALENDAR_EVENT_ID = 77L
     }
 }
