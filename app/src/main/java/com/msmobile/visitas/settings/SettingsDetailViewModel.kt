@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.msmobile.visitas.preference.PreferenceRepository
 import com.msmobile.visitas.util.AppVersionProvider
 import com.msmobile.visitas.util.BackupHandler
+import com.msmobile.visitas.util.CalendarEventManager
 import com.msmobile.visitas.util.DispatcherProvider
 import com.msmobile.visitas.visit.VisitMapEngineOption
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,6 +19,7 @@ import javax.inject.Inject
 @HiltViewModel
 class SettingsDetailViewModel @Inject constructor(
     private val preferenceRepository: PreferenceRepository,
+    private val calendarEventManager: CalendarEventManager,
     private val backupHandler: BackupHandler,
     private val dispatchers: DispatcherProvider,
     private val appVersionProvider: AppVersionProvider
@@ -36,6 +38,11 @@ class SettingsDetailViewModel @Inject constructor(
         when (event) {
             is UiEvent.ViewCreated -> viewCreated()
             is UiEvent.MapEngineSelected -> mapEngineSelected(event.engine)
+            is UiEvent.AddVisitsToCalendarToggled -> addVisitsToCalendarToggled(event.enabled)
+            is UiEvent.CalendarRationaleAccepted -> calendarRationaleAccepted()
+            is UiEvent.CalendarRationaleDismissed -> calendarRationaleDismissed()
+            is UiEvent.CalendarPermissionGranted -> calendarPermissionGranted()
+            is UiEvent.CalendarPermissionDenied -> calendarPermissionDenied()
             is UiEvent.CreateBackup -> handleCreateBackup(event.successMessage, event.errorMessage)
             is UiEvent.RestoreBackup -> handleRestoreBackup(
                 event.fileUri,
@@ -53,7 +60,12 @@ class SettingsDetailViewModel @Inject constructor(
     private fun viewCreated() {
         viewModelScope.launch(dispatchers.io) {
             val preference = preferenceRepository.get()
-            _uiState.update { it.copy(selectedMapEngine = preference.visitMapEngineOption) }
+            _uiState.update {
+                it.copy(
+                    selectedMapEngine = preference.visitMapEngineOption,
+                    addVisitsToCalendar = preference.addVisitsToCalendar
+                )
+            }
         }
     }
 
@@ -63,6 +75,60 @@ class SettingsDetailViewModel @Inject constructor(
             preferenceRepository.save(preference)
         }
         _uiState.update { it.copy(selectedMapEngine = engine) }
+    }
+
+    /**
+     * Turning the setting on needs calendar permission, so an ungranted permission routes through
+     * the rationale sheet first and only persists once the system prompt is granted. Turning it off
+     * needs no permission and is persisted immediately; calendar events already created are left in
+     * place so re-enabling keeps updating them.
+     */
+    private fun addVisitsToCalendarToggled(enabled: Boolean) {
+        if (!enabled) {
+            saveAddVisitsToCalendar(enabled = false)
+            return
+        }
+        if (calendarEventManager.hasCalendarPermission()) {
+            saveAddVisitsToCalendar(enabled = true)
+            return
+        }
+        _uiState.update { it.copy(showCalendarRationale = true) }
+    }
+
+    private fun calendarRationaleAccepted() {
+        _uiState.update {
+            it.copy(
+                showCalendarRationale = false,
+                showCalendarPermissionDialog = true
+            )
+        }
+    }
+
+    private fun calendarRationaleDismissed() {
+        _uiState.update {
+            it.copy(
+                showCalendarRationale = false,
+                showCalendarPermissionDialog = false
+            )
+        }
+    }
+
+    private fun calendarPermissionGranted() {
+        _uiState.update { it.copy(showCalendarPermissionDialog = false) }
+        saveAddVisitsToCalendar(enabled = true)
+    }
+
+    private fun calendarPermissionDenied() {
+        // The checkbox stays off: without permission there is nothing to write events to.
+        _uiState.update { it.copy(showCalendarPermissionDialog = false) }
+    }
+
+    private fun saveAddVisitsToCalendar(enabled: Boolean) {
+        viewModelScope.launch(dispatchers.io) {
+            val preference = preferenceRepository.get().copy(addVisitsToCalendar = enabled)
+            preferenceRepository.save(preference)
+        }
+        _uiState.update { it.copy(addVisitsToCalendar = enabled) }
     }
 
     private fun handleCreateBackup(successMessage: String, errorMessage: String) {
@@ -143,6 +209,11 @@ class SettingsDetailViewModel @Inject constructor(
     sealed class UiEvent {
         data object ViewCreated : UiEvent()
         data class MapEngineSelected(val engine: VisitMapEngineOption) : UiEvent()
+        data class AddVisitsToCalendarToggled(val enabled: Boolean) : UiEvent()
+        data object CalendarRationaleAccepted : UiEvent()
+        data object CalendarRationaleDismissed : UiEvent()
+        data object CalendarPermissionGranted : UiEvent()
+        data object CalendarPermissionDenied : UiEvent()
 
         data class CreateBackup(
             val successMessage: String,
@@ -180,6 +251,9 @@ class SettingsDetailViewModel @Inject constructor(
         val backupResult: BackupResult? = null,
         val eventState: UiEventState = UiEventState.Idle,
         val selectedMapEngine: VisitMapEngineOption = VisitMapEngineOption.MapLibre,
+        val addVisitsToCalendar: Boolean = false,
+        val showCalendarRationale: Boolean = false,
+        val showCalendarPermissionDialog: Boolean = false,
         val versionName: String = ""
     )
 }

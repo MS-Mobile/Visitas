@@ -99,7 +99,6 @@ import com.msmobile.visitas.extension.launchSms
 import com.msmobile.visitas.extension.launchUrl
 import com.msmobile.visitas.extension.launchWhatsApp
 import com.msmobile.visitas.extension.ReadOnlyTextFieldColors
-import com.msmobile.visitas.extension.RequestCalendarPermission
 import com.msmobile.visitas.extension.RequestLocationPermission
 import com.msmobile.visitas.extension.bottomSheetListItemColors
 import com.msmobile.visitas.extension.removeBottomCorner
@@ -132,6 +131,7 @@ import com.msmobile.visitas.util.snackbarPadding
 import com.msmobile.visitas.util.verticalFieldPadding
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.SettingsScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.VisitDetailScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import java.util.UUID
@@ -150,12 +150,17 @@ fun VisitDetailScreen(
         navigator.navigateUp()
         Unit
     }
+    val onNavigateToSettings = {
+        navigator.navigate(SettingsScreenDestination)
+        Unit
+    }
     VisitDetailScreenContent(
         householderId = householderId,
         uiState = uiState,
         appScaffoldState = appScaffoldState,
         onEvent = onEvent,
         onNavigateUp = onNavigateUp,
+        onNavigateToSettings = onNavigateToSettings,
     )
 }
 
@@ -166,6 +171,7 @@ private fun VisitDetailScreenContent(
     uiState: VisitDetailViewModel.UiState,
     appScaffoldState: AppScaffoldState,
     onNavigateUp: () -> Unit,
+    onNavigateToSettings: () -> Unit,
     onEvent: (VisitDetailViewModel.UiEvent) -> Unit,
 ) {
     LaunchedEffect(key1 = null) {
@@ -210,12 +216,6 @@ private fun VisitDetailScreenContent(
             onEvent(VisitDetailViewModel.UiEvent.LocationPermissionGranted)
         }
     }
-    if (uiState.showCalendarPermissionDialog) {
-        RequestCalendarPermission {
-            onEvent(VisitDetailViewModel.UiEvent.CalendarPermissionDialogShown)
-            onEvent(VisitDetailViewModel.UiEvent.CalendarPermissionGranted)
-        }
-    }
     PermissionRationaleSheet(
         isVisible = uiState.showLocationRationale,
         message = stringResource(R.string.location_permission_message),
@@ -227,17 +227,18 @@ private fun VisitDetailScreenContent(
             onEvent(VisitDetailViewModel.UiEvent.LocationRationaleAccepted)
         }
     )
-    PermissionRationaleSheet(
-        isVisible = uiState.showCalendarRationale,
-        message = stringResource(R.string.calendar_permission_message),
-        icon = Icons.Rounded.DateRange,
-        onDismiss = {
-            onEvent(VisitDetailViewModel.UiEvent.CalendarRationaleDismissed)
-        },
-        onConfirm = {
-            onEvent(VisitDetailViewModel.UiEvent.CalendarRationaleAccepted)
-        }
-    )
+    if (uiState.showAddVisitToCalendarMessage) {
+        AddVisitToCalendarSnackbar(
+            modifier = Modifier.snackbarPadding(),
+            onLearnMore = {
+                onEvent(VisitDetailViewModel.UiEvent.AddVisitToCalendarMessageLearnMoreClicked)
+                onNavigateToSettings()
+            },
+            onDismiss = {
+                onEvent(VisitDetailViewModel.UiEvent.AddVisitToCalendarMessageDismissed)
+            }
+        )
+    }
     if (uiState.showPhoneInputDialog) {
         PhoneInputDialog(
             initialPhoneNumber = uiState.householder.phoneNumber.orEmpty(),
@@ -1282,6 +1283,45 @@ private fun NoAddressFoundSnackbar(
     }
 }
 
+/**
+ * One-time nudge telling the user visits can be mirrored to the device calendar. Both actions
+ * retire the message: "learn more" hands off to the settings screen where the feature is enabled.
+ */
+@Composable
+private fun AddVisitToCalendarSnackbar(
+    modifier: Modifier,
+    onLearnMore: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+        Snackbar(
+            modifier = modifier,
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            action = {
+                TextButton(onClick = onLearnMore) {
+                    Text(
+                        text = stringResource(R.string.learn_more),
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                }
+            },
+            dismissAction = {
+                IconButton(onClick = onDismiss) {
+                    Icon(
+                        imageVector = Icons.Rounded.Close,
+                        contentDescription = stringResource(R.string.close_icon_content_description),
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }) {
+            Text(
+                text = stringResource(R.string.add_visit_to_calendar_message),
+                color = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+        }
+    }
+}
+
 @Composable
 private fun CopiedToClipboardSnackbar(
     modifier: Modifier,
@@ -1360,6 +1400,7 @@ internal fun VisitDetailScreenPreview(
                     appScaffoldState = remember { AppScaffoldState() }, // TODO: config.appScaffoldState
                     onEvent = {},
                     onNavigateUp = {},
+                    onNavigateToSettings = {},
                 )
             }
         }

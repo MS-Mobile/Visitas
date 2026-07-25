@@ -13,5 +13,7 @@ data class Preference(
     val id: UUID = UUID.randomUUID(),
     val visitListDateFilterOption: VisitListDateFilterOption,
     val visitListDistanceFilterOption: VisitListDistanceFilterOption,
-    val visitMapEngineOption: VisitMapEngineOption = VisitMapEngineOption.MapLibre
+    val visitMapEngineOption: VisitMapEngineOption = VisitMapEngineOption.MapLibre,
+    val addVisitsToCalendar: Boolean = false,
+    val hasSeenAddVisitToCalendarMessage: Boolean = false
 )

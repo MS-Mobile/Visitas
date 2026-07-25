@@ -5,6 +5,8 @@ import com.msmobile.visitas.conversation.ConversationRepository
 import com.msmobile.visitas.householder.Householder
 import com.msmobile.visitas.householder.HouseholderRepository
 import com.msmobile.visitas.householder.HouseholderSnapshot
+import com.msmobile.visitas.preference.Preference
+import com.msmobile.visitas.preference.PreferenceRepository
 import com.msmobile.visitas.util.AddressProvider
 import com.msmobile.visitas.util.CalendarEventManager
 import com.msmobile.visitas.util.SyncVisitCalendarEventUseCase
@@ -26,6 +28,7 @@ import junit.framework.TestCase.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -56,6 +59,79 @@ class VisitDetailViewModelTest {
         assertEquals(3, state.conversationList.size)
         assertEquals(VisitDetailViewModel.UiEventState.Idle, state.eventState)
         assertFalse(state.showDeleteButton)
+    }
+
+    @Test
+    fun `onEvent with ViewCreated shows the add visit to calendar message when it was never seen`() {
+        // Arrange
+        val viewModel = createViewModel(hasSeenAddVisitToCalendarMessage = false)
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+
+        // Assert
+        assertTrue(viewModel.uiState.value.showAddVisitToCalendarMessage)
+    }
+
+    @Test
+    fun `onEvent with ViewCreated hides the add visit to calendar message once it was seen`() {
+        // Arrange
+        val viewModel = createViewModel(hasSeenAddVisitToCalendarMessage = true)
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+
+        // Assert
+        assertFalse(viewModel.uiState.value.showAddVisitToCalendarMessage)
+    }
+
+    @Test
+    fun `onEvent with ViewCreated hides the add visit to calendar message when the setting is on`() {
+        // Arrange
+        val viewModel = createViewModel(
+            addVisitsToCalendar = true,
+            hasSeenAddVisitToCalendarMessage = false
+        )
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+
+        // Assert
+        assertFalse(viewModel.uiState.value.showAddVisitToCalendarMessage)
+    }
+
+    @Test
+    fun `onEvent with AddVisitToCalendarMessageDismissed marks the message as seen`() {
+        // Arrange
+        val preferenceRepositoryRef = MockReferenceHolder<PreferenceRepository>()
+        val viewModel = createViewModel(preferenceRepositoryRef = preferenceRepositoryRef)
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.AddVisitToCalendarMessageDismissed)
+
+        // Assert
+        assertFalse(viewModel.uiState.value.showAddVisitToCalendarMessage)
+        verifyBlocking(requireNotNull(preferenceRepositoryRef.value)) {
+            save(argThat { hasSeenAddVisitToCalendarMessage })
+        }
+    }
+
+    @Test
+    fun `onEvent with AddVisitToCalendarMessageLearnMoreClicked marks the message as seen`() {
+        // Arrange
+        val preferenceRepositoryRef = MockReferenceHolder<PreferenceRepository>()
+        val viewModel = createViewModel(preferenceRepositoryRef = preferenceRepositoryRef)
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.AddVisitToCalendarMessageLearnMoreClicked)
+
+        // Assert
+        assertFalse(viewModel.uiState.value.showAddVisitToCalendarMessage)
+        verifyBlocking(requireNotNull(preferenceRepositoryRef.value)) {
+            save(argThat { hasSeenAddVisitToCalendarMessage })
+        }
     }
 
     @Test
@@ -1273,7 +1349,10 @@ class VisitDetailViewModelTest {
         householderNotes: String = "Test Notes",
         householderPhoneNumber: String? = null,
         visitTimeValidResult: Boolean = true,
-        conversations: List<Conversation>? = null
+        conversations: List<Conversation>? = null,
+        addVisitsToCalendar: Boolean = false,
+        hasSeenAddVisitToCalendarMessage: Boolean = false,
+        preferenceRepositoryRef: MockReferenceHolder<PreferenceRepository>? = null
     ): VisitDetailViewModel {
         val dispatchers = DispatcherProvider(
             io = mainDispatcherRule.dispatcher
@@ -1319,6 +1398,16 @@ class VisitDetailViewModelTest {
         }
         snapshotRepositoryRef?.value = snapshotRepository
 
+        val preferenceRepository = mock<PreferenceRepository> {
+            on { get() } doReturn Preference(
+                visitListDateFilterOption = VisitListDateFilterOption.All,
+                visitListDistanceFilterOption = VisitListDistanceFilterOption.All,
+                addVisitsToCalendar = addVisitsToCalendar,
+                hasSeenAddVisitToCalendarMessage = hasSeenAddVisitToCalendarMessage
+            )
+        }
+        preferenceRepositoryRef?.value = preferenceRepository
+
         val addressProvider = mock<AddressProvider>()
         val idProvider = mock<IdProvider> {
             on { generateId() } doReturn NEW_UUID
@@ -1355,6 +1444,7 @@ class VisitDetailViewModelTest {
             visitRepository = visitRepository,
             snapshotRepository = snapshotRepository,
             conversationRepository = conversationRepository,
+            preferenceRepository = preferenceRepository,
             addressProvider = addressProvider,
             idProvider = idProvider,
             permissionChecker = permissionChecker,

@@ -84,6 +84,10 @@
     <string name="colon">: </string>
     <string name="settings_section_backup">Backup</string>
     <string name="settings_section_map">Configurações do mapa</string>
+    <string name="settings_section_calendar">Agenda</string>
+    <string name="settings_add_visits_to_calendar">Adicionar visitas à agenda</string>
+    <string name="add_visit_to_calendar_message">As visitas podem ser adicionadas à sua agenda automaticamente.</string>
+    <string name="learn_more">Saiba mais</string>
     <string name="map_engine_label">Motor de mapa</string>
     <string name="create_backup">Fazer backup</string>
     <string name="restore_backup">Restaurar backup</string>

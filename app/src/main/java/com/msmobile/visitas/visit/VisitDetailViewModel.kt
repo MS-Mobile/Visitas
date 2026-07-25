@@ -11,6 +11,7 @@ import com.msmobile.visitas.extension.subListInclusive
 import com.msmobile.visitas.householder.Householder
 import com.msmobile.visitas.householder.HouseholderRepository
 import com.msmobile.visitas.householder.HouseholderSnapshot
+import com.msmobile.visitas.preference.PreferenceRepository
 import com.msmobile.visitas.util.AddressProvider
 import com.msmobile.visitas.util.CalendarEventManager
 import com.msmobile.visitas.util.ClipboardHandler
@@ -45,6 +46,7 @@ class VisitDetailViewModel
     private val visitRepository: VisitRepository,
     private val snapshotRepository: SnapshotRepository,
     private val conversationRepository: ConversationRepository,
+    private val preferenceRepository: PreferenceRepository,
     private val addressProvider: AddressProvider,
     private val idProvider: IdProvider,
     private val permissionChecker: PermissionChecker,
@@ -149,10 +151,8 @@ class VisitDetailViewModel
             UiEvent.LocationRationaleDismissed -> handleLocationRationaleDismissed()
             UiEvent.LocationPermissionGranted -> handleLocationPermissionGranted()
             UiEvent.LocationPermissionDialogShown -> handleLocationPermissionDialogShown()
-            UiEvent.CalendarRationaleAccepted -> handleCalendarRationaleAccepted()
-            UiEvent.CalendarRationaleDismissed -> handleCalendarRationaleDismissed()
-            UiEvent.CalendarPermissionGranted -> handleCalendarPermissionGranted()
-            UiEvent.CalendarPermissionDialogShown -> handleCalendarPermissionDialogShown()
+            UiEvent.AddVisitToCalendarMessageDismissed -> acknowledgeAddVisitToCalendarMessage()
+            UiEvent.AddVisitToCalendarMessageLearnMoreClicked -> acknowledgeAddVisitToCalendarMessage()
             UiEvent.CopyVisitDataClicked -> copyVisitDataClicked()
             UiEvent.PhoneClicked -> phoneClicked()
             UiEvent.PhoneInputDismissed -> phoneInputDismissed()
@@ -339,33 +339,18 @@ class VisitDetailViewModel
         }
     }
 
-    private fun handleCalendarRationaleAccepted() {
+    /**
+     * Both the dismiss and the learn-more path retire the one-time message for good, so the user
+     * is never shown it twice regardless of which action they took.
+     */
+    private fun acknowledgeAddVisitToCalendarMessage() {
         newState {
-            copy(
-                showCalendarRationale = false,
-                showCalendarPermissionDialog = true
-            )
+            copy(showAddVisitToCalendarMessage = false)
         }
-    }
-
-    private fun handleCalendarRationaleDismissed() {
-        newState {
-            copy(
-                showCalendarRationale = false,
-                showCalendarPermissionDialog = false
-            )
-        }
-        // Continue saving without calendar integration
-        performSave()
-    }
-
-    private fun handleCalendarPermissionGranted() {
-        performSave()
-    }
-
-    private fun handleCalendarPermissionDialogShown() {
-        newState {
-            copy(showCalendarPermissionDialog = false)
+        viewModelScope.launch(dispatchers.io) {
+            val preference = preferenceRepository.get()
+                .copy(hasSeenAddVisitToCalendarMessage = true)
+            preferenceRepository.save(preference)
         }
     }
 
@@ -897,17 +882,8 @@ class VisitDetailViewModel
     }
 
     private fun saveClicked() {
-        // Check if there are pending visits that need calendar integration
-        val hasPendingVisits = _uiState.value.visitList.any { !it.isDone && !it.wasRemoved }
-
-        // If there are pending visits and no calendar permission, show rationale
-        if (hasPendingVisits && !calendarEventManager.hasCalendarPermission()) {
-            newState {
-                copy(showCalendarRationale = true)
-            }
-            return
-        }
-
+        // Calendar permission is requested from the settings screen, where the user opts into
+        // calendar sync, so saving never interrupts with a permission prompt of its own.
         performSave()
     }
 
@@ -1253,6 +1229,12 @@ class VisitDetailViewModel
 
             didCreateViewAlready = true
 
+            // One-time nudge towards the calendar setting, only worth showing while the feature
+            // is still off.
+            val preference = preferenceRepository.get()
+            val showAddVisitToCalendarMessage =
+                !preference.hasSeenAddVisitToCalendarMessage && !preference.addVisitsToCalendar
+
             val visitTypeList = listOf(
                 VisitType.BIBLE_STUDY.asState,
                 VisitType.RETURN_VISIT.asState,
@@ -1266,7 +1248,8 @@ class VisitDetailViewModel
                         conversationList = conversationList,
                         visitTypeList = visitTypeList,
                         eventState = UiEventState.Idle,
-                        showDeleteButton = isUpdatingVisit
+                        showDeleteButton = isUpdatingVisit,
+                        showAddVisitToCalendarMessage = showAddVisitToCalendarMessage
                     )
                 }
                 initialEditableData = _uiState.value.getEditableDataSnapshot()
@@ -1282,7 +1265,8 @@ class VisitDetailViewModel
                     conversationList = conversationList,
                     visitTypeList = visitTypeList,
                     eventState = UiEventState.Idle,
-                    showDeleteButton = isUpdatingVisit
+                    showDeleteButton = isUpdatingVisit,
+                    showAddVisitToCalendarMessage = showAddVisitToCalendarMessage
                 )
             }
             initialEditableData = _uiState.value.getEditableDataSnapshot()
@@ -1662,10 +1646,8 @@ class VisitDetailViewModel
         data object LocationRationaleDismissed : UiEvent()
         data object LocationPermissionGranted : UiEvent()
         data object LocationPermissionDialogShown : UiEvent()
-        data object CalendarRationaleAccepted : UiEvent()
-        data object CalendarRationaleDismissed : UiEvent()
-        data object CalendarPermissionGranted : UiEvent()
-        data object CalendarPermissionDialogShown : UiEvent()
+        data object AddVisitToCalendarMessageDismissed : UiEvent()
+        data object AddVisitToCalendarMessageLearnMoreClicked : UiEvent()
         data object CopyVisitDataClicked : UiEvent()
         data object PhoneClicked : UiEvent()
         data object PhoneInputDismissed : UiEvent()
@@ -1698,8 +1680,7 @@ class VisitDetailViewModel
         val showDeleteButton: Boolean = false,
         val showLocationRationale: Boolean = false,
         val showLocationPermissionDialog: Boolean = false,
-        val showCalendarRationale: Boolean = false,
-        val showCalendarPermissionDialog: Boolean = false,
+        val showAddVisitToCalendarMessage: Boolean = false,
         val showPhoneInputDialog: Boolean = false,
         val showPhoneOptionsSheet: Boolean = false
     ) {
