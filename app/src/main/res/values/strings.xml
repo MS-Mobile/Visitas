@@ -86,6 +86,10 @@
     <string name="colon">: </string>
     <string name="settings_section_backup">Backup</string>
     <string name="settings_section_map">Map settings</string>
+    <string name="settings_section_calendar">Calendar</string>
+    <string name="settings_add_visits_to_calendar">Add visits to calendar</string>
+    <string name="add_visit_to_calendar_message">Visits can be added to your calendar automatically.</string>
+    <string name="learn_more">Learn more</string>
     <string name="map_engine_label">Map Engine</string>
     <string name="create_backup">Create backup</string>
     <string name="restore_backup">Restore backup</string>

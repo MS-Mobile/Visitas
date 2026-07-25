@@ -49,6 +49,15 @@ internal class SettingsPreviewConfigProvider : PreviewParameterProvider<Settings
                 backupResult = SettingsDetailViewModel.BackupResult.RestoreFailure("Failed to restore backup"),
                 versionName = APP_VERSION
             )
+        ),
+        SettingsPreviewConfig(
+            configName = "Add Visits To Calendar Enabled",
+            mainActivityUiState = previewMainActivityUiState,
+            uiState = SettingsDetailViewModel.UiState(
+                selectedMapEngine = VisitMapEngineOption.MapLibre,
+                addVisitsToCalendar = true,
+                versionName = APP_VERSION
+            )
         )
     )
 

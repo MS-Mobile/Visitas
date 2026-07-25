@@ -259,6 +259,18 @@ internal class VisitDetailPreviewConfigProvider :
             ),
             isDarkMode = false,
         ),
+        VisitDetailPreviewConfig(
+            configName = "Add visit to calendar message",
+            mainActivityUiState = previewMainActivityUiState,
+            householderId = UUID.randomUUID(),
+            uiState = previewVisitDetailUiState.copy(
+                visitList = listOf(
+                    previewFirstVisitUiState
+                ),
+                showAddVisitToCalendarMessage = true
+            ),
+            isDarkMode = false,
+        ),
     )
 
     override fun getDisplayName(index: Int): String {

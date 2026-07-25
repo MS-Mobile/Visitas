@@ -4,16 +4,21 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.VisibleForTesting
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.DateRange
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -45,8 +50,10 @@ import com.msmobile.visitas.util.scaffold.AppScaffoldState
 import com.msmobile.visitas.R
 import com.msmobile.visitas.util.scaffold.TopNavigationAction
 import com.msmobile.visitas.util.scaffold.topNavigationActions
+import com.msmobile.visitas.extension.RequestCalendarPermission
 import com.msmobile.visitas.extension.showShareIntent
 import com.msmobile.visitas.ui.theme.PreviewFoldable
+import com.msmobile.visitas.ui.views.PermissionRationaleSheet
 import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.util.DetailScreenStyle
@@ -148,6 +155,15 @@ private fun SettingsScreenContent(
             }
         }
 
+        SettingsSection(title = stringResource(R.string.settings_section_calendar)) {
+            AddVisitsToCalendarCheckbox(
+                checked = uiState.addVisitsToCalendar,
+                onCheckedChange = { enabled ->
+                    onEvent(SettingsDetailViewModel.UiEvent.AddVisitsToCalendarToggled(enabled))
+                }
+            )
+        }
+
         SettingsSection(title = stringResource(R.string.settings_section_map)) {
             MapEngineDropdown(
                 selectedEngine = uiState.selectedMapEngine,
@@ -195,6 +211,52 @@ private fun SettingsScreenContent(
         )
 
         Spacer(modifier = Modifier.height(16.dp))
+    }
+
+    PermissionRationaleSheet(
+        isVisible = uiState.showCalendarRationale,
+        message = stringResource(R.string.calendar_permission_message),
+        icon = Icons.Rounded.DateRange,
+        onDismiss = {
+            onEvent(SettingsDetailViewModel.UiEvent.CalendarRationaleDismissed)
+        },
+        onConfirm = {
+            onEvent(SettingsDetailViewModel.UiEvent.CalendarRationaleAccepted)
+        }
+    )
+
+    if (uiState.showCalendarPermissionDialog) {
+        RequestCalendarPermission(
+            onPermissionDenied = {
+                onEvent(SettingsDetailViewModel.UiEvent.CalendarPermissionDenied)
+            },
+            onPermissionGranted = {
+                onEvent(SettingsDetailViewModel.UiEvent.CalendarPermissionGranted)
+            }
+        )
+    }
+}
+
+@Composable
+private fun AddVisitsToCalendarCheckbox(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onCheckedChange(!checked) },
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Checkbox(
+            checked = checked,
+            onCheckedChange = onCheckedChange
+        )
+        Text(
+            modifier = Modifier.padding(start = 8.dp),
+            text = stringResource(R.string.settings_add_visits_to_calendar),
+            style = MaterialTheme.typography.bodyLarge
+        )
     }
 }
 
