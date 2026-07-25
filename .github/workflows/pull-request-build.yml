@@ -67,6 +67,12 @@ jobs:
           ENCRYPTION_PASSPHRASE: ${{ secrets.ENCRYPTION_PASSPHRASE }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
 
+      # Room exports its schema JSONs during KSP compilation, so the build above
+      # already regenerated app/schemas — no emulator or app launch needed. This
+      # only checks the regenerated files match what the PR committed.
+      - name: Verify Room Schemas Are Committed
+        run: sh scripts/verify-room-schemas.sh
+
       - name: Upload Test Results
         uses: actions/upload-artifact@v4
         if: always()

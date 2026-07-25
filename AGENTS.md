@@ -78,6 +78,21 @@ Always inject `DispatcherProvider` instead of using `Dispatchers.IO` directly. T
 ### Database Migrations
 Add new migrations in `migration/` following the `MIGRATION_N_(N+1).kt` naming convention, then register them in `VisitasDatabase.MIGRATIONS`.
 
+Bumping the `@Database` version also produces a new exported schema JSON in `app/schemas/`,
+which must be committed alongside the migration. Room exports these during **KSP compilation**
+(the `androidx.room` plugin copies them into the `schemaDirectory` set in `app/build.gradle.kts`) —
+the app does not need to be installed or launched, so `./gradlew :app:assembleDebug` is enough:
+
+```bash
+./gradlew :app:assembleDebug          # regenerates app/schemas/
+sh scripts/verify-room-schemas.sh     # asserts the committed schemas match
+```
+
+The PR build runs that same check (`Verify Room Schemas Are Committed`) against the schemas the
+build just regenerated, so a forgotten or stale schema JSON fails the PR. To fix it without
+building locally, dispatch the **Regenerate Room Schemas** workflow
+(`.github/workflows/regenerate-room-schemas.yml`) for your branch and it commits them for you.
+
 ## Build & Developer Workflows
 
 ### Build Commands
