@@ -853,6 +853,7 @@ private fun HouseholderNameRow(
         ) {
             if (visit.hasDrafts) {
                 Text(
+                    modifier = Modifier.weight(weight = 1f, fill = false),
                     text = stringResource(id = R.string.visit_draft),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
@@ -860,13 +861,11 @@ private fun HouseholderNameRow(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                VerticalDivider(
-                    color = Color.Transparent,
-                    thickness = horizontalFieldPadding
-                )
+                Spacer(modifier = Modifier.padding(horizontal = horizontalFieldPadding))
             }
             if (showNearbyVisits && isHouseholderAddressNearby) {
                 Text(
+                    modifier = Modifier.weight(weight = 1f, fill = false),
                     text = stringResource(id = R.string.nearby_visit),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
@@ -874,8 +873,8 @@ private fun HouseholderNameRow(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+                Spacer(modifier = Modifier.padding(horizontal = horizontalFieldPadding))
             }
-            VerticalDivider(color = Color.Transparent, thickness = horizontalFieldPadding)
             if (!visit.isDone) {
                 AnimatedVisibility(!isLoading) {
                     IconButton(
