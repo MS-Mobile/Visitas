@@ -2,6 +2,7 @@ package com.msmobile.visitas.visit
 
 import androidx.annotation.VisibleForTesting
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -66,11 +67,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
@@ -783,17 +786,8 @@ private fun VisitCard(
     onEvent: (VisitListViewModel.UiEvent) -> Unit,
     onNavigate: (Direction) -> Unit,
 ) {
-    val dateTextColor = MaterialTheme.colorScheme.primary
-    val locale = LocalConfiguration.current.locales[0]
     val isHouseholderAddressNearby =
         visit.householderAddressDistance is AddressProvider.AddressDistance.Nearby
-    val context = LocalContext.current
-    val linkColor = MaterialTheme.colorScheme.primary
-    val subjectPreview = remember(visit.subjectPreview, linkColor) {
-        annotateMarkdownLinks(visit.subjectPreview, linkColor) { url ->
-            context.launchUrl(url)
-        }
-    }
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -808,104 +802,165 @@ private fun VisitCard(
             modifier = Modifier.padding(cardInnerPadding),
             verticalArrangement = Arrangement.Center
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            HouseholderNameRow(
+                visit = visit,
+                isLoading = isLoading,
+                showNearbyVisits = showNearbyVisits,
+                isHouseholderAddressNearby = isHouseholderAddressNearby,
+                onEvent = onEvent
+            )
+            VisitDateRow(
+                visit = visit,
+                isLoading = isLoading
+            )
+            VisitSubjectRow(
+                visit = visit,
+                isLoading = isLoading,
+                onEvent = onEvent
+            )
+        }
+    }
+}
+
+@Composable
+private fun HouseholderNameRow(
+    visit: VisitListViewModel.VisitHouseholderState,
+    isLoading: Boolean,
+    showNearbyVisits: Boolean,
+    isHouseholderAddressNearby: Boolean,
+    onEvent: (VisitListViewModel.UiEvent) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            modifier = Modifier
+                .textShimmer(isLoading)
+                .weight(weight = 6f, fill = true),
+            style = MaterialTheme.typography.titleMedium,
+            text = visit.householderName,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Row(
+            modifier = Modifier.weight(weight = 4f, fill = true),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.End
+        ) {
+            if (visit.hasDrafts) {
                 Text(
-                    modifier = Modifier.textShimmer(isLoading),
-                    style = MaterialTheme.typography.titleMedium,
-                    text = visit.householderName,
+                    text = stringResource(id = R.string.visit_draft),
+                    style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.tertiary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (visit.hasDrafts) {
-                        Text(
-                            text = stringResource(id = R.string.visit_draft),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.tertiary
-                        )
-                        VerticalDivider(
-                            color = Color.Transparent,
-                            thickness = horizontalFieldPadding
-                        )
-                    }
-                    if (showNearbyVisits && isHouseholderAddressNearby) {
-                        Text(
-                            text = stringResource(id = R.string.nearby_visit),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.75f)
-                        )
-                    }
-                    VerticalDivider(color = Color.Transparent, thickness = horizontalFieldPadding)
-                    if (!visit.isDone) {
-                        AnimatedVisibility(!isLoading) {
-                            IconButton(
-                                modifier = Modifier.size(26.dp),
-                                onClick = {
-                                    onEvent(
-                                        VisitListViewModel.UiEvent.PendingVisitMenuClicked(
-                                            visit
-                                        )
-                                    )
-                                }) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Update,
-                                    contentDescription = stringResource(
-                                        id = R.string.more_options
-                                    )
+                VerticalDivider(
+                    color = Color.Transparent,
+                    thickness = horizontalFieldPadding
+                )
+            }
+            if (showNearbyVisits && isHouseholderAddressNearby) {
+                Text(
+                    text = stringResource(id = R.string.nearby_visit),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.75f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            VerticalDivider(color = Color.Transparent, thickness = horizontalFieldPadding)
+            if (!visit.isDone) {
+                AnimatedVisibility(!isLoading) {
+                    IconButton(
+                        modifier = Modifier.size(26.dp),
+                        onClick = {
+                            onEvent(
+                                VisitListViewModel.UiEvent.PendingVisitMenuClicked(
+                                    visit
                                 )
-                                PendingVisitMenu(visit, onEvent)
-                            }
-                        }
+                            )
+                        }) {
+                        Icon(
+                            imageVector = Icons.Rounded.Update,
+                            contentDescription = stringResource(
+                                id = R.string.more_options
+                            )
+                        )
+                        PendingVisitMenu(visit, onEvent)
                     }
                 }
             }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    modifier = Modifier.textShimmer(isLoading),
-                    text = visit.date.toString(locale),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = dateTextColor
-                )
-            }
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Text(
-                    modifier = Modifier
-                        .textShimmer(isLoading)
-                        .weight(1f),
-                    text = subjectPreview,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+        }
+    }
+}
 
-                val addressState = visit.householderAddressState
-                AnimatedVisibility(
-                    visible = !isLoading && addressState is VisitListViewModel.HouseholderAddressState.Data
-                ) {
-                    if (addressState is VisitListViewModel.HouseholderAddressState.Data) {
-                        IconButton(
-                            modifier = Modifier.size(24.dp),
-                            onClick = {
-                                onEvent(VisitListViewModel.UiEvent.AddressOptionsClicked(visit))
-                            }) {
-                            Icon(
-                                imageVector = Icons.Rounded.Explore,
-                                contentDescription = stringResource(R.string.open_address_options_content_description),
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                        }
-                    }
+@Composable
+private fun VisitDateRow(
+    visit: VisitListViewModel.VisitHouseholderState,
+    isLoading: Boolean
+) {
+    val locale = LocalConfiguration.current.locales[0]
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            modifier = Modifier.textShimmer(isLoading),
+            text = visit.date.toString(locale),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
+}
+
+@Composable
+private fun VisitSubjectRow(
+    visit: VisitListViewModel.VisitHouseholderState,
+    isLoading: Boolean,
+    onEvent: (VisitListViewModel.UiEvent) -> Unit
+) {
+    val context = LocalContext.current
+    val linkColor = MaterialTheme.colorScheme.primary
+    val subjectPreview = remember(visit.subjectPreview, linkColor) {
+        annotateMarkdownLinks(visit.subjectPreview, linkColor) { url ->
+            context.launchUrl(url)
+        }
+    }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text(
+            modifier = Modifier
+                .textShimmer(isLoading)
+                .weight(1f),
+            text = subjectPreview,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        val addressState = visit.householderAddressState
+        AnimatedVisibility(
+            visible = !isLoading && addressState is VisitListViewModel.HouseholderAddressState.Data
+        ) {
+            if (addressState is VisitListViewModel.HouseholderAddressState.Data) {
+                IconButton(
+                    modifier = Modifier.size(24.dp),
+                    onClick = {
+                        onEvent(VisitListViewModel.UiEvent.AddressOptionsClicked(visit))
+                    }) {
+                    Icon(
+                        imageVector = Icons.Rounded.Explore,
+                        contentDescription = stringResource(R.string.open_address_options_content_description),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
                 }
             }
         }
@@ -1071,7 +1126,7 @@ private fun LazyLoadedVisitsMap(
             !didLoadMap || isMapLoading || didFailLoadingMap || noMapData || !isMapEngineReady
         AnimatedVisibility(
             visible = showOverlay,
-            enter = androidx.compose.animation.EnterTransition.None,
+            enter = EnterTransition.None,
             exit = fadeOut(animationSpec = tween(300))
         ) {
             Box(
@@ -1226,7 +1281,7 @@ private fun AddressOptionsSheet(
 
 @Composable
 private fun AddressOptionItem(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     label: String,
     onClick: () -> Unit
 ) {
