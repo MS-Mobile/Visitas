@@ -45,6 +45,7 @@ import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.TravelExplore
+import androidx.compose.material.icons.rounded.Whatsapp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenuItem
@@ -335,7 +336,7 @@ private fun PhoneOptionsSheet(
                 onDismiss()
             }
             PhoneOptionItem(
-                icon = Icons.Rounded.Chat,
+                icon = Icons.Rounded.Whatsapp,
                 label = stringResource(id = R.string.phone_action_whatsapp)
             ) {
                 context.launchWhatsApp(phoneNumber)
