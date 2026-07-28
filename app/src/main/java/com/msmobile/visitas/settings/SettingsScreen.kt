@@ -155,14 +155,6 @@ private fun SettingsScreenContent(
             }
         }
 
-        SettingsSection(title = stringResource(R.string.settings_section_calendar)) {
-            AddVisitsToCalendarCheckbox(
-                checked = uiState.addVisitsToCalendar,
-                onCheckedChange = { enabled ->
-                    onEvent(SettingsDetailViewModel.UiEvent.AddVisitsToCalendarToggled(enabled))
-                }
-            )
-        }
 
         SettingsSection(title = stringResource(R.string.settings_section_map)) {
             MapEngineDropdown(
@@ -173,11 +165,19 @@ private fun SettingsScreenContent(
             )
         }
 
+        SettingsSection(title = stringResource(R.string.settings_section_calendar)) {
+            AddVisitsToCalendarCheckbox(
+                checked = uiState.addVisitsToCalendar,
+                onCheckedChange = { enabled ->
+                    onEvent(SettingsDetailViewModel.UiEvent.AddVisitsToCalendarToggled(enabled))
+                }
+            )
+        }
+
         if (uiState.isLoading) {
             Spacer(modifier = Modifier.height(16.dp))
             CircularProgressIndicator()
         }
-
 
         when (uiState.backupResult) {
             is SettingsDetailViewModel.BackupResult.RestoreFailure -> {
