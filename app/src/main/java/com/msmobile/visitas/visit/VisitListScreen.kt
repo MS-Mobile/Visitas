@@ -861,7 +861,7 @@ private fun HouseholderNameRow(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.padding(horizontal = horizontalFieldPadding))
+                Spacer(modifier = Modifier.padding(end = horizontalFieldPadding))
             }
             if (showNearbyVisits && isHouseholderAddressNearby) {
                 Text(
@@ -873,7 +873,7 @@ private fun HouseholderNameRow(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.padding(horizontal = horizontalFieldPadding))
+                Spacer(modifier = Modifier.padding(end = horizontalFieldPadding))
             }
             if (!visit.isDone) {
                 AnimatedVisibility(!isLoading) {
