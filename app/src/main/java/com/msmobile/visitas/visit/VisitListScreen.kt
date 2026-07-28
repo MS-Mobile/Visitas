@@ -838,7 +838,7 @@ private fun HouseholderNameRow(
         Text(
             modifier = Modifier
                 .textShimmer(isLoading)
-                .weight(weight = 6f, fill = true),
+                .weight(weight = 55f, fill = true),
             style = MaterialTheme.typography.titleMedium,
             text = visit.householderName,
             fontWeight = FontWeight.Bold,
@@ -847,7 +847,7 @@ private fun HouseholderNameRow(
             overflow = TextOverflow.Ellipsis
         )
         Row(
-            modifier = Modifier.weight(weight = 4f, fill = true),
+            modifier = Modifier.weight(weight = 45f, fill = true),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.End
         ) {
