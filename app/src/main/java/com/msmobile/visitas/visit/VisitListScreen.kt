@@ -835,10 +835,15 @@ private fun HouseholderNameRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // The badges and the menu button are unweighted, so Row measures them first and
+        // gives them exactly the width their content needs. The name is the only flexible
+        // child: it takes whatever is left over (fill = false keeps it hugging short names)
+        // and ellipsizes once the leftover space runs out.
         Text(
             modifier = Modifier
                 .textShimmer(isLoading)
-                .weight(weight = 55f, fill = true),
+                .padding(end = horizontalFieldPadding)
+                .weight(weight = 1f, fill = false),
             style = MaterialTheme.typography.titleMedium,
             text = visit.householderName,
             fontWeight = FontWeight.Bold,
@@ -847,13 +852,14 @@ private fun HouseholderNameRow(
             overflow = TextOverflow.Ellipsis
         )
         Row(
-            modifier = Modifier.weight(weight = 45f, fill = true),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.End
         ) {
             if (visit.hasDrafts) {
                 Text(
-                    modifier = Modifier.weight(weight = 1f, fill = false),
+                    modifier = Modifier
+                        .weight(weight = 1f, fill = false)
+                        .padding(end = horizontalFieldPadding),
                     text = stringResource(id = R.string.visit_draft),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
@@ -861,11 +867,12 @@ private fun HouseholderNameRow(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.padding(end = horizontalFieldPadding))
             }
             if (showNearbyVisits && isHouseholderAddressNearby) {
                 Text(
-                    modifier = Modifier.weight(weight = 1f, fill = false),
+                    modifier = Modifier
+                        .weight(weight = 1f, fill = false)
+                        .padding(end = horizontalFieldPadding),
                     text = stringResource(id = R.string.nearby_visit),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
@@ -873,7 +880,6 @@ private fun HouseholderNameRow(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.padding(end = horizontalFieldPadding))
             }
             if (!visit.isDone) {
                 AnimatedVisibility(!isLoading) {

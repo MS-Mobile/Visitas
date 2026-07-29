@@ -118,6 +118,26 @@ internal class VisitListPreviewConfigProvider : PreviewParameterProvider<VisitLi
                     ),
                 )
             )
+        ),
+        VisitListPreviewConfig(
+            configName = "Long householder name",
+            mainActivityUiState = previewMainActivityUiState,
+            summaryUiState = previewSummaryUiState,
+            visitListUiState = previewVisitListUiState.copy(
+                visitList = listOf(
+                    // Long name competing with both badges and the menu button
+                    previewVisitListUiState.visitList[0].copy(
+                        householderName = "Mary Magdalene of Magdala by the Sea of Galilee",
+                        hasDrafts = true
+                    ),
+                    // Long name with nothing but the menu button next to it
+                    previewVisitListUiState.visitList[1].copy(
+                        householderName = "Joseph of Arimathea, member of the Sanhedrin"
+                    ),
+                    // Short name, so the badges keep their natural width
+                    previewVisitListUiState.visitList[2].copy(hasDrafts = true),
+                )
+            )
         )
     )
 
