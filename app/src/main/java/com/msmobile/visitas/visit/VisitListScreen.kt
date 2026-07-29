@@ -842,6 +842,7 @@ private fun HouseholderNameRow(
         Text(
             modifier = Modifier
                 .textShimmer(isLoading)
+                .padding(end = horizontalFieldPadding)
                 .weight(weight = 1f, fill = false),
             style = MaterialTheme.typography.titleMedium,
             text = visit.householderName,
@@ -856,7 +857,9 @@ private fun HouseholderNameRow(
         ) {
             if (visit.hasDrafts) {
                 Text(
-                    modifier = Modifier.weight(weight = 1f, fill = false),
+                    modifier = Modifier
+                        .weight(weight = 1f, fill = false)
+                        .padding(end = horizontalFieldPadding),
                     text = stringResource(id = R.string.visit_draft),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
@@ -864,11 +867,12 @@ private fun HouseholderNameRow(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.padding(end = horizontalFieldPadding))
             }
             if (showNearbyVisits && isHouseholderAddressNearby) {
                 Text(
-                    modifier = Modifier.weight(weight = 1f, fill = false),
+                    modifier = Modifier
+                        .weight(weight = 1f, fill = false)
+                        .padding(end = horizontalFieldPadding),
                     text = stringResource(id = R.string.nearby_visit),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
@@ -876,7 +880,6 @@ private fun HouseholderNameRow(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.padding(end = horizontalFieldPadding))
             }
             if (!visit.isDone) {
                 AnimatedVisibility(!isLoading) {
