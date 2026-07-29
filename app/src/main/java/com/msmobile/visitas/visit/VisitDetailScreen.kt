@@ -194,6 +194,8 @@ private fun VisitDetailScreenContent(
     val floatingActionButtonActions = visitDetailFloatingActionButtonActions(onEvent = onEvent)
     val subtitle = visitDetailSubtitleString(hasDrafts)
 
+    // Keyed on subtitle, not Unit: the published actions and subtitle close over draft state, so
+    // the chrome has to be re-published when that changes or the scaffold keeps stale values.
     DisposableEffect(subtitle) {
         appScaffoldState.setUiState(
             owner = chromeOwner,
