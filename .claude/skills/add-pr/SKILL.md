@@ -27,22 +27,30 @@ If the branch was cut from `release/**`, the PR must target that same release br
 Two PR-build checks validate *committed* generated files. Both fail the PR if the files are stale, so
 regenerate them **before** step 3. `AGENTS.md` is canonical for the details.
 
-### No local toolchain — regenerate *after* the push
+### No local toolchain — regenerate between the push and the PR
 
-Claude Code web/remote sessions cannot run Gradle at all (the egress proxy denies
-`services.gradle.org`, so `./gradlew` dies fetching its distribution — see `AGENTS.md`). The
-regeneration workflows run against a **pushed** branch, so there is nothing to dispatch before the
-first commit and step 2 above cannot come first. Invert it:
+Applies **only** when Gradle cannot run in this session — Claude Code web/remote sessions, where the
+egress proxy denies `services.gradle.org` and `./gradlew` dies fetching its distribution (see
+`AGENTS.md`). With a working toolchain, regenerate locally at step 2 and skip this entirely. The
+regeneration workflows are a substitute for a build you cannot run, not a step every PR needs.
 
-1. Commit and push the source change, and open the PR — do not hold the PR back waiting for green.
-2. Dispatch the regeneration workflow(s) for the branch (`ref` and `target_branch` both = your branch).
-3. Let the workflow commit the regenerated files back; that push re-triggers the PR build.
-4. Watch the re-run to green before calling the PR ready, and say in the checklist that nothing was
-   verified locally.
+The workflows regenerate against a **pushed** branch, so step 2 cannot come first. Reorder:
 
-Dispatch on the *expectation* of a baseline change — a Compose UI or preview edit is enough. Do not
-wait for `validateDebugScreenshotTest` to fail first, and do not leave the dispatch as a note in the
-PR body for a human to action.
+1. Push the branch.
+2. Look at what the branch actually changed (`git diff --name-only master...HEAD`), then dispatch a
+   workflow **only if the diff calls for it**:
+   - a `@Composable`, `@Preview`, or `PreviewParameterProvider` edit → **Regenerate Screenshots**
+   - a `@Database` version change → **Regenerate Room Schemas**
+
+   A branch touching neither — docs, ViewModels, tests, Gradle config — needs no dispatch. Judge it
+   from the diff, not from a habit of always dispatching.
+3. Wait for the workflow to commit the regenerated files back to the branch.
+4. Open the PR, so its first build runs against the complete branch, and say in the checklist that
+   nothing was verified locally.
+
+When the diff does call for it, dispatch on that expectation rather than waiting for
+`validateDebugScreenshotTest` to fail — and do not leave the dispatch as a note in the PR body for a
+human to action.
 
 ### Room schemas — `Verify Room Schemas Are Committed`
 
