@@ -835,10 +835,14 @@ private fun HouseholderNameRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // The badges and the menu button are unweighted, so Row measures them first and
+        // gives them exactly the width their content needs. The name is the only flexible
+        // child: it takes whatever is left over (fill = false keeps it hugging short names)
+        // and ellipsizes once the leftover space runs out.
         Text(
             modifier = Modifier
                 .textShimmer(isLoading)
-                .weight(weight = 55f, fill = true),
+                .weight(weight = 1f, fill = false),
             style = MaterialTheme.typography.titleMedium,
             text = visit.householderName,
             fontWeight = FontWeight.Bold,
@@ -847,7 +851,6 @@ private fun HouseholderNameRow(
             overflow = TextOverflow.Ellipsis
         )
         Row(
-            modifier = Modifier.weight(weight = 45f, fill = true),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.End
         ) {
