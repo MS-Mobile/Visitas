@@ -123,6 +123,17 @@ building locally, dispatch the **Regenerate Room Schemas** workflow
 ./gradlew installGitHooks          # install pre-commit hook
 ```
 
+### No Gradle in Claude Code web/remote sessions
+Those sessions run behind an egress proxy that denies `services.gradle.org`, so the very first
+`./gradlew` call fails at *"Downloading gradle-*-bin.zip … 403 Forbidden"* — before any task runs.
+The container also ships no `~/.gradle` dependency cache, so nothing builds offline either. **Do not
+retry, swap distribution URLs, or route around the proxy** (a 403 is an org egress policy, not a
+flake). Push the branch and let the PR Build workflow compile, run `test`, and run
+`validateDebugScreenshotTest` — then read the failures off the check run and fix forward. State
+plainly in the PR that nothing was verified locally and why. A local checkout with network access is
+unaffected: build normally there. (The `verify` skill's emulator run is unavailable for the same
+reason — no SDK downloads, no emulator.)
+
 ### Required Environment Variables (release only)
 `VERSION_CODE`, `KEYSTORE_FILE`, `KEYSTORE_PASSWORD`, `KEYSTORE_ALIAS`, `ENCRYPTION_PASSPHRASE`, `SENTRY_DSN`. Sentry source-map upload also needs `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN`.
 
