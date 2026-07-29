@@ -31,7 +31,7 @@ The app is fully wired and verified end-to-end on a Galaxy S23 (Android 16 / SDK
 
 ## Verify via ADB (needs Android 16 device)
 
-adb is at `~/AppData/Local/Android/Sdk/platform-tools/adb.exe` (not on PATH). The debug build is `com.msmobile.visitas.debug` with its **own empty database** (returns count:0 until visits are added in that installed app). Two package IDs = two separate OS registries.
+The debug build is `com.msmobile.visitas.debug` with its **own empty database** (returns count:0 until visits are added in that installed app). Two package IDs = two separate OS registries.
 
 ```bash
 # List registration
@@ -45,4 +45,4 @@ The ADB `execute-app-function` tool bypasses normal indexing with elevated shell
 
 ## Build gotcha
 
-Full `:app:installDebug` needs `VERSION_CODE=1` env var. The PC has memory pressure — cap heap with `-Dorg.gradle.jvmargs="-Xmx3072m ..."` to avoid a daemon JVM crash.
+Full `:app:installDebug` needs a `VERSION_CODE` env var (any value, e.g. `VERSION_CODE=1`).

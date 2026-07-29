@@ -1,6 +1,6 @@
 ---
 name: di-providers
-description: Use when writing or reviewing code that would call LocalDate.now(), LocalDateTime.now(), Locale.getDefault(), or Dispatchers.* inside a DI class (ViewModel, repository, AppFunctions, etc.)
+description: Use when writing or reviewing code that would call LocalDate.now(), LocalDateTime.now(), Locale.getDefault(), UUID.randomUUID(), or Dispatchers.* inside a DI class (ViewModel, repository, AppFunctions, etc.)
 ---
 
 # Inject utility providers, never call static platform APIs
@@ -9,11 +9,16 @@ In any class that participates in Hilt DI, use the injected provider wrappers in
 
 | Instead of | Use |
 |---|---|
-| `LocalDate.now()` / `LocalDateTime.now()` | `dateTimeProvider.nowLocalDateTime()` |
+| `LocalDate.now()` | `dateTimeProvider.nowLocalDate()` |
+| `LocalDateTime.now()` | `dateTimeProvider.nowLocalDateTime()` |
+| `Date()` / `System.nanoTime()` | `dateTimeProvider.nowDate()` / `dateTimeProvider.nanoTime()` |
 | `Locale.getDefault()` | `localeProvider.getLocale()` |
+| `UUID.randomUUID()` | `idProvider.generateId()` |
 | `Dispatchers.IO` / `Dispatchers.Main` | `dispatcherProvider.io` / `dispatcherProvider.main` |
 
-All three are `@Singleton`, provided in `ApplicationModule.kt`, and injected via `@Inject constructor`.
+All of these are `@Singleton`, provided in `ApplicationModule.kt`, and injected via
+`@Inject constructor`. The wrappers themselves live in `util/` (`DateTimeProvider`, `LocaleProvider`,
+`IdProvider`, `DispatcherProvider`).
 
 **Why:** testability. Providers can be mocked to control time, locale, and dispatchers; static calls make tests brittle and non-deterministic.
 
