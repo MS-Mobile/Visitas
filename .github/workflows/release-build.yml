@@ -92,6 +92,10 @@ jobs:
             gradle-${{ runner.os }}-
             gradle-
 
+      # WARNING: github.run_number is scoped to this workflow's FILE PATH. Renaming or moving
+      # this file resets it to 1, which drops the calculated version code below what is already
+      # live on Play and makes Play reject the upload. This has happened before. If this file is
+      # ever renamed, raise the VERSION_CODE_OFFSET repo variable above the last deployed code.
       - name: Calculate Version Code
         id: version
         run: |

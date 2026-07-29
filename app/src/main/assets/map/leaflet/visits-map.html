@@ -22,6 +22,10 @@
 </head>
 <body>
 <div id="map"></div>
+<!-- This is the IIFE/global build (unpkg's leaflet-global.js), not leaflet.js, which is ESM-only
+     and will not load from a file:// WebView. v2 exposes window.leaflet and removed the lowercase
+     factory helpers, so classes are constructed with `new leaflet.X()`. Coordinates are
+     [latitude, longitude] here — the opposite of the MapLibre engine. -->
 <script src="leaflet-2.0.0-alpha.1.js"></script>
 <script>
     let map;

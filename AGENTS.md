@@ -72,8 +72,22 @@ ViewModels are wired to screens via **`di/NavigationDependencies.kt`** using `de
 ### StringResource Utility
 ViewModels pass `StringResource(@StringRes textResId: Int, arguments: List<Any>)` to `UiState` to keep UI strings out of the data layer. Resolve it in the composable with `stringResource`.
 
-### DispatcherProvider
-Always inject `DispatcherProvider` instead of using `Dispatchers.IO` directly. This enables swapping dispatchers in tests without reflection.
+### Injected Providers — never call static platform APIs in a DI class
+In any class that participates in Hilt DI (ViewModel, repository, AppFunctions, …), use the injected
+provider wrapper instead of the static call. This keeps tests deterministic — time, locale, IDs and
+dispatchers can all be mocked, with no reflection.
+
+| Instead of | Use |
+|---|---|
+| `LocalDate.now()` | `dateTimeProvider.nowLocalDate()` |
+| `LocalDateTime.now()` | `dateTimeProvider.nowLocalDateTime()` |
+| `Date()` / `System.nanoTime()` | `dateTimeProvider.nowDate()` / `dateTimeProvider.nanoTime()` |
+| `Locale.getDefault()` | `localeProvider.getLocale()` |
+| `UUID.randomUUID()` | `idProvider.generateId()` |
+| `Dispatchers.IO` / `Dispatchers.Main` | `dispatcherProvider.io` / `dispatcherProvider.main` |
+
+All are `@Singleton`s provided in `di/ApplicationModule.kt`, declared in `util/`, and taken via
+`@Inject constructor`. There is no static-analysis rule enforcing this yet — it is review-enforced.
 
 ### Database Migrations
 Add new migrations in `migration/` following the `MIGRATION_N_(N+1).kt` naming convention, then register them in `VisitasDatabase.MIGRATIONS`.
@@ -153,6 +167,13 @@ PNGs in `app/src/screenshotTestDebug/reference/`. The PR build runs `validateDeb
 - Reference PNGs are regenerated and committed by the **Regenerate Screenshots** workflow
   (`.github/workflows/regenerate-screenshots.yml`, runs `updateDebugScreenshotTest`), dispatched
   per branch. Dispatch it after any intended UI change so `validateDebugScreenshotTest` passes.
+
+## Tech Debt
+Tech-debt and code-smell findings are tracked **as GitHub issues** labeled `tech-debt` (plus `bug`
+for live defects) — deliberately not as a committed markdown registry. Query the live label for the
+current backlog; never work from a remembered list of issue numbers. Fix one issue per session and
+close it with `Fixes #N` in the PR. File new items with `.github/ISSUE_TEMPLATE/tech_debt.yml`. The
+audit methodology (no findings) is at `docs/superpowers/specs/2026-06-12-code-smell-audit-design.md`.
 
 ## Pre-commit Hook
 Modifying `VisitasDatabase.kt` triggers `BackupHandlerTest` automatically (requires a connected device). Run `./gradlew installGitHooks` once after cloning.

@@ -55,6 +55,15 @@ sealed class VisitsMapEvent {
     data class ErrorLoadingMap(val errorMessage: String) : VisitsMapEvent()
 }
 
+/**
+ * Both engines are vendored under `assets/map/<engine>/` and are interchangeable: each implements
+ * the same bridge in both directions — Kotlin calls `initializeMap` and `setMarkers(lat, lng,
+ * visitsJson)`, JS calls back on `window.Visits`. A change to either side of that contract has to
+ * land in both HTML files, or switching engines in Settings breaks the map.
+ *
+ * They differ in coordinate order (Leaflet takes `[lat, lng]`, MapLibre GeoJSON `[lng, lat]`); each
+ * file documents its own conversion.
+ */
 private fun assetPath(engine: VisitMapEngineOption) = when (engine) {
     VisitMapEngineOption.MapLibre -> "file:///android_asset/map/maplibre/visits-map.html"
     VisitMapEngineOption.Leaflet -> "file:///android_asset/map/leaflet/visits-map.html"

@@ -55,6 +55,19 @@ import com.ramcosta.composedestinations.spec.DestinationSpec
 import com.ramcosta.composedestinations.spec.Direction
 import com.ramcosta.composedestinations.spec.DirectionDestinationSpec
 
+/**
+ * The one and only Scaffold in the app, hosted by `Main`.
+ *
+ * Screens — including detail screens — are plain composables that fill the content slot and publish
+ * their chrome through `AppScaffoldState`. Do not give a screen its own Scaffold: that was the
+ * original design and it flickered the top bar and bottom nav, and recomposed them, on every
+ * navigation. Screen *previews* are the exception; they wrap themselves here with a throwaway
+ * `AppScaffoldState` so the preview renders with chrome, which is not per-screen chrome in the app.
+ *
+ * Chrome visibility is derived from [currentDestination] rather than from what a screen asks for.
+ * Detail destinations are deliberately absent from the bottom-navigation set, so no tab bar flashes
+ * before a detail footer publishes.
+ */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun AppScaffold(

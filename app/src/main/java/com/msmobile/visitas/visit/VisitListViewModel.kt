@@ -703,11 +703,21 @@ constructor(
                 householderDistanceAsFilter = householderDistanceAsFilter
             )
             val hasDrafts = visit.hasDrafts
+            // Two invariants, both deliberate:
+            //  - Drafts are always visible. They are work in progress the user must not lose
+            //    sight of, so no filter may hide them.
+            //  - A name-search match is always visible. Typing a name is a direct ask that
+            //    overrides the browsing filters.
+            // Only the default, empty-search view is narrowed by date/distance. A new filter
+            // belongs inside the isSearchEmpty branch — never wrap hasDrafts or matchesName
+            // with it.
             val show = hasDrafts
                     || isSearchEmpty && (matchesDate || matchesDistance)
                     || matchesName
             visit.copy(hide = !show) to matchesDistance
         }.sortedWith(
+            // Drafts sort first for the same reason they are never hidden: keep both halves
+            // of that guarantee together.
             compareByDescending<Pair<VisitHouseholderState, Boolean>> { (visit, _) -> visit.hasDrafts }
                 .thenByDescending { (_, matchesDistance) -> matchesDistance }
                 .thenBy { (visit, _) -> visit.date }
