@@ -1,6 +1,6 @@
 ---
 name: appfunctions
-description: Use when adding or modifying Android AppFunctions (Gemini on-device integration) in Visitas, or verifying them via ADB
+description: Use when Gemini is not seeing a registered AppFunction or is passing unexpected parameter values, and when adding, modifying or ADB-verifying Android AppFunctions (Gemini on-device integration) in Visitas
 ---
 
 # AppFunctions — what the code can't tell you
