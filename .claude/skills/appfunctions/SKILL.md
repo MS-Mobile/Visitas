@@ -3,46 +3,53 @@ name: appfunctions
 description: Use when adding or modifying Android AppFunctions (Gemini on-device integration) in Visitas, or verifying them via ADB
 ---
 
-# AppFunctions (Gemini integration)
+# AppFunctions — what the code can't tell you
 
-Visitas exposes functionality to Gemini as on-device tools via `androidx.appfunctions` (alpha).
+Visitas exposes on-device tools to Gemini via `androidx.appfunctions` (alpha). Adding a function is
+just a new `@AppFunction suspend` method on `VisitAppFunctions` — KSP generates the schema and
+`VisitasApp` provides the instance. The wiring is visible in those two files and in
+`AndroidManifest.xml`; read them first.
 
-## Adding a function
+What follows was established by experiment against a real device and is recorded nowhere in the
+source.
 
-Add a new `@AppFunction` **suspend** method to `VisitAppFunctions`. No other wiring needed — KSP generates the schema, and `VisitasApp` (implements `AppFunctionConfiguration.Provider`) injects `VisitAppFunctions` via Hilt.
+## How Gemini actually calls these
 
-## Key files
+- **Parameter values arrive in the vocabulary you documented in KDoc — English tokens — regardless
+  of the user's spoken language.** A Portuguese prompt still yields `dateFilter="today"`. Do not add
+  localised token handling.
+- **Free-form `String` parameters are not validated by the framework.** Harden the implementation:
+  handle `null` as the intended default, match the documented tokens, and throw
+  `AppFunctionInvalidArgumentException` on anything else. A silent `else` fallback returns
+  plausible-but-wrong data; throwing is what makes Gemini retry with a documented value.
+- **A Kotlin `enum class` as a parameter type was never confirmed to work in this alpha.** Primitives,
+  `@AppFunctionSerializable` data classes and `List<T>` do. Validate tokens in code rather than
+  relying on an enum parameter.
 
-- `app/src/main/java/com/msmobile/visitas/appfunctions/VisitAppFunctions.kt` — all `@AppFunction` methods; add new ones here.
-- `app/src/main/java/com/msmobile/visitas/VisitasApp.kt` — `AppFunctionConfiguration.Provider`, Hilt injection.
-- `AndroidManifest.xml` — **no manual entries needed**; the `appfunctions-service` library auto-injects service declarations + `<meta-data>` (pointing at generated `assets/app_functions.xml`) via manifest merging. **Do NOT** add a `<property ... @xml/app_metadata>` — that resource doesn't exist in this alpha and breaks resource linking.
+## Status: blocked on EAP, not on code
 
-## Parameter validation (verified)
+The integration is wired and verified end-to-end on a Galaxy S23 (Android 16 / SDK 36) through the OS
+`AppFunctionManagerService`. The **real Gemini agent path is EAP-gated**: the OS only indexes
+AppFunctions from a pre-approved package set (Samsung/Google first-party). This is enforced at
+OS registry-indexing level — it is *not* about debug vs release, signing, or anything in this repo.
+An EAP form was submitted for `com.msmobile.visitas`. Re-verify this gate before concluding that a
+code change is needed; if Gemini can't see the functions, this is almost certainly why.
 
-- Gemini passes parameter **values in the documented vocabulary (English tokens from the KDoc), not the user's spoken language.** A Portuguese prompt still yields e.g. `dateFilter="today"`.
-- Free-form `String` params are not enforced, so harden the impl: match `null` explicitly (intended default), match known tokens, and `else -> throw AppFunctionInvalidArgumentException(...)`. **Never use a silent `else` fallback** — it returns plausible-but-wrong data; throwing makes Gemini retry with a documented value.
-- Kotlin `enum class` as a **parameter** type was not confirmed supported in this alpha (primitives, `@AppFunctionSerializable` data classes, and `List<T>` are). Validate in code rather than relying on an enum param type.
-
-Current function: `listVisits(dateFilter: String?)` — `"today"`/`"tomorrow"`/`"past_due"`/`"done"`/`null` (all upcoming); unrecognized non-null → throws.
-
-## Status: EAP-gated
-
-The app is fully wired and verified end-to-end on a Galaxy S23 (Android 16 / SDK 36) through the OS `AppFunctionManagerService`. But the real **Gemini agent path is EAP-gated**: the OS only indexes AppFunctions from a pre-approved set of packages (Samsung/Google first-party). This is enforced at the OS registry-indexing level — **not** about debug vs release, signing, or code correctness. Unblocking requires Google Early Access Program enrollment, not code changes (EAP form submitted for `com.msmobile.visitas`). Re-verify this gate if/when EAP access lands.
-
-## Verify via ADB (needs Android 16 device)
-
-The debug build is `com.msmobile.visitas.debug` with its **own empty database** (returns count:0 until visits are added in that installed app). Two package IDs = two separate OS registries.
+## Verifying via ADB (needs an Android 16 device)
 
 ```bash
 # List registration
 adb shell cmd app_function list-app-functions | grep -A30 visitas
 
-# Execute (closest thing to Gemini; wrap whole cmd in double quotes to keep JSON quotes)
+# Execute — the closest thing to Gemini. Wrap the whole command in double quotes to keep JSON quotes.
 adb shell "cmd app_function execute-app-function --package com.msmobile.visitas.debug --function 'com.msmobile.visitas.appfunctions.VisitAppFunctions#listVisits' --parameters '{\"dateFilter\":\"today\"}' --brief-yaml"
 ```
 
-The ADB `execute-app-function` tool bypasses normal indexing with elevated shell permissions — it's a test path, not the real Gemini consumer path.
+Two caveats that will otherwise waste an afternoon:
 
-## Build gotcha
+- `execute-app-function` bypasses normal indexing using elevated shell permissions. It proves your
+  function works; it does **not** prove Gemini can reach it (see the EAP gate).
+- The debug build is `com.msmobile.visitas.debug` with its **own empty database** — it returns
+  `count:0` until you add visits *in that installed app*. Two package IDs mean two OS registries.
 
-Full `:app:installDebug` needs a `VERSION_CODE` env var (any value, e.g. `VERSION_CODE=1`).
+`:app:installDebug` needs a `VERSION_CODE` env var set (any value, e.g. `VERSION_CODE=1`).

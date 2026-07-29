@@ -37,7 +37,9 @@
         tools:targetApi="36">
 
         <!-- AppFunctions service declarations and metadata are auto-injected via
-             manifest merging by the androidx.appfunctions:appfunctions-service library. -->
+             manifest merging by the androidx.appfunctions:appfunctions-service library.
+             Do not add a <property android:resource="@xml/app_metadata" /> entry here: that
+             resource does not exist in this alpha and referencing it breaks resource linking. -->
 
         <!-- Disable Sentry auto-init; manual init in VisitasApp -->
         <meta-data

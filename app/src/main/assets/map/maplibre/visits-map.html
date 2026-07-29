@@ -106,6 +106,8 @@
         }
     }
 
+    // Kotlin calls this with (latitude, longitude) for both engines. MapLibre is GeoJSON-ordered,
+    // so every coordinate handed to it below must be swapped to [longitude, latitude].
     async function setMarkers(latitude, longitude, visits) {
         try {
             if (!map) {
@@ -148,6 +150,9 @@
 
                     log('Adding marker for: ' + householderName + ' (order: ' + visitOrder + ')');
 
+                    // The pin and its number are one SVG on purpose. Do not add `position:
+                    // relative` to this wrapper — it breaks MapLibre's own marker positioning
+                    // and the pins drift away from their coordinates.
                     const el = document.createElement('div');
                     el.style.cssText = 'cursor:pointer;line-height:0;';
                     el.innerHTML =

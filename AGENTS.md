@@ -168,6 +168,13 @@ PNGs in `app/src/screenshotTestDebug/reference/`. The PR build runs `validateDeb
   (`.github/workflows/regenerate-screenshots.yml`, runs `updateDebugScreenshotTest`), dispatched
   per branch. Dispatch it after any intended UI change so `validateDebugScreenshotTest` passes.
 
+## Tech Debt
+Tech-debt and code-smell findings are tracked **as GitHub issues** labeled `tech-debt` (plus `bug`
+for live defects) — deliberately not as a committed markdown registry. Query the live label for the
+current backlog; never work from a remembered list of issue numbers. Fix one issue per session and
+close it with `Fixes #N` in the PR. File new items with `.github/ISSUE_TEMPLATE/tech_debt.yml`. The
+audit methodology (no findings) is at `docs/superpowers/specs/2026-06-12-code-smell-audit-design.md`.
+
 ## Pre-commit Hook
 Modifying `VisitasDatabase.kt` triggers `BackupHandlerTest` automatically (requires a connected device). Run `./gradlew installGitHooks` once after cloning.
 
