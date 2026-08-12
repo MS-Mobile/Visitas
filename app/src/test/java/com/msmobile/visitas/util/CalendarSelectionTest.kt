@@ -59,15 +59,17 @@ class CalendarSelectionTest {
     }
 
     @Test
-    fun `orderedByAutoPickPreference keeps provider order between equally ranked calendars`() {
-        val secondGoogleCalendar = WORK.copy(id = 5L, displayName = "Aaa first alphabetically")
-        val calendars = listOf(WORK, secondGoogleCalendar)
+    fun `orderedByAutoPickPreference keeps the order equally ranked calendars arrived in`() {
+        val zulu = WORK.copy(id = 5L, displayName = "Zulu")
+        val alpha = WORK.copy(id = 6L, displayName = "Alpha")
+        val mike = WORK.copy(id = 7L, displayName = "Mike")
+        val calendars = listOf(zulu, LOCAL, alpha, mike)
 
         val ordered = calendars.orderedByAutoPickPreference()
 
-        // Stable sort: WORK stays ahead despite sorting later by name. This is what stops an
-        // upgrade from moving a user's events to a different calendar.
-        assertEquals(listOf(WORK, secondGoogleCalendar), ordered)
+        // Stable sort: the three Google calendars keep their arrival order despite sorting
+        // differently by name. This is what stops an upgrade from moving a user's events.
+        assertEquals(listOf(zulu, alpha, mike, LOCAL), ordered)
     }
 
     @Test
@@ -85,6 +87,15 @@ class CalendarSelectionTest {
         // contract, so slipping a sort in at a call site fails here instead of silently showing
         // one calendar while writing to another.
         assertEquals(LOCAL, resolved)
+    }
+
+    @Test
+    fun `ordering then resolving with no preference picks the best ranked calendar`() {
+        val calendars = listOf(LOCAL, WORK, GOOGLE_PRIMARY)
+
+        val resolved = calendars.orderedByAutoPickPreference().resolvePreferred(preferredCalendarId = null)
+
+        assertEquals(GOOGLE_PRIMARY, resolved)
     }
 
     private companion object {
