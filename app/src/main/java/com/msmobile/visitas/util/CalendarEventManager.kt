@@ -26,6 +26,7 @@ class CalendarEventManager(
 
     suspend fun saveEvent(
         eventId: Long? = null,
+        calendarId: Long? = null,
         title: String,
         description: String,
         startTime: LocalDateTime,
@@ -36,7 +37,7 @@ class CalendarEventManager(
             return@withContext null
         }
 
-        val calendar = getFirstCalendar() ?: return@withContext null
+        val calendar = resolveCalendar(calendarId) ?: return@withContext null
         val eventTitle = if (isDone) "$CHECKMARK$title" else title
         val startMillis = startTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
         val endMillis = startMillis + duration.toMillis()
@@ -59,6 +60,17 @@ class CalendarEventManager(
         } else {
             insertEvent(values)
         }
+    }
+
+    /**
+     * The calendars the app may write to, ordered best-candidate-first. Empty without calendar
+     * permission.
+     */
+    suspend fun getAvailableCalendars(): List<CalendarInfo> = withContext(Dispatchers.IO) {
+        if (!hasCalendarPermission()) {
+            return@withContext emptyList()
+        }
+        queryWritableCalendars()
     }
 
     suspend fun deleteEvent(eventId: Long): Boolean = withContext(Dispatchers.IO) {
@@ -100,12 +112,13 @@ class CalendarEventManager(
         }
     }
 
-    private fun getFirstCalendar(): CalendarInfo? {
+    private fun resolveCalendar(preferredCalendarId: Long?): CalendarInfo? =
+        queryWritableCalendars().resolvePreferred(preferredCalendarId)
+
+    private fun queryWritableCalendars(): List<CalendarInfo> {
         val projection = arrayOf(
             CalendarContract.Calendars._ID,
-            CalendarContract.Calendars.CALENDAR_ACCESS_LEVEL,
-            CalendarContract.Calendars.VISIBLE,
-            CalendarContract.Calendars.SYNC_EVENTS,
+            CalendarContract.Calendars.CALENDAR_DISPLAY_NAME,
             CalendarContract.Calendars.IS_PRIMARY,
             CalendarContract.Calendars.ACCOUNT_NAME,
             CalendarContract.Calendars.ACCOUNT_TYPE
@@ -122,47 +135,57 @@ class CalendarEventManager(
             "1"   // Sync events enabled
         )
 
-        context.contentResolver.query(
-            CalendarContract.Calendars.CONTENT_URI,
-            projection,
-            selection,
-            selectionArgs,
-            null
-        )?.use { cursor ->
-            val idIndex = cursor.getColumnIndex(CalendarContract.Calendars._ID)
-            val isPrimaryIndex = cursor.getColumnIndex(CalendarContract.Calendars.IS_PRIMARY)
-            val accountNameIndex = cursor.getColumnIndex(CalendarContract.Calendars.ACCOUNT_NAME)
-            val accountTypeIndex = cursor.getColumnIndex(CalendarContract.Calendars.ACCOUNT_TYPE)
+        return try {
+            context.contentResolver.query(
+                CalendarContract.Calendars.CONTENT_URI,
+                projection,
+                selection,
+                selectionArgs,
+                null
+            )?.use { cursor ->
+                val idIndex = cursor.getColumnIndex(CalendarContract.Calendars._ID)
+                if (idIndex < 0) return@use emptyList()
 
-            if (idIndex < 0) return null
+                val displayNameIndex =
+                    cursor.getColumnIndex(CalendarContract.Calendars.CALENDAR_DISPLAY_NAME)
+                val isPrimaryIndex = cursor.getColumnIndex(CalendarContract.Calendars.IS_PRIMARY)
+                val accountNameIndex =
+                    cursor.getColumnIndex(CalendarContract.Calendars.ACCOUNT_NAME)
+                val accountTypeIndex =
+                    cursor.getColumnIndex(CalendarContract.Calendars.ACCOUNT_TYPE)
 
-            var bestCalendar: CalendarInfo? = null
-            var bestScore = -1
-
-            while (cursor.moveToNext()) {
-                val calendarId = cursor.getLong(idIndex)
-                val isPrimary = isPrimaryIndex >= 0 && cursor.getInt(isPrimaryIndex) == 1
-                val accountName = if (accountNameIndex >= 0) cursor.getString(accountNameIndex) else null
-                val accountType = if (accountTypeIndex >= 0) cursor.getString(accountTypeIndex) else null
-                val isGoogle = accountType == GOOGLE_ACCOUNT_TYPE
-
-                val score = calculateCalendarScore(isGoogle, isPrimary)
-                if (score > bestScore) {
-                    bestScore = score
-                    bestCalendar = CalendarInfo(calendarId, accountName, accountType)
-                }
+                buildList {
+                    while (cursor.moveToNext()) {
+                        add(
+                            CalendarInfo(
+                                id = cursor.getLong(idIndex),
+                                displayName = if (displayNameIndex >= 0) {
+                                    cursor.getString(displayNameIndex).orEmpty()
+                                } else {
+                                    ""
+                                },
+                                accountName = if (accountNameIndex >= 0) {
+                                    cursor.getString(accountNameIndex)
+                                } else {
+                                    null
+                                },
+                                accountType = if (accountTypeIndex >= 0) {
+                                    cursor.getString(accountTypeIndex)
+                                } else {
+                                    null
+                                },
+                                isPrimary = isPrimaryIndex >= 0 && cursor.getInt(isPrimaryIndex) == 1
+                            )
+                        )
+                    }
+                }.orderedByAutoPickPreference()
+            } ?: emptyList()
+        } catch (e: Exception) {
+            if (e is CancellationException) {
+                throw e
             }
-            return bestCalendar
-        }
-        return null
-    }
-
-    private fun calculateCalendarScore(isGoogle: Boolean, isPrimary: Boolean): Int {
-        return when {
-            isGoogle && isPrimary -> 3
-            isGoogle -> 2
-            isPrimary -> 1
-            else -> 0
+            logger.error(TAG, "Failed to query calendars", e)
+            emptyList()
         }
     }
 
@@ -184,16 +207,9 @@ class CalendarEventManager(
         }
     }
 
-    private data class CalendarInfo(
-        val id: Long,
-        val accountName: String?,
-        val accountType: String?
-    )
-
     companion object {
         private const val TAG = "CalendarEventManager"
         private const val CHECKMARK = "✅ "
-        private const val GOOGLE_ACCOUNT_TYPE = "com.google"
         private val DEFAULT_DURATION: Duration = Duration.ofMinutes(30)
     }
 }
