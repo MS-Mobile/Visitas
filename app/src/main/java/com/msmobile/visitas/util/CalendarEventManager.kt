@@ -64,7 +64,7 @@ class CalendarEventManager(
 
     /**
      * The calendars the app may write to, ordered best-candidate-first. Empty without calendar
-     * permission.
+     * permission, and also on a provider error, which is logged.
      */
     suspend fun getAvailableCalendars(): List<CalendarInfo> = withContext(Dispatchers.IO) {
         if (!hasCalendarPermission()) {
@@ -115,32 +115,18 @@ class CalendarEventManager(
     private fun resolveCalendar(preferredCalendarId: Long?): CalendarInfo? =
         queryWritableCalendars().resolvePreferred(preferredCalendarId)
 
+    /**
+     * The writable calendars, ranked by [orderedByAutoPickPreference]. The ordering is the contract:
+     * [resolvePreferred] falls back to the first entry, so returning these unranked would silently
+     * change which calendar events land in.
+     */
     private fun queryWritableCalendars(): List<CalendarInfo> {
-        val projection = arrayOf(
-            CalendarContract.Calendars._ID,
-            CalendarContract.Calendars.CALENDAR_DISPLAY_NAME,
-            CalendarContract.Calendars.IS_PRIMARY,
-            CalendarContract.Calendars.ACCOUNT_NAME,
-            CalendarContract.Calendars.ACCOUNT_TYPE
-        )
-
-        val selection = """
-            ${CalendarContract.Calendars.CALENDAR_ACCESS_LEVEL} >= ? AND
-            ${CalendarContract.Calendars.VISIBLE} = ? AND
-            ${CalendarContract.Calendars.SYNC_EVENTS} = ?
-        """.trimIndent()
-        val selectionArgs = arrayOf(
-            CalendarContract.Calendars.CAL_ACCESS_CONTRIBUTOR.toString(),
-            "1",  // Visible
-            "1"   // Sync events enabled
-        )
-
         return try {
             context.contentResolver.query(
                 CalendarContract.Calendars.CONTENT_URI,
-                projection,
-                selection,
-                selectionArgs,
+                WRITABLE_CALENDAR_PROJECTION,
+                WRITABLE_CALENDAR_SELECTION,
+                WRITABLE_CALENDAR_SELECTION_ARGS,
                 null
             )?.use { cursor ->
                 val idIndex = cursor.getColumnIndex(CalendarContract.Calendars._ID)
@@ -211,5 +197,25 @@ class CalendarEventManager(
         private const val TAG = "CalendarEventManager"
         private const val CHECKMARK = "✅ "
         private val DEFAULT_DURATION: Duration = Duration.ofMinutes(30)
+
+        private val WRITABLE_CALENDAR_PROJECTION = arrayOf(
+            CalendarContract.Calendars._ID,
+            CalendarContract.Calendars.CALENDAR_DISPLAY_NAME,
+            CalendarContract.Calendars.IS_PRIMARY,
+            CalendarContract.Calendars.ACCOUNT_NAME,
+            CalendarContract.Calendars.ACCOUNT_TYPE
+        )
+
+        private val WRITABLE_CALENDAR_SELECTION = """
+            ${CalendarContract.Calendars.CALENDAR_ACCESS_LEVEL} >= ? AND
+            ${CalendarContract.Calendars.VISIBLE} = ? AND
+            ${CalendarContract.Calendars.SYNC_EVENTS} = ?
+        """.trimIndent()
+
+        private val WRITABLE_CALENDAR_SELECTION_ARGS = arrayOf(
+            CalendarContract.Calendars.CAL_ACCESS_CONTRIBUTOR.toString(),
+            "1",  // Visible
+            "1"   // Sync events enabled
+        )
     }
 }
