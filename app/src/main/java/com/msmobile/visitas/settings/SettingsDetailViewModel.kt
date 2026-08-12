@@ -4,10 +4,15 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.msmobile.visitas.preference.PreferenceRepository
+import com.msmobile.visitas.preference.preferredCalendar
+import com.msmobile.visitas.preference.withPreferredCalendar
 import com.msmobile.visitas.util.AppVersionProvider
 import com.msmobile.visitas.util.BackupHandler
 import com.msmobile.visitas.util.CalendarEventManager
+import com.msmobile.visitas.util.CalendarIdentity
+import com.msmobile.visitas.util.CalendarInfo
 import com.msmobile.visitas.util.DispatcherProvider
+import com.msmobile.visitas.util.identity
 import com.msmobile.visitas.visit.VisitMapEngineOption
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,6 +44,7 @@ class SettingsDetailViewModel @Inject constructor(
             is UiEvent.ViewCreated -> viewCreated()
             is UiEvent.MapEngineSelected -> mapEngineSelected(event.engine)
             is UiEvent.AddVisitsToCalendarToggled -> addVisitsToCalendarToggled(event.enabled)
+            is UiEvent.CalendarSelected -> calendarSelected(event.calendar)
             is UiEvent.CalendarRationaleAccepted -> calendarRationaleAccepted()
             is UiEvent.CalendarRationaleDismissed -> calendarRationaleDismissed()
             is UiEvent.CalendarPermissionGranted -> calendarPermissionGranted()
@@ -63,10 +69,46 @@ class SettingsDetailViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     selectedMapEngine = preference.visitMapEngineOption,
-                    addVisitsToCalendar = preference.addVisitsToCalendar
+                    addVisitsToCalendar = preference.addVisitsToCalendar,
+                    preferredCalendar = preference.preferredCalendar
                 )
             }
+            loadAvailableCalendars()
         }
+    }
+
+    /**
+     * Loads the calendars the dropdown offers, and drops a stored choice that no longer resolves —
+     * the calendar was deleted, or its account was removed. Clearing it here rather than on the
+     * write path keeps saving a visit free of preference writes; the write path falls back on its
+     * own.
+     *
+     * This runs whenever calendar permission is granted, not only while the checkbox is on, so the
+     * dropdown can be populated even while it is disabled.
+     */
+    private suspend fun loadAvailableCalendars() {
+        if (!calendarEventManager.hasCalendarPermission()) return
+        val calendars = calendarEventManager.getAvailableCalendars()
+        val preference = preferenceRepository.get()
+        val stored = preference.preferredCalendar
+        val isStale = stored != null && calendars.none { it.identity == stored }
+        if (isStale) {
+            preferenceRepository.save(preference.withPreferredCalendar(null))
+        }
+        _uiState.update {
+            it.copy(
+                availableCalendars = calendars,
+                preferredCalendar = if (isStale) null else stored
+            )
+        }
+    }
+
+    private fun calendarSelected(calendar: CalendarInfo) {
+        val identity = calendar.identity
+        viewModelScope.launch(dispatchers.io) {
+            preferenceRepository.save(preferenceRepository.get().withPreferredCalendar(identity))
+        }
+        _uiState.update { it.copy(preferredCalendar = identity) }
     }
 
     private fun mapEngineSelected(engine: VisitMapEngineOption) {
@@ -116,6 +158,7 @@ class SettingsDetailViewModel @Inject constructor(
     private fun calendarPermissionGranted() {
         _uiState.update { it.copy(showCalendarPermissionDialog = false) }
         saveAddVisitsToCalendar(enabled = true)
+        viewModelScope.launch(dispatchers.io) { loadAvailableCalendars() }
     }
 
     private fun calendarPermissionDenied() {
@@ -210,6 +253,7 @@ class SettingsDetailViewModel @Inject constructor(
         data object ViewCreated : UiEvent()
         data class MapEngineSelected(val engine: VisitMapEngineOption) : UiEvent()
         data class AddVisitsToCalendarToggled(val enabled: Boolean) : UiEvent()
+        data class CalendarSelected(val calendar: CalendarInfo) : UiEvent()
         data object CalendarRationaleAccepted : UiEvent()
         data object CalendarRationaleDismissed : UiEvent()
         data object CalendarPermissionGranted : UiEvent()
@@ -252,6 +296,8 @@ class SettingsDetailViewModel @Inject constructor(
         val eventState: UiEventState = UiEventState.Idle,
         val selectedMapEngine: VisitMapEngineOption = VisitMapEngineOption.MapLibre,
         val addVisitsToCalendar: Boolean = false,
+        val availableCalendars: List<CalendarInfo> = emptyList(),
+        val preferredCalendar: CalendarIdentity? = null,
         val showCalendarRationale: Boolean = false,
         val showCalendarPermissionDialog: Boolean = false,
         val versionName: String = ""
