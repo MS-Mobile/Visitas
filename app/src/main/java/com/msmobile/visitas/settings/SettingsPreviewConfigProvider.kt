@@ -87,7 +87,8 @@ internal class SettingsPreviewConfigProvider : PreviewParameterProvider<Settings
             accountName = "user@gmail.com",
             ownerAccount = "user@gmail.com",
             accountType = "com.google",
-            isPrimary = true
+            isPrimary = true,
+            isVisible = true
         )
 
         private val PREVIEW_MINISTRY_CALENDAR = CalendarInfo(
@@ -96,7 +97,8 @@ internal class SettingsPreviewConfigProvider : PreviewParameterProvider<Settings
             accountName = "user@gmail.com",
             ownerAccount = "ministry123@group.calendar.google.com",
             accountType = "com.google",
-            isPrimary = false
+            isPrimary = false,
+            isVisible = true
         )
 
         private val PREVIEW_CALENDARS =

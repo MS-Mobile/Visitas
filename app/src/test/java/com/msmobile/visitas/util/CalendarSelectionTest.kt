@@ -113,7 +113,8 @@ class CalendarSelectionTest {
             accountName = "user@gmail.com",
             ownerAccount = "pt.brazilian#holiday@group.v.calendar.google.com",
             accountType = "com.google",
-            isPrimary = false
+            isPrimary = false,
+            isVisible = true
         )
         val holidaysOnWork = CalendarInfo(
             id = 16L,
@@ -121,7 +122,8 @@ class CalendarSelectionTest {
             accountName = "user@work.com",
             ownerAccount = "pt.brazilian#holiday@group.v.calendar.google.com",
             accountType = "com.google",
-            isPrimary = false
+            isPrimary = false,
+            isVisible = true
         )
         val calendars = listOf(holidaysOnPersonal, holidaysOnWork)
 
@@ -159,6 +161,41 @@ class CalendarSelectionTest {
         assertEquals(GOOGLE_PRIMARY, calendars.resolvePreferred(preferred = null))
     }
 
+    @Test
+    fun `orderedByAutoPickPreference ranks every visible calendar above every hidden one`() {
+        val hiddenGooglePrimary = GOOGLE_PRIMARY.copy(id = 20L, isVisible = false)
+        val visibleLocal = LOCAL.copy(id = 21L, isVisible = true)
+        val calendars = listOf(hiddenGooglePrimary, visibleLocal)
+
+        val ordered = calendars.orderedByAutoPickPreference()
+
+        // A hidden Google primary would outrank a visible local calendar on account score alone.
+        // It must not: before hidden calendars were offered at all, the visible one was the only
+        // candidate, and upgrading must not move where a user's events go.
+        assertEquals(listOf(visibleLocal, hiddenGooglePrimary), ordered)
+    }
+
+    @Test
+    fun `orderedByAutoPickPreference still ranks by account among hidden calendars`() {
+        val hiddenLocal = LOCAL.copy(id = 22L, isVisible = false)
+        val hiddenGoogle = WORK.copy(id = 23L, isVisible = false)
+        val calendars = listOf(hiddenLocal, hiddenGoogle)
+
+        val ordered = calendars.orderedByAutoPickPreference()
+
+        assertEquals(listOf(hiddenGoogle, hiddenLocal), ordered)
+    }
+
+    @Test
+    fun `resolvePreferred honours a chosen calendar that is hidden`() {
+        val hidden = WORK.copy(isVisible = false)
+        val calendars = listOf(GOOGLE_PRIMARY, hidden)
+
+        // Hiding a calendar in the calendar app is a display preference; it must not revoke an
+        // explicit choice to write there.
+        assertEquals(hidden, calendars.resolvePreferred(hidden.identity))
+    }
+
     private companion object {
         val GOOGLE_PRIMARY = CalendarInfo(
             id = 1L,
@@ -166,7 +203,8 @@ class CalendarSelectionTest {
             accountName = "user@gmail.com",
             ownerAccount = "user@gmail.com",
             accountType = "com.google",
-            isPrimary = true
+            isPrimary = true,
+            isVisible = true
         )
         val WORK = CalendarInfo(
             id = 2L,
@@ -174,7 +212,8 @@ class CalendarSelectionTest {
             accountName = "user@work.com",
             ownerAccount = "user@work.com",
             accountType = "com.google",
-            isPrimary = false
+            isPrimary = false,
+            isVisible = true
         )
         val LOCAL = CalendarInfo(
             id = 3L,
@@ -182,7 +221,8 @@ class CalendarSelectionTest {
             accountName = "Local",
             ownerAccount = "local",
             accountType = "LOCAL",
-            isPrimary = false
+            isPrimary = false,
+            isVisible = true
         )
         val LOCAL_PRIMARY = CalendarInfo(
             id = 4L,
@@ -190,7 +230,8 @@ class CalendarSelectionTest {
             accountName = "Local",
             ownerAccount = "local.primary",
             accountType = "LOCAL",
-            isPrimary = true
+            isPrimary = true,
+            isVisible = true
         )
     }
 }

@@ -141,6 +141,7 @@ class CalendarEventManager(
                     cursor.getColumnIndex(CalendarContract.Calendars.OWNER_ACCOUNT)
                 val accountTypeIndex =
                     cursor.getColumnIndex(CalendarContract.Calendars.ACCOUNT_TYPE)
+                val visibleIndex = cursor.getColumnIndex(CalendarContract.Calendars.VISIBLE)
 
                 buildList {
                     while (cursor.moveToNext()) {
@@ -167,7 +168,10 @@ class CalendarEventManager(
                                 } else {
                                     null
                                 },
-                                isPrimary = isPrimaryIndex >= 0 && cursor.getInt(isPrimaryIndex) == 1
+                                isPrimary = isPrimaryIndex >= 0 && cursor.getInt(isPrimaryIndex) == 1,
+                                // A missing column defaults to visible, so an unknown calendar ranks
+                                // exactly as it would have before VISIBLE was read at all.
+                                isVisible = visibleIndex < 0 || cursor.getInt(visibleIndex) == 1
                             )
                         )
                     }
@@ -211,18 +215,21 @@ class CalendarEventManager(
             CalendarContract.Calendars.IS_PRIMARY,
             CalendarContract.Calendars.ACCOUNT_NAME,
             CalendarContract.Calendars.OWNER_ACCOUNT,
-            CalendarContract.Calendars.ACCOUNT_TYPE
+            CalendarContract.Calendars.ACCOUNT_TYPE,
+            CalendarContract.Calendars.VISIBLE
         )
 
+        // VISIBLE is deliberately not part of the selection: it is a display preference in the
+        // user's calendar app, not a permission, so it has no business gating which calendars the
+        // app may offer for an explicit choice. It is still read into CalendarInfo.isVisible below,
+        // because it dominates the automatic-pick ranking (see orderedByAutoPickPreference).
         private val WRITABLE_CALENDAR_SELECTION = """
             ${CalendarContract.Calendars.CALENDAR_ACCESS_LEVEL} >= ? AND
-            ${CalendarContract.Calendars.VISIBLE} = ? AND
             ${CalendarContract.Calendars.SYNC_EVENTS} = ?
         """.trimIndent()
 
         private val WRITABLE_CALENDAR_SELECTION_ARGS = arrayOf(
             CalendarContract.Calendars.CAL_ACCESS_CONTRIBUTOR.toString(),
-            "1",  // Visible
             "1"   // Sync events enabled
         )
     }

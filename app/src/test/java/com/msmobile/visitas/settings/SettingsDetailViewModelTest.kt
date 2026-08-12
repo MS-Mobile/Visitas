@@ -410,7 +410,8 @@ class SettingsDetailViewModelTest {
             accountName = "user@gmail.com",
             ownerAccount = "user@gmail.com",
             accountType = "com.google",
-            isPrimary = true
+            isPrimary = true,
+            isVisible = true
         )
         val MINISTRY_CALENDAR = CalendarInfo(
             id = 2L,
@@ -418,7 +419,8 @@ class SettingsDetailViewModelTest {
             accountName = "user@gmail.com",
             ownerAccount = "ministry123@group.calendar.google.com",
             accountType = "com.google",
-            isPrimary = false
+            isPrimary = false,
+            isVisible = true
         )
     }
 }

@@ -5,7 +5,9 @@ private const val GOOGLE_ACCOUNT_TYPE = "com.google"
 /**
  * A calendar the app may write events to, as listed for the Settings dropdown and used on the
  * write path. [accountName] is what tells two calendars with the same [displayName] apart;
- * [accountType] and [isPrimary] are the inputs to the automatic pick.
+ * [accountType], [isPrimary] and [isVisible] are the inputs to the automatic pick. [isVisible] is
+ * a display preference from the user's calendar app, not a permission — a calendar can be hidden
+ * from the day view and still be perfectly writable.
  */
 data class CalendarInfo(
     val id: Long,
@@ -14,7 +16,8 @@ data class CalendarInfo(
     val accountName: String?,
     val ownerAccount: String?,
     val accountType: String?,
-    val isPrimary: Boolean
+    val isPrimary: Boolean,
+    val isVisible: Boolean
 )
 
 /**
@@ -46,7 +49,10 @@ val CalendarInfo.identity: CalendarIdentity?
 
 /**
  * Orders calendars best-candidate-first: a Google account's primary calendar, then any other
- * Google calendar, then a non-Google primary, then everything else.
+ * Google calendar, then a non-Google primary, then everything else — and, dominating all of that,
+ * every visible calendar ranks above every hidden one. Hidden calendars used to be excluded from
+ * the candidate list entirely, so ranking them last keeps the automatic pick exactly where it was
+ * for existing installs whenever at least one visible writable calendar exists.
  *
  * The sort is stable, so calendars with equal standing keep the order they arrived in. That is
  * deliberate — it reproduces the pick the app made before calendar selection existed, so upgrading
@@ -67,10 +73,16 @@ fun List<CalendarInfo>.resolvePreferred(preferred: CalendarIdentity?): CalendarI
 
 private fun CalendarInfo.autoPickScore(): Int {
     val isGoogle = accountType == GOOGLE_ACCOUNT_TYPE
-    return when {
+    val accountScore = when {
         isGoogle && isPrimary -> 3
         isGoogle -> 2
         isPrimary -> 1
         else -> 0
     }
+    // Visibility dominates every account consideration. Hidden calendars used to be filtered out
+    // of the query entirely, so they were never automatic candidates; ranking them below every
+    // visible calendar keeps the automatic pick exactly where it was for existing installs.
+    return if (isVisible) accountScore + VISIBLE_RANK_OFFSET else accountScore
 }
+
+private const val VISIBLE_RANK_OFFSET = 4
