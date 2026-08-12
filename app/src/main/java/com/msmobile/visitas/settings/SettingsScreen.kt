@@ -375,24 +375,30 @@ private fun CalendarSelectionDropdown(
 ) {
     var expanded by remember { mutableStateOf(false) }
     val emptyLabel = stringResource(R.string.settings_calendar_selection_empty)
+    // "enabled" is the feature switch; "menuEnabled" is whether there is anything to pick. An
+    // empty list still shows the placeholder text, but the popup itself should not open.
+    val menuEnabled = enabled && calendars.isNotEmpty()
+    // The list can empty out or the checkbox can be turned off while the menu is open.
+    LaunchedEffect(menuEnabled) { if (!menuEnabled) expanded = false }
     ExposedDropdownMenuBox(
         expanded = expanded,
-        // ExposedDropdownMenuBox has no `enabled` flag of its own: without this guard the menu
-        // still opens on tap while the checkbox is off.
-        onExpandedChange = { if (enabled) expanded = it },
+        onExpandedChange = { expanded = it },
         modifier = Modifier.fillMaxWidth()
     ) {
         OutlinedTextField(
             // Shows the calendar events actually go to, so it never reads as "nothing selected"
             // while events are being written to the automatic pick.
-            value = selectedCalendar?.label(emptyLabel) ?: emptyLabel,
+            value = selectedCalendar?.label() ?: emptyLabel,
             onValueChange = {},
             readOnly = true,
-            enabled = enabled,
+            enabled = menuEnabled,
             label = { Text(text = stringResource(R.string.settings_calendar_selection_label)) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = Modifier
-                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                // menuAnchor's own `enabled` drops the expandable modifier entirely when false,
+                // so the control stops advertising a dropdown role and click action to
+                // accessibility services, not just visually.
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = menuEnabled)
                 .fillMaxWidth()
         )
         ExposedDropdownMenu(
@@ -403,11 +409,13 @@ private fun CalendarSelectionDropdown(
                 DropdownMenuItem(
                     text = {
                         Column {
-                            Text(text = calendar.label(emptyLabel))
-                            // Two calendars on different accounts can share a display name.
-                            if (!calendar.accountName.isNullOrBlank()) {
+                            Text(text = calendar.label())
+                            // Two calendars on different accounts can share a display name — but
+                            // don't repeat the account when it is already serving as the title.
+                            val account = calendar.accountName
+                            if (!account.isNullOrBlank() && account != calendar.label()) {
                                 Text(
-                                    text = calendar.accountName,
+                                    text = account,
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -425,15 +433,12 @@ private fun CalendarSelectionDropdown(
 }
 
 /**
- * `displayName` is empty when the provider supplies no name for a calendar — rare, but it would
- * otherwise render as a blank row identifiable only by its account. Falls back to the account name,
- * then to the same placeholder an empty list gets.
+ * A calendar's title in the dropdown. `displayName` is empty when the provider supplies no name;
+ * the account name is a guaranteed fallback, because a calendar without one has no identity and is
+ * filtered out before it reaches the UI.
  */
-private fun CalendarInfo.label(fallback: String): String = when {
-    displayName.isNotBlank() -> displayName
-    !accountName.isNullOrBlank() -> accountName
-    else -> fallback
-}
+private fun CalendarInfo.label(): String =
+    displayName.ifBlank { accountName.orEmpty() }
 
 @VisibleForTesting
 @PreviewPhone
