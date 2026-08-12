@@ -197,23 +197,40 @@ class CalendarSelectionTest {
             id = 1L,
             displayName = "Personal",
             accountName = "user@gmail.com",
-            accountType = "com.google"
+            accountType = "com.google",
+            isPrimary = true
         )
         val WORK = CalendarInfo(
             id = 2L,
             displayName = "Work",
             accountName = "user@work.com",
-            accountType = "com.google"
+            accountType = "com.google",
+            isPrimary = false
         )
         val LOCAL = CalendarInfo(
             id = 3L,
             displayName = "Offline",
             accountName = "Local",
-            accountType = "LOCAL"
+            accountType = "LOCAL",
+            isPrimary = false
+        )
+        val LOCAL_PRIMARY = CalendarInfo(
+            id = 4L,
+            displayName = "Device",
+            accountName = "Local",
+            accountType = "LOCAL",
+            isPrimary = true
         )
     }
 }
 ```
+
+Add ordering tests alongside these: a primary Google calendar ranks first; a secondary Google
+calendar outranks a non-Google primary; equally ranked calendars keep the order they arrived in
+(use three of them — two cannot distinguish a stable sort from an unstable one); an empty list comes
+back empty; ordering composed with resolving picks the best-ranked calendar. Also pin that
+`resolvePreferred` trusts the receiver's order rather than re-ranking, by asserting an unordered
+receiver resolves to its own first entry.
 
 - [ ] **Step 2: Run the test to verify it fails**
 
@@ -227,37 +244,66 @@ Create `app/src/main/java/com/msmobile/visitas/util/CalendarSelection.kt`:
 ```kotlin
 package com.msmobile.visitas.util
 
+private const val GOOGLE_ACCOUNT_TYPE = "com.google"
+
 /**
- * A calendar the app may write events to, as returned by
- * [CalendarEventManager.getAvailableCalendars]. [accountType] drives the automatic preference for
- * Google calendars; [accountName] is what tells two calendars with the same [displayName] apart in
- * the Settings dropdown.
+ * A calendar the app may write events to. [accountName] is what tells two calendars with the same
+ * [displayName] apart; [accountType] and [isPrimary] are the inputs to the automatic pick.
  */
 data class CalendarInfo(
     val id: Long,
+    /** Empty when the provider supplies no name; the dropdown substitutes a placeholder. */
     val displayName: String,
     val accountName: String?,
-    val accountType: String?
+    val accountType: String?,
+    val isPrimary: Boolean
 )
+
+/**
+ * Orders calendars best-candidate-first: a Google account's primary calendar, then any other
+ * Google calendar, then a non-Google primary, then everything else.
+ *
+ * The sort is stable, so calendars with equal standing keep the order they arrived in. That is
+ * deliberate — it reproduces the pick the app made before calendar selection existed, so upgrading
+ * does not silently move a user's events to a different calendar.
+ */
+fun List<CalendarInfo>.orderedByAutoPickPreference(): List<CalendarInfo> =
+    sortedByDescending { it.autoPickScore() }
 
 /**
  * Picks the calendar events are written to.
  *
- * The receiver is ordered best-candidate-first, so falling back to the first entry reproduces the
- * automatic choice the app made before calendar selection existed. A [preferredCalendarId] that is
- * no longer in the list — the calendar was deleted, or its account was removed — falls back the
- * same way, so events keep being written instead of silently stopping.
- *
- * Callers must not reorder the list before calling this: the fallback *is* the ordering.
+ * Falls back to the receiver's first entry — the best automatic candidate, provided the receiver is
+ * ordered by [orderedByAutoPickPreference] — both when [preferredCalendarId] is null and when it
+ * names a calendar that is no longer in the list, deleted or its account removed, so events keep
+ * being written instead of silently stopping.
  */
 fun List<CalendarInfo>.resolvePreferred(preferredCalendarId: Long?): CalendarInfo? =
     firstOrNull { it.id == preferredCalendarId } ?: firstOrNull()
+
+private fun CalendarInfo.autoPickScore(): Int {
+    val isGoogle = accountType == GOOGLE_ACCOUNT_TYPE
+    return when {
+        isGoogle && isPrimary -> 3
+        isGoogle -> 2
+        isPrimary -> 1
+        else -> 0
+    }
+}
 ```
+
+**`sortedByDescending` must not become `sortedBy { }.reversed()`, and must not gain a tie-break.**
+`compareByDescending` inverts the comparator by swapping its arguments rather than reversing the
+list, so ties keep their arrival order. Reversing instead would flip every tie while looking
+identical on distinct scores.
 
 - [ ] **Step 4: Run the test to verify it passes**
 
 Run: `./gradlew testDebugUnitTest --tests "com.msmobile.visitas.util.CalendarSelectionTest"`
-Expected: PASS, 4 tests.
+Expected: PASS, 10 tests.
+
+For the exact committed KDoc wording, `app/src/main/java/com/msmobile/visitas/util/CalendarSelection.kt`
+on this branch is authoritative — this block gives the shape and the reasoning.
 
 - [ ] **Step 5: Commit**
 
@@ -869,13 +915,15 @@ Add the test constants to the bottom of the class, after `createViewModel`:
             id = 1L,
             displayName = "Personal",
             accountName = "user@gmail.com",
-            accountType = "com.google"
+            accountType = "com.google",
+            isPrimary = true
         )
         val MINISTRY_CALENDAR = CalendarInfo(
             id = 2L,
             displayName = "Ministry",
             accountName = "user@gmail.com",
-            accountType = "com.google"
+            accountType = "com.google",
+            isPrimary = false
         )
     }
 ```
@@ -1198,13 +1246,15 @@ Add to the existing `companion object` (lines 68-70):
                 id = 1L,
                 displayName = "Personal",
                 accountName = "user@gmail.com",
-                accountType = "com.google"
+                accountType = "com.google",
+                isPrimary = true
             ),
             CalendarInfo(
                 id = 2L,
                 displayName = "Ministry",
                 accountName = "user@gmail.com",
-                accountType = "com.google"
+                accountType = "com.google",
+                isPrimary = false
             )
         )
     }
@@ -1283,6 +1333,6 @@ Use the `add-pr` skill — it covers branch/commit/push, the Room-schema and scr
 
 **Spec coverage:** persistence + migration → Task 4. Manager split → Task 3. Shared resolution rule → Task 2. Color removal → Task 1. Write path → Task 5. ViewModel + stale-id clearing → Task 6. UI + disabled state + strings → Task 7. Gated artifacts → Tasks 4 and 8. Manual verification → Task 9. No spec section is unimplemented.
 
-**Naming consistency, checked across tasks:** `resolvePreferred` (Tasks 2, 3, 7), `CalendarInfo(id, displayName, accountName, accountType)` (Tasks 2, 3, 6, 7, 8), `getAvailableCalendars` (Tasks 3, 6), `preferredCalendarId` (Tasks 4, 5, 6, 7, 8), `UiEvent.CalendarSelected(calendarId)` (Tasks 6, 7), `settings_calendar_selection_label` / `settings_calendar_selection_empty` (Task 7).
+**Naming consistency, checked across tasks:** `resolvePreferred` (Tasks 2, 3, 6, 7), `orderedByAutoPickPreference` (Tasks 2, 3), `CalendarInfo(id, displayName, accountName, accountType, isPrimary)` (Tasks 2, 3, 6, 7, 8 — every construction site must pass all five), `getAvailableCalendars` (Tasks 3, 6), `preferredCalendarId` (Tasks 4, 5, 6, 7, 8), `UiEvent.CalendarSelected(calendarId)` (Tasks 6, 7), `settings_calendar_selection_label` / `settings_calendar_selection_empty` (Task 7).
 
 **Ordering constraint:** Task 3 depends on Task 2 (`CalendarInfo` moves out of `CalendarEventManager`). Task 5 depends on Tasks 3 and 4. Tasks 6–8 depend on Task 4. Do not reorder.
