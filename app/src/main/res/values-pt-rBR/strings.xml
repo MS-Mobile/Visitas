@@ -89,6 +89,8 @@
     <string name="add_visit_to_calendar_message">As visitas podem ser adicionadas à sua agenda automaticamente.</string>
     <string name="learn_more">Saiba mais</string>
     <string name="map_engine_label">Motor de mapa</string>
+    <string name="settings_calendar_selection_label">Salvar eventos em</string>
+    <string name="settings_calendar_selection_empty">Nenhuma agenda disponível</string>
     <string name="create_backup">Fazer backup</string>
     <string name="restore_backup">Restaurar backup</string>
     <string name="restore_backup_title">Restaurar Backup</string>

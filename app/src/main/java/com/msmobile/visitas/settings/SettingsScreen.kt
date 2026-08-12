@@ -56,6 +56,7 @@ import com.msmobile.visitas.ui.theme.PreviewFoldable
 import com.msmobile.visitas.ui.views.PermissionRationaleSheet
 import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
+import com.msmobile.visitas.util.CalendarInfo
 import com.msmobile.visitas.util.DetailScreenStyle
 import com.msmobile.visitas.util.borderPadding
 import com.msmobile.visitas.util.cardInnerPadding
@@ -170,6 +171,17 @@ private fun SettingsScreenContent(
                 checked = uiState.addVisitsToCalendar,
                 onCheckedChange = { enabled ->
                     onEvent(SettingsDetailViewModel.UiEvent.AddVisitsToCalendarToggled(enabled))
+                }
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            CalendarSelectionDropdown(
+                calendars = uiState.availableCalendars,
+                selectedCalendar = uiState.selectedCalendar,
+                enabled = uiState.addVisitsToCalendar,
+                onCalendarSelected = { calendar ->
+                    onEvent(SettingsDetailViewModel.UiEvent.CalendarSelected(calendar))
                 }
             )
         }
@@ -352,6 +364,81 @@ private fun MapEngineDropdown(
         }
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CalendarSelectionDropdown(
+    calendars: List<CalendarInfo>,
+    selectedCalendar: CalendarInfo?,
+    enabled: Boolean,
+    onCalendarSelected: (CalendarInfo) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val emptyLabel = stringResource(R.string.settings_calendar_selection_empty)
+    // "enabled" is the feature switch; "menuEnabled" is whether there is anything to pick. An
+    // empty list still shows the placeholder text, but the popup itself should not open.
+    val menuEnabled = enabled && calendars.isNotEmpty()
+    // The list can empty out or the checkbox can be turned off while the menu is open.
+    LaunchedEffect(menuEnabled) { if (!menuEnabled) expanded = false }
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        OutlinedTextField(
+            // Shows the calendar events actually go to, so it never reads as "nothing selected"
+            // while events are being written to the automatic pick.
+            value = selectedCalendar?.label() ?: emptyLabel,
+            onValueChange = {},
+            readOnly = true,
+            enabled = menuEnabled,
+            label = { Text(text = stringResource(R.string.settings_calendar_selection_label)) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier
+                // menuAnchor's own `enabled` drops the expandable modifier entirely when false,
+                // so the control stops advertising a dropdown role and click action to
+                // accessibility services, not just visually.
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = menuEnabled)
+                .fillMaxWidth()
+        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            calendars.forEach { calendar ->
+                DropdownMenuItem(
+                    text = {
+                        Column {
+                            Text(text = calendar.label())
+                            // Two calendars on different accounts can share a display name — but
+                            // don't repeat the account when it is already serving as the title.
+                            val account = calendar.accountName
+                            if (!account.isNullOrBlank() && account != calendar.label()) {
+                                Text(
+                                    text = account,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    },
+                    onClick = {
+                        onCalendarSelected(calendar)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+/**
+ * A calendar's title in the dropdown. `displayName` is empty when the provider supplies no name;
+ * the account name is a guaranteed fallback, because a calendar without one has no identity and is
+ * filtered out before it reaches the UI.
+ */
+private fun CalendarInfo.label(): String =
+    displayName.ifBlank { accountName.orEmpty() }
 
 @VisibleForTesting
 @PreviewPhone

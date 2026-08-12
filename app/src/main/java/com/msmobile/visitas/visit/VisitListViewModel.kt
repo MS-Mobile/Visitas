@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.msmobile.visitas.extension.containsAllWords
 import com.msmobile.visitas.preference.PreferenceRepository
+import com.msmobile.visitas.preference.preferredCalendar
 import com.msmobile.visitas.util.AddressProvider
 import com.msmobile.visitas.util.DateTimeProvider
 import com.msmobile.visitas.util.SyncVisitCalendarEventUseCase
@@ -258,9 +259,11 @@ constructor(
         }
         viewModelScope.launch(dispatchers.io) {
             val visitModel = visitRepository.getById(visit.visitId).copy(date = date)
-            val calendarEventId = if (preferenceRepository.get().addVisitsToCalendar) {
+            val preference = preferenceRepository.get()
+            val calendarEventId = if (preference.addVisitsToCalendar) {
                 syncVisitCalendarEvent(
                     calendarEventId = visitModel.calendarEventId,
+                    preferredCalendar = preference.preferredCalendar,
                     visitType = visitModel.visitType,
                     subject = visitModel.subject,
                     date = visitModel.date,

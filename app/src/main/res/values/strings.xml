@@ -91,6 +91,8 @@
     <string name="add_visit_to_calendar_message">Visits can be added to your calendar automatically.</string>
     <string name="learn_more">Learn more</string>
     <string name="map_engine_label">Map Engine</string>
+    <string name="settings_calendar_selection_label">Save events to</string>
+    <string name="settings_calendar_selection_empty">No calendar available</string>
     <string name="create_backup">Create backup</string>
     <string name="restore_backup">Restore backup</string>
     <string name="restore_backup_title">Restore Backup</string>

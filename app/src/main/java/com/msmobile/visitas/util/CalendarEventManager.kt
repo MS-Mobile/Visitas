@@ -26,38 +26,33 @@ class CalendarEventManager(
 
     suspend fun saveEvent(
         eventId: Long? = null,
+        calendar: CalendarIdentity? = null,
         title: String,
         description: String,
         startTime: LocalDateTime,
         duration: Duration = DEFAULT_DURATION,
-        isDone: Boolean = false,
-        color: ColorKey = getDefaultColorKey()
+        isDone: Boolean = false
     ): Long? = withContext(Dispatchers.IO) {
         if (!hasCalendarPermission()) {
             return@withContext null
         }
 
-        val calendar = getFirstCalendar() ?: return@withContext null
+        val resolvedCalendar = resolveCalendar(calendar) ?: return@withContext null
         val eventTitle = if (isDone) "$CHECKMARK$title" else title
         val startMillis = startTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
         val endMillis = startMillis + duration.toMillis()
 
+        // EVENT_COLOR_KEY is deliberately not written: an event with no color of its own renders
+        // in the color of the calendar it belongs to. Note this block also feeds updateEvent, and
+        // omitting the column leaves any key an existing event already carries untouched — events
+        // created before this change keep their old color, which is intended.
         val values = ContentValues().apply {
-            put(CalendarContract.Events.CALENDAR_ID, calendar.id)
+            put(CalendarContract.Events.CALENDAR_ID, resolvedCalendar.id)
             put(CalendarContract.Events.TITLE, eventTitle)
             put(CalendarContract.Events.DESCRIPTION, description)
             put(CalendarContract.Events.DTSTART, startMillis)
             put(CalendarContract.Events.DTEND, endMillis)
             put(CalendarContract.Events.EVENT_TIMEZONE, ZoneId.systemDefault().id)
-            // EVENT_COLOR_KEY references the account's synced color palette
-            // (CalendarContract.Colors), so the color survives sync for Google
-            // calendars. The provider rejects keys the account doesn't have,
-            // so only apply the key when it exists in the palette.
-            if (queryEventColors(calendar).any { it.key == color }) {
-                put(CalendarContract.Events.EVENT_COLOR_KEY, color.value)
-            } else {
-                putNull(CalendarContract.Events.EVENT_COLOR_KEY)
-            }
         }
 
         return@withContext if (eventId != null && eventExists(eventId)) {
@@ -68,19 +63,15 @@ class CalendarEventManager(
     }
 
     /**
-     * Returns the event colors available for the calendar events are saved to,
-     * as synced by the account (from [CalendarContract.Colors]). Empty when the
-     * account exposes no event color palette (e.g. local calendars).
+     * The calendars the app may write to, ordered best-candidate-first. Empty without calendar
+     * permission, and also on a provider error, which is logged.
      */
-    suspend fun getAvailableColors(): List<EventColor> = withContext(Dispatchers.IO) {
+    suspend fun getAvailableCalendars(): List<CalendarInfo> = withContext(Dispatchers.IO) {
         if (!hasCalendarPermission()) {
             return@withContext emptyList()
         }
-        val calendar = getFirstCalendar() ?: return@withContext emptyList()
-        queryEventColors(calendar)
+        queryWritableCalendars()
     }
-
-    fun getDefaultColorKey(): ColorKey = DEFAULT_COLOR_KEY
 
     suspend fun deleteEvent(eventId: Long): Boolean = withContext(Dispatchers.IO) {
         if (!hasCalendarPermission()) {
@@ -121,116 +112,77 @@ class CalendarEventManager(
         }
     }
 
-    private fun getFirstCalendar(): CalendarInfo? {
-        val projection = arrayOf(
-            CalendarContract.Calendars._ID,
-            CalendarContract.Calendars.CALENDAR_ACCESS_LEVEL,
-            CalendarContract.Calendars.VISIBLE,
-            CalendarContract.Calendars.SYNC_EVENTS,
-            CalendarContract.Calendars.IS_PRIMARY,
-            CalendarContract.Calendars.ACCOUNT_NAME,
-            CalendarContract.Calendars.ACCOUNT_TYPE
-        )
+    private fun resolveCalendar(preferred: CalendarIdentity?): CalendarInfo? =
+        queryWritableCalendars().resolvePreferred(preferred)
 
-        val selection = """
-            ${CalendarContract.Calendars.CALENDAR_ACCESS_LEVEL} >= ? AND
-            ${CalendarContract.Calendars.VISIBLE} = ? AND
-            ${CalendarContract.Calendars.SYNC_EVENTS} = ?
-        """.trimIndent()
-        val selectionArgs = arrayOf(
-            CalendarContract.Calendars.CAL_ACCESS_CONTRIBUTOR.toString(),
-            "1",  // Visible
-            "1"   // Sync events enabled
-        )
-
-        context.contentResolver.query(
-            CalendarContract.Calendars.CONTENT_URI,
-            projection,
-            selection,
-            selectionArgs,
-            null
-        )?.use { cursor ->
-            val idIndex = cursor.getColumnIndex(CalendarContract.Calendars._ID)
-            val isPrimaryIndex = cursor.getColumnIndex(CalendarContract.Calendars.IS_PRIMARY)
-            val accountNameIndex = cursor.getColumnIndex(CalendarContract.Calendars.ACCOUNT_NAME)
-            val accountTypeIndex = cursor.getColumnIndex(CalendarContract.Calendars.ACCOUNT_TYPE)
-
-            if (idIndex < 0) return null
-
-            var bestCalendar: CalendarInfo? = null
-            var bestScore = -1
-
-            while (cursor.moveToNext()) {
-                val calendarId = cursor.getLong(idIndex)
-                val isPrimary = isPrimaryIndex >= 0 && cursor.getInt(isPrimaryIndex) == 1
-                val accountName = if (accountNameIndex >= 0) cursor.getString(accountNameIndex) else null
-                val accountType = if (accountTypeIndex >= 0) cursor.getString(accountTypeIndex) else null
-                val isGoogle = accountType == GOOGLE_ACCOUNT_TYPE
-
-                val score = calculateCalendarScore(isGoogle, isPrimary)
-                if (score > bestScore) {
-                    bestScore = score
-                    bestCalendar = CalendarInfo(calendarId, accountName, accountType)
-                }
-            }
-            return bestCalendar
-        }
-        return null
-    }
-
-    private fun queryEventColors(calendar: CalendarInfo): List<EventColor> {
-        val accountName = calendar.accountName ?: return emptyList()
-        val accountType = calendar.accountType ?: return emptyList()
-
-        val projection = arrayOf(
-            CalendarContract.Colors.COLOR_KEY,
-            CalendarContract.Colors.COLOR
-        )
-        val selection = """
-            ${CalendarContract.Colors.ACCOUNT_NAME} = ? AND
-            ${CalendarContract.Colors.ACCOUNT_TYPE} = ? AND
-            ${CalendarContract.Colors.COLOR_TYPE} = ?
-        """.trimIndent()
-        val selectionArgs = arrayOf(
-            accountName,
-            accountType,
-            CalendarContract.Colors.TYPE_EVENT.toString()
-        )
-
+    /**
+     * The writable calendars, ranked by [orderedByAutoPickPreference]. The ordering is the contract:
+     * [resolvePreferred] falls back to the first entry, so returning these unranked would silently
+     * change which calendar events land in.
+     */
+    private fun queryWritableCalendars(): List<CalendarInfo> {
         return try {
             context.contentResolver.query(
-                CalendarContract.Colors.CONTENT_URI,
-                projection,
-                selection,
-                selectionArgs,
+                CalendarContract.Calendars.CONTENT_URI,
+                WRITABLE_CALENDAR_PROJECTION,
+                WRITABLE_CALENDAR_SELECTION,
+                WRITABLE_CALENDAR_SELECTION_ARGS,
                 null
             )?.use { cursor ->
-                val keyIndex = cursor.getColumnIndex(CalendarContract.Colors.COLOR_KEY)
-                val colorIndex = cursor.getColumnIndex(CalendarContract.Colors.COLOR)
-                if (keyIndex < 0 || colorIndex < 0) return@use emptyList()
+                val idIndex = cursor.getColumnIndex(CalendarContract.Calendars._ID)
+                if (idIndex < 0) return@use emptyList()
+
+                val displayNameIndex =
+                    cursor.getColumnIndex(CalendarContract.Calendars.CALENDAR_DISPLAY_NAME)
+                val isPrimaryIndex = cursor.getColumnIndex(CalendarContract.Calendars.IS_PRIMARY)
+                val accountNameIndex =
+                    cursor.getColumnIndex(CalendarContract.Calendars.ACCOUNT_NAME)
+                val ownerAccountIndex =
+                    cursor.getColumnIndex(CalendarContract.Calendars.OWNER_ACCOUNT)
+                val accountTypeIndex =
+                    cursor.getColumnIndex(CalendarContract.Calendars.ACCOUNT_TYPE)
+                val visibleIndex = cursor.getColumnIndex(CalendarContract.Calendars.VISIBLE)
 
                 buildList {
                     while (cursor.moveToNext()) {
-                        val key = cursor.getString(keyIndex) ?: continue
-                        add(EventColor(ColorKey(key), cursor.getInt(colorIndex)))
+                        add(
+                            CalendarInfo(
+                                id = cursor.getLong(idIndex),
+                                displayName = if (displayNameIndex >= 0) {
+                                    cursor.getString(displayNameIndex).orEmpty()
+                                } else {
+                                    ""
+                                },
+                                accountName = if (accountNameIndex >= 0) {
+                                    cursor.getString(accountNameIndex)
+                                } else {
+                                    null
+                                },
+                                ownerAccount = if (ownerAccountIndex >= 0) {
+                                    cursor.getString(ownerAccountIndex)
+                                } else {
+                                    null
+                                },
+                                accountType = if (accountTypeIndex >= 0) {
+                                    cursor.getString(accountTypeIndex)
+                                } else {
+                                    null
+                                },
+                                isPrimary = isPrimaryIndex >= 0 && cursor.getInt(isPrimaryIndex) == 1,
+                                // A missing column defaults to visible, so an unknown calendar ranks
+                                // exactly as it would have before VISIBLE was read at all.
+                                isVisible = visibleIndex < 0 || cursor.getInt(visibleIndex) == 1
+                            )
+                        )
                     }
-                }
+                }.orderedByAutoPickPreference()
             } ?: emptyList()
         } catch (e: Exception) {
             if (e is CancellationException) {
                 throw e
             }
-            logger.error(TAG, "Failed to query event colors for account $accountName", e)
+            logger.error(TAG, "Failed to query calendars", e)
             emptyList()
-        }
-    }
-
-    private fun calculateCalendarScore(isGoogle: Boolean, isPrimary: Boolean): Int {
-        return when {
-            isGoogle && isPrimary -> 3
-            isGoogle -> 2
-            isPrimary -> 1
-            else -> 0
         }
     }
 
@@ -252,24 +204,33 @@ class CalendarEventManager(
         }
     }
 
-    private data class CalendarInfo(
-        val id: Long,
-        val accountName: String?,
-        val accountType: String?
-    )
-
-    @JvmInline
-    value class ColorKey(val value: String)
-
-    data class EventColor(val key: ColorKey, val argb: Int)
-
     companion object {
         private const val TAG = "CalendarEventManager"
         private const val CHECKMARK = "✅ "
-        private const val GOOGLE_ACCOUNT_TYPE = "com.google"
         private val DEFAULT_DURATION: Duration = Duration.ofMinutes(30)
-        // Google Calendar's "Sage" green, the palette color closest to the
-        // RGB(72, 145, 96) the app used before switching to color keys
-        private val DEFAULT_COLOR_KEY = ColorKey("2")
+
+        private val WRITABLE_CALENDAR_PROJECTION = arrayOf(
+            CalendarContract.Calendars._ID,
+            CalendarContract.Calendars.CALENDAR_DISPLAY_NAME,
+            CalendarContract.Calendars.IS_PRIMARY,
+            CalendarContract.Calendars.ACCOUNT_NAME,
+            CalendarContract.Calendars.OWNER_ACCOUNT,
+            CalendarContract.Calendars.ACCOUNT_TYPE,
+            CalendarContract.Calendars.VISIBLE
+        )
+
+        // VISIBLE is deliberately not part of the selection: it is a display preference in the
+        // user's calendar app, not a permission, so it has no business gating which calendars the
+        // app may offer for an explicit choice. It is still read into CalendarInfo.isVisible below,
+        // because it dominates the automatic-pick ranking (see orderedByAutoPickPreference).
+        private val WRITABLE_CALENDAR_SELECTION = """
+            ${CalendarContract.Calendars.CALENDAR_ACCESS_LEVEL} >= ? AND
+            ${CalendarContract.Calendars.SYNC_EVENTS} = ?
+        """.trimIndent()
+
+        private val WRITABLE_CALENDAR_SELECTION_ARGS = arrayOf(
+            CalendarContract.Calendars.CAL_ACCESS_CONTRIBUTOR.toString(),
+            "1"   // Sync events enabled
+        )
     }
 }

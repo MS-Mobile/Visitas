@@ -7,8 +7,10 @@ import com.msmobile.visitas.householder.HouseholderRepository
 import com.msmobile.visitas.householder.HouseholderSnapshot
 import com.msmobile.visitas.preference.Preference
 import com.msmobile.visitas.preference.PreferenceRepository
+import com.msmobile.visitas.preference.withPreferredCalendar
 import com.msmobile.visitas.util.AddressProvider
 import com.msmobile.visitas.util.CalendarEventManager
+import com.msmobile.visitas.util.CalendarIdentity
 import com.msmobile.visitas.util.SyncVisitCalendarEventUseCase
 import com.msmobile.visitas.util.ClipboardHandler
 import com.msmobile.visitas.util.DateTimeProvider
@@ -33,6 +35,7 @@ import org.mockito.kotlin.argThat
 import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -387,7 +390,7 @@ class VisitDetailViewModelTest {
 
         // Assert
         verifyBlocking(requireNotNull(syncVisitCalendarEventRef.value)) {
-            invoke(anyOrNull(), any(), any(), any(), any(), any())
+            invoke(anyOrNull(), anyOrNull(), any(), any(), any(), any(), any())
         }
     }
 
@@ -407,7 +410,33 @@ class VisitDetailViewModelTest {
 
         // Assert
         verifyBlocking(requireNotNull(syncVisitCalendarEventRef.value), never()) {
-            invoke(anyOrNull(), any(), any(), any(), any(), any())
+            invoke(anyOrNull(), anyOrNull(), any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `save passes the chosen calendar to the calendar sync`() {
+        // Arrange
+        val chosen = CalendarIdentity(
+            accountType = "com.google",
+            accountName = "user@gmail.com",
+            ownerAccount = "ministry123@group.calendar.google.com"
+        )
+        val syncVisitCalendarEventRef = MockReferenceHolder<SyncVisitCalendarEventUseCase>()
+        val viewModel = createViewModel(
+            addVisitsToCalendar = true,
+            savedPreferredCalendar = chosen,
+            syncVisitCalendarEventRef = syncVisitCalendarEventRef
+        )
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.SaveClicked)
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert
+        verifyBlocking(requireNotNull(syncVisitCalendarEventRef.value)) {
+            invoke(anyOrNull(), eq(chosen), any(), any(), any(), any(), any())
         }
     }
 
@@ -1415,6 +1444,7 @@ class VisitDetailViewModelTest {
         conversations: List<Conversation>? = null,
         addVisitsToCalendar: Boolean = false,
         hasSeenAddVisitToCalendarMessage: Boolean = false,
+        savedPreferredCalendar: CalendarIdentity? = null,
         preferenceRepositoryRef: MockReferenceHolder<PreferenceRepository>? = null,
         syncVisitCalendarEventRef: MockReferenceHolder<SyncVisitCalendarEventUseCase>? = null
     ): VisitDetailViewModel {
@@ -1468,7 +1498,7 @@ class VisitDetailViewModelTest {
                 visitListDistanceFilterOption = VisitListDistanceFilterOption.All,
                 addVisitsToCalendar = addVisitsToCalendar,
                 hasSeenAddVisitToCalendarMessage = hasSeenAddVisitToCalendarMessage
-            )
+            ).withPreferredCalendar(savedPreferredCalendar)
         }
         preferenceRepositoryRef?.value = preferenceRepository
 

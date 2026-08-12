@@ -5,6 +5,9 @@ import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.msmobile.visitas.VisitasDatabase
+import com.msmobile.visitas.preference.Preference
+import com.msmobile.visitas.preference.preferredCalendar
+import com.msmobile.visitas.preference.withPreferredCalendar
 import com.msmobile.visitas.visit.VisitListDateFilterOption
 import com.msmobile.visitas.visit.VisitListDistanceFilterOption
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -269,6 +272,41 @@ class BackupHandlerTest {
         assertEquals(testConversation.question, restoredConversation?.question)
         assertEquals(testConversation.response, restoredConversation?.response)
         assertEquals(testConversation.orderIndex, restoredConversation?.orderIndex)
+    }
+
+    @Test
+    fun restoreBackup_withPreferredCalendar_shouldPreserveTheChosenCalendar() = runTest {
+        // Arrange
+        initDatabase()
+
+        // Stored as an account identity rather than a row id, so it stays meaningful across the
+        // backup: on a device signed into the same account it names the same calendar.
+        val chosen = CalendarIdentity(
+            accountType = "com.google",
+            accountName = "user@gmail.com",
+            ownerAccount = "family17536855988708452884@group.calendar.google.com"
+        )
+        database.preferenceDao().save(
+            Preference(
+                visitListDateFilterOption = VisitListDateFilterOption.All,
+                visitListDistanceFilterOption = VisitListDistanceFilterOption.All,
+                addVisitsToCalendar = true
+            ).withPreferredCalendar(chosen)
+        )
+
+        // Act - Create backup, wipe as if this were a fresh install, restore
+        val backupUri = backupHandler.createBackupFile().getOrThrow()
+        database.clearAllTables()
+        backupHandler.restoreBackup(backupUri).getOrThrow()
+
+        // Assert
+        val restored = database.preferenceDao().getPreference()
+        assertNotNull(restored)
+        assertEquals(chosen, restored?.preferredCalendar)
+        assertTrue(
+            "Other calendar preferences must survive the restore",
+            restored?.addVisitsToCalendar == true
+        )
     }
 
     @Test
