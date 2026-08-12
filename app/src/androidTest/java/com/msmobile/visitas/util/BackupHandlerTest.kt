@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.msmobile.visitas.VisitasDatabase
+import com.msmobile.visitas.preference.Preference
 import com.msmobile.visitas.visit.VisitListDateFilterOption
 import com.msmobile.visitas.visit.VisitListDistanceFilterOption
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -14,6 +15,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -269,6 +271,38 @@ class BackupHandlerTest {
         assertEquals(testConversation.question, restoredConversation?.question)
         assertEquals(testConversation.response, restoredConversation?.response)
         assertEquals(testConversation.orderIndex, restoredConversation?.orderIndex)
+    }
+
+    @Test
+    fun restoreBackup_withPreferredCalendar_shouldDropItButKeepOtherPreferences() = runTest {
+        // Arrange
+        initDatabase()
+
+        // A calendar id is assigned by the device's calendar provider, so it means nothing on the
+        // device restoring the backup. Restoring it would resolve to an unrelated calendar rather
+        // than fail, so it has to be dropped.
+        database.preferenceDao().save(
+            Preference(
+                visitListDateFilterOption = VisitListDateFilterOption.All,
+                visitListDistanceFilterOption = VisitListDistanceFilterOption.All,
+                addVisitsToCalendar = true,
+                preferredCalendarId = 42L
+            )
+        )
+
+        // Act - Create backup, wipe as if this were a fresh install, restore
+        val backupUri = backupHandler.createBackupFile().getOrThrow()
+        database.clearAllTables()
+        backupHandler.restoreBackup(backupUri).getOrThrow()
+
+        // Assert
+        val restored = database.preferenceDao().getPreference()
+        assertNotNull(restored)
+        assertNull("The chosen calendar must not survive a restore", restored?.preferredCalendarId)
+        assertTrue(
+            "Other calendar preferences must survive the restore",
+            restored?.addVisitsToCalendar == true
+        )
     }
 
     @Test

@@ -44,6 +44,15 @@ selected" while events are in fact being written somewhere. When the list is emp
 yet, or no writable calendars — it shows a "No calendar available" placeholder. One string covers
 both cases honestly.
 
+**Backup restore drops the chosen calendar.** `preferredCalendarId` holds a `CalendarContract`
+row id, assigned by the device's calendar provider. Restore the same backup on another device and
+that integer very likely names a different calendar there — and `resolvePreferred` matches on id
+alone, so it resolves cleanly and writes visits into a calendar the user never picked. The
+nullable fallback covers "id not found"; this is "id found, wrong calendar", which nothing can
+detect after the fact. So `BackupHandler.restoreDataFrom` clears the field and the restored install
+falls back to the automatic pick. Re-picking costs the user one tap; the alternative silently files
+appointments into a shared or work calendar.
+
 ## Design
 
 ### Persistence

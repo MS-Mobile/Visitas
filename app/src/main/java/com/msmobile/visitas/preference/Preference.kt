@@ -16,6 +16,11 @@ data class Preference(
     val visitMapEngineOption: VisitMapEngineOption = VisitMapEngineOption.MapLibre,
     val addVisitsToCalendar: Boolean = false,
     val hasSeenAddVisitToCalendarMessage: Boolean = false,
-    /** Null means "let the app pick" — see `resolvePreferred`. */
+    /**
+     * The [android.provider.CalendarContract.Calendars] row id of the calendar the user chose.
+     * Provider-assigned, so it is not stable across devices — it is deliberately dropped on backup
+     * restore. Null means "let the app pick"; see
+     * [com.msmobile.visitas.util.resolvePreferred].
+     */
     val preferredCalendarId: Long? = null
 )
