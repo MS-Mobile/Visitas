@@ -273,9 +273,11 @@ screen cannot drift apart. This is the first test coverage the fallback has had.
 
 ### Task 3: Split `CalendarEventManager`'s query from its choice
 
-`getFirstCalendar()` filters and scores in one pass and returns a single winner. The dropdown needs the full list, so split it: `queryWritableCalendars()` returns everything writable in best-first order, and `resolveCalendar()` applies `resolvePreferred`.
+`getFirstCalendar()` filters, scores, and picks a winner in one pass. Three responsibilities, one method, none of them testable. Split it: `queryWritableCalendars()` maps the cursor and delegates ranking to `orderedByAutoPickPreference()`, and `resolveCalendar()` applies `resolvePreferred`.
 
-There is no unit test here — every method goes through `ContentResolver`, which is why Task 2 exists. The behavior this task adds is verified on an emulator in Task 9.
+The scoring moves wholesale to `CalendarSelection.kt` (Task 2), so `calculateCalendarScore` and `GOOGLE_ACCOUNT_TYPE` leave this class. What remains here is only what genuinely needs `ContentResolver`: the query and the column mapping. That is why there is no unit test in this task — the part worth testing is now in Task 2's suite. The provider behavior is verified on an emulator in Task 9.
+
+**Do not reintroduce a tie-break.** `getFirstCalendar` picked with `if (score > bestScore)`, so equal-scoring calendars resolved to the first cursor row. `orderedByAutoPickPreference` uses a stable sort on score alone, preserving that. Adding a secondary sort key here (by display name, say) would move the automatic pick for any user whose best-scoring band holds two or more calendars, silently relocating their events on upgrade.
 
 **Files:**
 - Modify: `app/src/main/java/com/msmobile/visitas/util/CalendarEventManager.kt`
@@ -369,38 +371,29 @@ Delete `getFirstCalendar()` entirely (currently lines 124-179) and the `private 
 
                 buildList {
                     while (cursor.moveToNext()) {
-                        val accountType =
-                            if (accountTypeIndex >= 0) cursor.getString(accountTypeIndex) else null
-                        val isPrimary = isPrimaryIndex >= 0 && cursor.getInt(isPrimaryIndex) == 1
                         add(
-                            ScoredCalendar(
-                                calendar = CalendarInfo(
-                                    id = cursor.getLong(idIndex),
-                                    displayName = if (displayNameIndex >= 0) {
-                                        cursor.getString(displayNameIndex).orEmpty()
-                                    } else {
-                                        ""
-                                    },
-                                    accountName = if (accountNameIndex >= 0) {
-                                        cursor.getString(accountNameIndex)
-                                    } else {
-                                        null
-                                    },
-                                    accountType = accountType
-                                ),
-                                score = calculateCalendarScore(
-                                    isGoogle = accountType == GOOGLE_ACCOUNT_TYPE,
-                                    isPrimary = isPrimary
-                                )
+                            CalendarInfo(
+                                id = cursor.getLong(idIndex),
+                                displayName = if (displayNameIndex >= 0) {
+                                    cursor.getString(displayNameIndex).orEmpty()
+                                } else {
+                                    ""
+                                },
+                                accountName = if (accountNameIndex >= 0) {
+                                    cursor.getString(accountNameIndex)
+                                } else {
+                                    null
+                                },
+                                accountType = if (accountTypeIndex >= 0) {
+                                    cursor.getString(accountTypeIndex)
+                                } else {
+                                    null
+                                },
+                                isPrimary = isPrimaryIndex >= 0 && cursor.getInt(isPrimaryIndex) == 1
                             )
                         )
                     }
-                }
-                    .sortedWith(
-                        compareByDescending<ScoredCalendar> { it.score }
-                            .thenBy { it.calendar.displayName }
-                    )
-                    .map { it.calendar }
+                }.orderedByAutoPickPreference()
             } ?: emptyList()
         } catch (e: Exception) {
             if (e is CancellationException) {
@@ -412,16 +405,11 @@ Delete `getFirstCalendar()` entirely (currently lines 124-179) and the `private 
     }
 ```
 
-`calculateCalendarScore` is unchanged and still used — do not delete it. The `try`/`catch` is new: the old `getFirstCalendar` had none, while every other query in this class does.
+This method now only maps the cursor — the ranking lives in `orderedByAutoPickPreference()` in `CalendarSelection.kt`, where it is unit-tested. The `try`/`catch` is new: the old `getFirstCalendar` had none, while every other query in this class does.
 
-- [ ] **Step 4: Add the scoring holder**
+- [ ] **Step 4: Delete the scoring that moved out**
 
-Add near the bottom of the class, where the deleted nested `CalendarInfo` used to be:
-
-```kotlin
-    /** Pairs a calendar with its auto-pick score just long enough to sort the query results. */
-    private data class ScoredCalendar(val calendar: CalendarInfo, val score: Int)
-```
+`calculateCalendarScore` and the `GOOGLE_ACCOUNT_TYPE` constant are now dead — `orderedByAutoPickPreference` owns that logic and `CalendarSelection.kt` has its own private copy of the account-type constant. Delete both from `CalendarEventManager`, keeping `TAG`, `CHECKMARK`, and `DEFAULT_DURATION` in the companion object.
 
 - [ ] **Step 5: Verify it compiles and the suite is green**
 

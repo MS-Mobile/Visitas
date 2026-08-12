@@ -64,8 +64,8 @@ the write path needs one winner, so split them:
 
 - `private fun queryWritableCalendars(): List<CalendarInfo>` — the existing selection
   (`CALENDAR_ACCESS_LEVEL >= CAL_ACCESS_CONTRIBUTOR AND VISIBLE = 1 AND SYNC_EVENTS = 1`) unchanged,
-  plus `CALENDAR_DISPLAY_NAME` in the projection. Ordered by the existing `calculateCalendarScore`
-  descending, then display name, so the auto-pick candidate is always first.
+  plus `CALENDAR_DISPLAY_NAME` in the projection. It maps the cursor and delegates ranking to
+  `orderedByAutoPickPreference()`, so the auto-pick candidate is always first.
 - `private fun resolveCalendar(preferredCalendarId: Long?): CalendarInfo?` — delegates to
   `resolvePreferred` (below). Replaces `getFirstCalendar()`, which is removed.
 - `suspend fun getAvailableCalendars(): List<CalendarInfo>` — public; returns `emptyList()` without
@@ -73,19 +73,24 @@ the write path needs one winner, so split them:
 - `saveEvent(…, calendarId: Long? = null)` routes through `resolveCalendar`. The default argument
   keeps existing call sites compiling with today's behavior.
 
-`CalendarInfo` becomes public and gains a display name:
+`CalendarInfo` becomes public and gains a display name and the primary flag:
 
 ```kotlin
 data class CalendarInfo(
     val id: Long,
     val displayName: String,
     val accountName: String?,
-    val accountType: String?
+    val accountType: String?,
+    val isPrimary: Boolean
 )
 ```
 
-`accountType` stays because `calculateCalendarScore` uses it for the Google preference; `accountName`
-stays as the dropdown's secondary label.
+`accountType` and `isPrimary` stay as the inputs to the automatic ranking; `accountName` stays as the
+dropdown's secondary label.
+
+`calculateCalendarScore` and `GOOGLE_ACCOUNT_TYPE` leave `CalendarEventManager` entirely — the
+ranking moves to `CalendarSelection.kt` (below), which leaves this class holding only what genuinely
+needs `ContentResolver`.
 
 ### Removing event colors
 
@@ -111,18 +116,30 @@ added. Events created from now on inherit their calendar's color, so older visit
 indefinitely. This is accepted deliberately: a one-time pass over every stored `calendarEventId` is
 not worth the write traffic for a cosmetic difference.
 
-### One copy of the fallback rule
+### One copy of the selection rule
 
 Both the write path and the Settings screen need the resolved calendar. Rather than duplicating the
-rule, extract a top-level extension in the `util` package:
+rule, `CalendarSelection.kt` in the `util` package owns the whole of it — the ranking as well as the
+lookup, because the fallback *is* the ranking and splitting them would leave the half that can
+actually be wrong sitting untested inside a `ContentResolver` wrapper:
 
 ```kotlin
+fun List<CalendarInfo>.orderedByAutoPickPreference(): List<CalendarInfo> =
+    sortedByDescending { it.autoPickScore() }
+
 fun List<CalendarInfo>.resolvePreferred(preferredCalendarId: Long?): CalendarInfo? =
     firstOrNull { it.id == preferredCalendarId } ?: firstOrNull()
 ```
 
-`CalendarEventManager.resolveCalendar` and `SettingsDetailViewModel` both call it. One rule, one
-test target.
+`CalendarEventManager.resolveCalendar` and `SettingsDetailViewModel` both call `resolvePreferred`;
+`queryWritableCalendars` is the sole caller of `orderedByAutoPickPreference`. One rule, one test
+target.
+
+**The sort must stay stable and must not gain a tie-break.** `getFirstCalendar` picked with
+`if (score > bestScore)` — strict `>`, so equal-scoring calendars resolved to the first cursor row.
+`sortedByDescending` is stable and preserves exactly that. Adding a secondary sort key (by display
+name, say) would move the automatic pick for any user whose best-scoring band holds two or more
+calendars, relocating their events on upgrade with no warning.
 
 ### Write path
 
@@ -160,12 +177,18 @@ absent from the freshly loaded list, persist null.
 
 ## Testing
 
-`CalendarEventManager` has no test file — it is `ContentResolver` all the way down, which is why the
-fallback rule has never been directly tested. Extracting `resolvePreferred` makes the one piece of
-actual policy testable without a provider.
+`CalendarEventManager` has no test file — it is `ContentResolver` all the way down, which is why
+neither the ranking nor the fallback has ever been directly tested. Moving both into
+`CalendarSelection.kt` makes the whole selection policy testable without a provider.
 
 **`resolvePreferred`** (new test): preferred id present → returns it; preferred id absent (stale) →
-returns first; preferred null → returns first; empty list → null.
+returns first; preferred null → returns first; empty list → null; and a case pinning that it trusts
+the receiver's order rather than re-ranking, so slipping a sort in at a call site fails loudly
+instead of showing one calendar while writing to another.
+
+**`orderedByAutoPickPreference`** (new test): Google primary ranks first; a secondary Google calendar
+outranks a non-Google primary; equal-ranked calendars keep provider order (the stability guarantee
+above); an empty list comes back empty.
 
 **`SettingsDetailViewModelTest`** (existing Mockito + `createViewModel(...)` + `MockReferenceHolder`
 pattern; `createViewModel` gains `availableCalendars` and `savedPreferredCalendarId` parameters):
