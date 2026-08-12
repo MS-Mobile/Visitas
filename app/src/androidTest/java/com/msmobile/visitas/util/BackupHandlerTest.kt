@@ -6,6 +6,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.msmobile.visitas.VisitasDatabase
 import com.msmobile.visitas.preference.Preference
+import com.msmobile.visitas.preference.preferredCalendar
+import com.msmobile.visitas.preference.withPreferredCalendar
 import com.msmobile.visitas.visit.VisitListDateFilterOption
 import com.msmobile.visitas.visit.VisitListDistanceFilterOption
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -15,7 +17,6 @@ import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -274,20 +275,23 @@ class BackupHandlerTest {
     }
 
     @Test
-    fun restoreBackup_withPreferredCalendar_shouldDropItButKeepOtherPreferences() = runTest {
+    fun restoreBackup_withPreferredCalendar_shouldPreserveTheChosenCalendar() = runTest {
         // Arrange
         initDatabase()
 
-        // A calendar id is assigned by the device's calendar provider, so it means nothing on the
-        // device restoring the backup. Restoring it would resolve to an unrelated calendar rather
-        // than fail, so it has to be dropped.
+        // Stored as an account identity rather than a row id, so it stays meaningful across the
+        // backup: on a device signed into the same account it names the same calendar.
+        val chosen = CalendarIdentity(
+            accountType = "com.google",
+            accountName = "user@gmail.com",
+            ownerAccount = "family17536855988708452884@group.calendar.google.com"
+        )
         database.preferenceDao().save(
             Preference(
                 visitListDateFilterOption = VisitListDateFilterOption.All,
                 visitListDistanceFilterOption = VisitListDistanceFilterOption.All,
-                addVisitsToCalendar = true,
-                preferredCalendarId = 42L
-            )
+                addVisitsToCalendar = true
+            ).withPreferredCalendar(chosen)
         )
 
         // Act - Create backup, wipe as if this were a fresh install, restore
@@ -298,7 +302,7 @@ class BackupHandlerTest {
         // Assert
         val restored = database.preferenceDao().getPreference()
         assertNotNull(restored)
-        assertNull("The chosen calendar must not survive a restore", restored?.preferredCalendarId)
+        assertEquals(chosen, restored?.preferredCalendar)
         assertTrue(
             "Other calendar preferences must survive the restore",
             restored?.addVisitsToCalendar == true

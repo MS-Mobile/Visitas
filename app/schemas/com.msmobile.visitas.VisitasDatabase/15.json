@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 15,
-    "identityHash": "ff0e643738de75e5d353dbafbf603a7d",
+    "identityHash": "1efc40a143db7d95adf5c1333fb29d71",
     "entities": [
       {
         "tableName": "conversation",
@@ -209,7 +209,7 @@
       },
       {
         "tableName": "preference",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `visitListDateFilterOption` TEXT NOT NULL, `visitListDistanceFilterOption` TEXT NOT NULL, `visitMapEngineOption` TEXT NOT NULL, `addVisitsToCalendar` INTEGER NOT NULL, `hasSeenAddVisitToCalendarMessage` INTEGER NOT NULL, `preferredCalendarId` INTEGER, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `visitListDateFilterOption` TEXT NOT NULL, `visitListDistanceFilterOption` TEXT NOT NULL, `visitMapEngineOption` TEXT NOT NULL, `addVisitsToCalendar` INTEGER NOT NULL, `hasSeenAddVisitToCalendarMessage` INTEGER NOT NULL, `preferredCalendarAccountType` TEXT, `preferredCalendarAccountName` TEXT, `preferredCalendarOwnerAccount` TEXT, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -248,9 +248,19 @@
             "notNull": true
           },
           {
-            "fieldPath": "preferredCalendarId",
-            "columnName": "preferredCalendarId",
-            "affinity": "INTEGER"
+            "fieldPath": "preferredCalendarAccountType",
+            "columnName": "preferredCalendarAccountType",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "preferredCalendarAccountName",
+            "columnName": "preferredCalendarAccountName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "preferredCalendarOwnerAccount",
+            "columnName": "preferredCalendarOwnerAccount",
+            "affinity": "TEXT"
           }
         ],
         "primaryKey": {
@@ -444,7 +454,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'ff0e643738de75e5d353dbafbf603a7d')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '1efc40a143db7d95adf5c1333fb29d71')"
     ]
   }
 }

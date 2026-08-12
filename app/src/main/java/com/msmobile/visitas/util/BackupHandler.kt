@@ -152,14 +152,13 @@ class BackupHandler @Inject constructor(
             this.visitDao().save(visit)
         }
 
-        // Copy all preferences, minus the chosen calendar. preferredCalendarId is a row id owned by
-        // the device's calendar provider, so the same number names a different calendar on another
-        // device — and resolvePreferred matches on id alone, so it would happily write visits into
-        // whatever calendar holds that id. Falling back to the automatic pick is the only safe
-        // restore; the user re-picks if they care.
+        // Copy all preferences. The chosen calendar rides along safely because it is stored as an
+        // account identity, not a row id: on a device signed into the same account it resolves to
+        // the same calendar, and anywhere else it simply does not match and the app picks
+        // automatically.
         val preferences = backupDatabase.preferenceDao().listAll()
         preferences.forEach { preference ->
-            this.preferenceDao().save(preference.copy(preferredCalendarId = null))
+            this.preferenceDao().save(preference)
         }
     }
 
