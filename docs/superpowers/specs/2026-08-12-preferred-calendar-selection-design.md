@@ -11,7 +11,8 @@ dedicated ministry calendar — cannot direct visits anywhere but the one the ap
 
 Add a calendar dropdown to the Settings screen, grouped with the existing "add visits to calendar"
 checkbox, listing the device's writable calendars. Persist the choice as `preferredCalendarId` and
-use it on the write path.
+use it on the write path. Drop the app's custom event color so events take the color of whichever
+calendar the user picked.
 
 ## Scope
 
@@ -68,10 +69,9 @@ the write path needs one winner, so split them:
 - `private fun resolveCalendar(preferredCalendarId: Long?): CalendarInfo?` — delegates to
   `resolvePreferred` (below). Replaces `getFirstCalendar()`, which is removed.
 - `suspend fun getAvailableCalendars(): List<CalendarInfo>` — public; returns `emptyList()` without
-  `READ_CALENDAR`, as `getAvailableColors` already does.
-- `saveEvent(…, calendarId: Long? = null)` and `getAvailableColors(calendarId: Long? = null)` both
-  route through `resolveCalendar`. The default argument keeps existing call sites compiling with
-  today's behavior.
+  `READ_CALENDAR`.
+- `saveEvent(…, calendarId: Long? = null)` routes through `resolveCalendar`. The default argument
+  keeps existing call sites compiling with today's behavior.
 
 `CalendarInfo` becomes public and gains a display name:
 
@@ -84,11 +84,32 @@ data class CalendarInfo(
 )
 ```
 
-**Colors must follow the same calendar.** Event color palettes are per-account — `queryEventColors`
-filters on `ACCOUNT_NAME`/`ACCOUNT_TYPE`. If the chosen calendar is on a different account than the
-auto-picked one, colors queried against the wrong account cause `saveEvent` to drop the color key
-(it only applies a key present in the palette). Routing both methods through `resolveCalendar`
-prevents that mismatch.
+`accountType` stays because `calculateCalendarScore` uses it for the Google preference; `accountName`
+stays as the dropdown's secondary label.
+
+### Removing event colors
+
+Custom event colors are removed rather than carried across the change. Event color palettes are
+per-account (`queryEventColors` filters on `ACCOUNT_NAME`/`ACCOUNT_TYPE`), so letting the user pick a
+calendar on a different account would mean querying the right palette per save or silently dropping
+the color key — complexity in service of one hardcoded green. An event with no `EVENT_COLOR_KEY`
+renders in its calendar's own color, which is the better default anyway: visits look like they belong
+to the calendar the user chose.
+
+Every reference is internal to `CalendarEventManager` — `getAvailableColors`, `getDefaultColorKey`,
+`ColorKey`, and `EventColor` are public API with no callers anywhere in the repo, tests included. So
+this is a pure deletion, roughly 60 lines, with no call-site churn:
+
+- the `color` parameter on `saveEvent`
+- the palette-check block in the event's `ContentValues`, including the `EVENT_COLOR_KEY` column
+  itself — it is not written at all, not written as null
+- `getAvailableColors`, `getDefaultColorKey`, `queryEventColors`
+- `ColorKey`, `EventColor`, `DEFAULT_COLOR_KEY`
+
+**Events already created keep their sage green.** Nothing rewrites them, and no cleanup pass is
+added. Events created from now on inherit their calendar's color, so older visits stay green
+indefinitely. This is accepted deliberately: a one-time pass over every stored `calendarEventId` is
+not worth the write traffic for a cosmetic difference.
 
 ### One copy of the fallback rule
 
@@ -164,7 +185,8 @@ default keeps production call sites compiling but does not spare the mock verifi
 **Manual verification** (via the `verify` skill, on an emulator with two accounts) — neither is
 worth faking:
 
-- an event actually lands in a non-default, cross-account calendar with its color key intact;
+- an event actually lands in a non-default, cross-account calendar, rendered in that calendar's
+  color;
 - the dropdown is inert while the checkbox is off.
 
 ## Gated artifacts
