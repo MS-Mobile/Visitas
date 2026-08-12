@@ -1,15 +1,15 @@
-# Preferred Calendar Selection Implementation Plan
+﻿# Preferred Calendar Selection Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Let the user choose which device calendar visit events are written to, via a dropdown in the Settings screen grouped with the existing "add visits to calendar" checkbox.
 
-> **Design changed during execution — read this first.** Tasks 1–4 are implemented and merged, but
+> **Design changed during execution â€” read this first.** Tasks 1â€“4 are implemented and merged, but
 > *not* in the shape written below. The chosen calendar is identified by a
 > `CalendarIdentity(accountType, accountName, ownerAccount)` triple, **not** by a `Long` row id: a
 > provider row id is reused after a delete and names an unrelated calendar on another device, and a
 > reused id resolves *successfully* to the wrong calendar rather than failing, so nothing detects it.
-> The design spec — `docs/superpowers/specs/2026-08-12-preferred-calendar-selection-design.md` — is
+> The design spec â€” `docs/superpowers/specs/2026-08-12-preferred-calendar-selection-design.md` â€” is
 > the authority and is up to date. Task blocks below that still show `preferredCalendarId: Long?`
 > are historical; each remaining task is corrected in place before it is executed.
 
@@ -25,19 +25,19 @@
 
 Read these before starting:
 
-- `AGENTS.md` — architecture, the ViewModel/UiState/UiEvent pattern, testing conventions, and the Room-schema and screenshot workflows. Non-negotiable house rules live here.
+- `AGENTS.md` â€” architecture, the ViewModel/UiState/UiEvent pattern, testing conventions, and the Room-schema and screenshot workflows. Non-negotiable house rules live here.
 - Existing reference implementations you will mirror rather than invent:
-  - `SettingsScreen.kt:319` `MapEngineDropdown` — the exact dropdown shape to copy.
-  - `SettingsDetailViewModel.kt:72` `mapEngineSelected` — the exact "persist + update state" shape to copy.
-  - `migration/Migration_13_14.kt` — the migration shape to copy.
+  - `SettingsScreen.kt:319` `MapEngineDropdown` â€” the exact dropdown shape to copy.
+  - `SettingsDetailViewModel.kt:72` `mapEngineSelected` â€” the exact "persist + update state" shape to copy.
+  - `migration/Migration_13_14.kt` â€” the migration shape to copy.
 
 Three things that will bite you if you skip them:
 
-1. **Room schemas are gated.** Bumping the DB version requires a regenerated `app/schemas/…/15.json` committed in the same PR. A plain `assembleDebug` does **not** regenerate it — use the script in Task 4.
+1. **Room schemas are gated.** Bumping the DB version requires a regenerated `app/schemas/â€¦/15.json` committed in the same PR. A plain `assembleDebug` does **not** regenerate it â€” use the script in Task 4.
 2. **Screenshot baselines are gated.** This feature adds an always-visible dropdown to the Settings screen, so **every** Settings reference PNG changes, not just the new one. See Task 8.
 3. **A pre-commit hook fires on `VisitasDatabase.kt`.** It runs `BackupHandlerTest`, which needs a connected device/emulator. Have one running before the Task 4 commit.
 
-**Test command form:** `./gradlew test` runs the whole unit-test suite. To run a single test class you must use the per-variant task — `./gradlew testDebugUnitTest --tests "fully.qualified.ClassName"` — because `test` is an aggregate lifecycle task and rejects `--tests` with "Unknown command-line option". In PowerShell use `.\gradlew.bat` instead of `./gradlew`. If `./gradlew` fails at *"Downloading gradle-…-bin.zip … 403 Forbidden"*, you are in a Claude Code web/remote session — do not work around it; push the branch and read results off the PR Build check run (see `AGENTS.md` § "No Gradle in Claude Code web/remote sessions").
+**Test command form:** `./gradlew test` runs the whole unit-test suite. To run a single test class you must use the per-variant task â€” `./gradlew testDebugUnitTest --tests "fully.qualified.ClassName"` â€” because `test` is an aggregate lifecycle task and rejects `--tests` with "Unknown command-line option". In PowerShell use `.\gradlew.bat` instead of `./gradlew`. If `./gradlew` fails at *"Downloading gradle-â€¦-bin.zip â€¦ 403 Forbidden"*, you are in a Claude Code web/remote session â€” do not work around it; push the branch and read results off the PR Build check run (see `AGENTS.md` Â§ "No Gradle in Claude Code web/remote sessions").
 
 **Branch:** work on `preferred-calendar-selection`, which already holds the design spec.
 
@@ -50,7 +50,7 @@ Three things that will bite you if you skip them:
 | `app/src/main/java/com/msmobile/visitas/util/CalendarSelection.kt` | The `CalendarInfo` type and the one calendar-resolution rule | **Create** |
 | `app/src/test/java/com/msmobile/visitas/util/CalendarSelectionTest.kt` | Tests for the resolution rule | **Create** |
 | `app/src/main/java/com/msmobile/visitas/util/CalendarEventManager.kt` | `CalendarContract` wrapper: query, resolve, write, delete | Modify |
-| `app/src/main/java/com/msmobile/visitas/util/SyncVisitCalendarEventUseCase.kt` | Visit → calendar event mapping | Modify |
+| `app/src/main/java/com/msmobile/visitas/util/SyncVisitCalendarEventUseCase.kt` | Visit â†’ calendar event mapping | Modify |
 | `app/src/main/java/com/msmobile/visitas/preference/Preference.kt` | Preferences entity | Modify |
 | `app/src/main/java/com/msmobile/visitas/migration/Migration_14_15.kt` | Adds `preferredCalendarId` column | **Create** |
 | `app/src/main/java/com/msmobile/visitas/VisitasDatabase.kt` | DB version + migration registry | Modify |
@@ -70,7 +70,7 @@ Three things that will bite you if you skip them:
 
 The app writes one hardcoded green (`EVENT_COLOR_KEY = "2"`) to every event. Color palettes are per-account, so once the user can pick a calendar on another account this code would either need a per-save palette query or would silently drop the key. Removing it lets each event take its calendar's own color.
 
-`getAvailableColors`, `getDefaultColorKey`, `ColorKey`, and `EventColor` are public but have **zero callers anywhere in the repo, tests included** — verified by grep. There is no test to write first because there is no behavior under test and no caller to protect; the safety net is that the suite still compiles and passes.
+`getAvailableColors`, `getDefaultColorKey`, `ColorKey`, and `EventColor` are public but have **zero callers anywhere in the repo, tests included** â€” verified by grep. There is no test to write first because there is no behavior under test and no caller to protect; the safety net is that the suite still compiles and passes.
 
 **Files:**
 - Modify: `app/src/main/java/com/msmobile/visitas/util/CalendarEventManager.kt`
@@ -82,7 +82,7 @@ Run:
 git grep -n "ColorKey\|EventColor\|getAvailableColors\|getDefaultColorKey\|EVENT_COLOR"
 ```
 
-Expected: every hit is inside `app/src/main/java/com/msmobile/visitas/util/CalendarEventManager.kt`. If a hit appears in any other file, stop — the spec's assumption is wrong and the removal needs rethinking.
+Expected: every hit is inside `app/src/main/java/com/msmobile/visitas/util/CalendarEventManager.kt`. If a hit appears in any other file, stop â€” the spec's assumption is wrong and the removal needs rethinking.
 
 - [ ] **Step 2: Drop the `color` parameter from `saveEvent`**
 
@@ -126,7 +126,7 @@ Delete these members entirely from `CalendarEventManager`:
 - `value class ColorKey` and `data class EventColor` (currently lines 261-264)
 - `DEFAULT_COLOR_KEY` and its two-line comment from the companion object (currently lines 271-273)
 
-Keep `TAG`, `CHECKMARK`, `GOOGLE_ACCOUNT_TYPE`, and `DEFAULT_DURATION` — all still used.
+Keep `TAG`, `CHECKMARK`, `GOOGLE_ACCOUNT_TYPE`, and `DEFAULT_DURATION` â€” all still used.
 
 - [ ] **Step 5: Verify it compiles and the suite is green**
 
@@ -148,7 +148,7 @@ The color API had no callers, so this is a straight removal."
 
 ### Task 2: The calendar resolution rule
 
-One rule, used by both the write path and the Settings screen. Extracting it is what makes the fallback behavior testable at all — `CalendarEventManager` itself is `ContentResolver` all the way down and has no test file.
+One rule, used by both the write path and the Settings screen. Extracting it is what makes the fallback behavior testable at all â€” `CalendarEventManager` itself is `ContentResolver` all the way down and has no test file.
 
 **Files:**
 - Create: `app/src/main/java/com/msmobile/visitas/util/CalendarSelection.kt`
@@ -236,7 +236,7 @@ class CalendarSelectionTest {
 
 Add ordering tests alongside these: a primary Google calendar ranks first; a secondary Google
 calendar outranks a non-Google primary; equally ranked calendars keep the order they arrived in
-(use three of them — two cannot distinguish a stable sort from an unstable one); an empty list comes
+(use three of them â€” two cannot distinguish a stable sort from an unstable one); an empty list comes
 back empty; ordering composed with resolving picks the best-ranked calendar. Also pin that
 `resolvePreferred` trusts the receiver's order rather than re-ranking, by asserting an unordered
 receiver resolves to its own first entry.
@@ -244,7 +244,7 @@ receiver resolves to its own first entry.
 - [ ] **Step 2: Run the test to verify it fails**
 
 Run: `./gradlew testDebugUnitTest --tests "com.msmobile.visitas.util.CalendarSelectionTest"`
-Expected: FAIL — compilation error, `Unresolved reference: CalendarInfo`.
+Expected: FAIL â€” compilation error, `Unresolved reference: CalendarInfo`.
 
 - [ ] **Step 3: Write the implementation**
 
@@ -273,7 +273,7 @@ data class CalendarInfo(
  * Google calendar, then a non-Google primary, then everything else.
  *
  * The sort is stable, so calendars with equal standing keep the order they arrived in. That is
- * deliberate — it reproduces the pick the app made before calendar selection existed, so upgrading
+ * deliberate â€” it reproduces the pick the app made before calendar selection existed, so upgrading
  * does not silently move a user's events to a different calendar.
  */
 fun List<CalendarInfo>.orderedByAutoPickPreference(): List<CalendarInfo> =
@@ -282,8 +282,8 @@ fun List<CalendarInfo>.orderedByAutoPickPreference(): List<CalendarInfo> =
 /**
  * Picks the calendar events are written to.
  *
- * Falls back to the receiver's first entry — the best automatic candidate, provided the receiver is
- * ordered by [orderedByAutoPickPreference] — both when [preferredCalendarId] is null and when it
+ * Falls back to the receiver's first entry â€” the best automatic candidate, provided the receiver is
+ * ordered by [orderedByAutoPickPreference] â€” both when [preferredCalendarId] is null and when it
  * names a calendar that is no longer in the list, deleted or its account removed, so events keep
  * being written instead of silently stopping.
  */
@@ -312,7 +312,7 @@ Run: `./gradlew testDebugUnitTest --tests "com.msmobile.visitas.util.CalendarSel
 Expected: PASS, 10 tests.
 
 For the exact committed KDoc wording, `app/src/main/java/com/msmobile/visitas/util/CalendarSelection.kt`
-on this branch is authoritative — this block gives the shape and the reasoning.
+on this branch is authoritative â€” this block gives the shape and the reasoning.
 
 - [ ] **Step 5: Commit**
 
@@ -330,7 +330,7 @@ screen cannot drift apart. This is the first test coverage the fallback has had.
 
 `getFirstCalendar()` filters, scores, and picks a winner in one pass. Three responsibilities, one method, none of them testable. Split it: `queryWritableCalendars()` maps the cursor and delegates ranking to `orderedByAutoPickPreference()`, and `resolveCalendar()` applies `resolvePreferred`.
 
-The scoring moves wholesale to `CalendarSelection.kt` (Task 2), so `calculateCalendarScore` and `GOOGLE_ACCOUNT_TYPE` leave this class. What remains here is only what genuinely needs `ContentResolver`: the query and the column mapping. That is why there is no unit test in this task — the part worth testing is now in Task 2's suite. The provider behavior is verified on an emulator in Task 9.
+The scoring moves wholesale to `CalendarSelection.kt` (Task 2), so `calculateCalendarScore` and `GOOGLE_ACCOUNT_TYPE` leave this class. What remains here is only what genuinely needs `ContentResolver`: the query and the column mapping. That is why there is no unit test in this task â€” the part worth testing is now in Task 2's suite. The provider behavior is verified on an emulator in Task 9.
 
 **Do not reintroduce a tie-break.** `getFirstCalendar` picked with `if (score > bestScore)`, so equal-scoring calendars resolved to the first cursor row. `orderedByAutoPickPreference` uses a stable sort on score alone, preserving that. Adding a secondary sort key here (by display name, say) would move the automatic pick for any user whose best-scoring band holds two or more calendars, silently relocating their events on upgrade.
 
@@ -366,7 +366,7 @@ Add this immediately after `saveEvent` (it replaces the deleted `getAvailableCol
 
 ```kotlin
     /**
-     * The calendars the app may write to, ordered best-candidate-first — see [resolvePreferred],
+     * The calendars the app may write to, ordered best-candidate-first â€” see [resolvePreferred],
      * which relies on that ordering. Empty without calendar permission.
      */
     suspend fun getAvailableCalendars(): List<CalendarInfo> = withContext(Dispatchers.IO) {
@@ -379,7 +379,7 @@ Add this immediately after `saveEvent` (it replaces the deleted `getAvailableCol
 
 - [ ] **Step 3: Replace `getFirstCalendar` with the query + resolver pair**
 
-Delete `getFirstCalendar()` entirely (currently lines 124-179) and the `private data class CalendarInfo(...)` nested at the bottom of the class (currently lines 255-259) — `CalendarInfo` now comes from `CalendarSelection.kt` in the same package, so no import is needed. Put this in `getFirstCalendar`'s place:
+Delete `getFirstCalendar()` entirely (currently lines 124-179) and the `private data class CalendarInfo(...)` nested at the bottom of the class (currently lines 255-259) â€” `CalendarInfo` now comes from `CalendarSelection.kt` in the same package, so no import is needed. Put this in `getFirstCalendar`'s place:
 
 ```kotlin
     private fun resolveCalendar(preferredCalendarId: Long?): CalendarInfo? =
@@ -460,11 +460,11 @@ Delete `getFirstCalendar()` entirely (currently lines 124-179) and the `private 
     }
 ```
 
-This method now only maps the cursor — the ranking lives in `orderedByAutoPickPreference()` in `CalendarSelection.kt`, where it is unit-tested. The `try`/`catch` is new: the old `getFirstCalendar` had none, while every other query in this class does.
+This method now only maps the cursor â€” the ranking lives in `orderedByAutoPickPreference()` in `CalendarSelection.kt`, where it is unit-tested. The `try`/`catch` is new: the old `getFirstCalendar` had none, while every other query in this class does.
 
 - [ ] **Step 4: Delete the scoring that moved out**
 
-`calculateCalendarScore` and the `GOOGLE_ACCOUNT_TYPE` constant are now dead — `orderedByAutoPickPreference` owns that logic and `CalendarSelection.kt` has its own private copy of the account-type constant. Delete both from `CalendarEventManager`, keeping `TAG`, `CHECKMARK`, and `DEFAULT_DURATION` in the companion object.
+`calculateCalendarScore` and the `GOOGLE_ACCOUNT_TYPE` constant are now dead â€” `orderedByAutoPickPreference` owns that logic and `CalendarSelection.kt` has its own private copy of the account-type constant. Delete both from `CalendarEventManager`, keeping `TAG`, `CHECKMARK`, and `DEFAULT_DURATION` in the companion object.
 
 - [ ] **Step 5: Verify it compiles and the suite is green**
 
@@ -506,7 +506,7 @@ data class Preference(
     val visitMapEngineOption: VisitMapEngineOption = VisitMapEngineOption.MapLibre,
     val addVisitsToCalendar: Boolean = false,
     val hasSeenAddVisitToCalendarMessage: Boolean = false,
-    /** Null means "let the app pick" — see `resolvePreferred`. */
+    /** Null means "let the app pick" â€” see `resolvePreferred`. */
     val preferredCalendarId: Long? = null
 )
 ```
@@ -524,7 +524,7 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
- * Adds `preferredCalendarId` to `preference` — the calendar the user picked for visit events.
+ * Adds `preferredCalendarId` to `preference` â€” the calendar the user picked for visit events.
  *
  * Nullable with no default on purpose: null is the meaningful "let the app pick" value, so existing
  * installs keep the automatic choice they have been getting until the user changes it.
@@ -562,7 +562,7 @@ Change the last entry of `MIGRATIONS` (line 80) from `MIGRATION_13_14` to:
 Run: `sh scripts/verify-room-schemas.sh --export-only`
 Expected: `app/schemas/com.msmobile.visitas.VisitasDatabase/15.json` is written. Confirm with `git status` that the file is new and untracked.
 
-A plain `assembleDebug` will not do this — see `AGENTS.md` § Database Migrations for why.
+A plain `assembleDebug` will not do this â€” see `AGENTS.md` Â§ Database Migrations for why.
 
 - [ ] **Step 5: Verify the exported schema matches the entity**
 
@@ -578,7 +578,7 @@ git add app/src/main/java/com/msmobile/visitas/preference/Preference.kt app/src/
 git commit -m "Persist the user's preferred calendar
 
 Nullable, because null is the meaningful 'let the app pick' value rather than a
-placeholder — existing installs keep the automatic choice until they change it."
+placeholder â€” existing installs keep the automatic choice until they change it."
 ```
 
 ---
@@ -612,7 +612,7 @@ The second `anyOrNull()` is the new nullable `preferredCalendar`.
 - [ ] **Step 2: Run the tests to verify they fail**
 
 Run: `./gradlew testDebugUnitTest --tests "com.msmobile.visitas.visit.VisitDetailViewModelTest"`
-Expected: FAIL — compilation error, `Too many arguments for public open suspend operator fun invoke(...)`.
+Expected: FAIL â€” compilation error, `Too many arguments for public open suspend operator fun invoke(...)`.
 
 - [ ] **Step 3: Add the parameter to the use case**
 
@@ -714,7 +714,7 @@ Replace lines 259-272 with:
             }
 ```
 
-Leave the lines after it (`val updatedVisitModel = …` onward) untouched.
+Leave the lines after it (`val updatedVisitModel = â€¦` onward) untouched.
 
 - [ ] **Step 6: Run the tests to verify they pass**
 
@@ -735,7 +735,7 @@ through costs no extra query."
 
 ### Task 6: Settings ViewModel
 
-The screen loads the calendar list whenever permission is granted — regardless of the checkbox — so the dropdown can legitimately be populated while disabled. This is also where a stale id gets cleared, lazily, so the write path never blocks on a preference write.
+The screen loads the calendar list whenever permission is granted â€” regardless of the checkbox â€” so the dropdown can legitimately be populated while disabled. This is also where a stale choice gets cleared, lazily, so the write path never blocks on a preference write.
 
 **Files:**
 - Modify: `app/src/main/java/com/msmobile/visitas/settings/SettingsDetailViewModel.kt`
@@ -743,16 +743,17 @@ The screen loads the calendar list whenever permission is granted — regardless
 
 - [ ] **Step 1: Extend the test factory**
 
-Per `AGENTS.md` § Testing Conventions, all mock configuration lives in `createViewModel`. Replace it (lines 181-208) with:
+Per `AGENTS.md` Â§ Testing Conventions, all mock configuration lives in `createViewModel`. Replace it with:
 
 ```kotlin
     private fun createViewModel(
         savedMapEngine: VisitMapEngineOption = VisitMapEngineOption.MapLibre,
         savedAddVisitsToCalendar: Boolean = false,
-        savedPreferredCalendarId: Long? = null,
+        savedPreferredCalendar: CalendarIdentity? = null,
         availableCalendars: List<CalendarInfo> = emptyList(),
         hasCalendarPermission: Boolean = true,
-        preferenceRepositoryRef: MockReferenceHolder<PreferenceRepository>? = null
+        preferenceRepositoryRef: MockReferenceHolder<PreferenceRepository>? = null,
+        calendarEventManagerRef: MockReferenceHolder<CalendarEventManager>? = null
     ): SettingsDetailViewModel {
         val dispatchers = DispatcherProvider(io = mainDispatcherRule.dispatcher)
         val backupHandler = mock<BackupHandler>()
@@ -761,15 +762,15 @@ Per `AGENTS.md` § Testing Conventions, all mock configuration lives in `createV
                 visitListDateFilterOption = VisitListDateFilterOption.All,
                 visitListDistanceFilterOption = VisitListDistanceFilterOption.All,
                 visitMapEngineOption = savedMapEngine,
-                addVisitsToCalendar = savedAddVisitsToCalendar,
-                preferredCalendarId = savedPreferredCalendarId
-            )
+                addVisitsToCalendar = savedAddVisitsToCalendar
+            ).withPreferredCalendar(savedPreferredCalendar)
         }
         preferenceRepositoryRef?.value = preferenceRepository
         val calendarEventManager = mock<CalendarEventManager> {
             on { hasCalendarPermission() } doReturn hasCalendarPermission
             on { getAvailableCalendars() } doReturn availableCalendars
         }
+        calendarEventManagerRef?.value = calendarEventManager
         return SettingsDetailViewModel(
             preferenceRepository = preferenceRepository,
             calendarEventManager = calendarEventManager,
@@ -780,17 +781,38 @@ Per `AGENTS.md` § Testing Conventions, all mock configuration lives in `createV
     }
 ```
 
-`getAvailableCalendars()` is a suspend function, and `on { … }` is the correct stubbing form for it here — the file already stubs the suspend `preferenceRepository.get()` exactly this way, and there is no `onBlocking` anywhere in this codebase.
+`getAvailableCalendars()` is a suspend function, and `on { â€¦ }` is the correct stubbing form for it here â€” the file already stubs the suspend `preferenceRepository.get()` exactly this way, and there is no `onBlocking` anywhere in this codebase.
 
-Add these imports to the file:
+Add the test constants after `createViewModel`:
 
 ```kotlin
-import com.msmobile.visitas.util.CalendarInfo
+    private companion object {
+        val PERSONAL_CALENDAR = CalendarInfo(
+            id = 1L,
+            displayName = "Personal",
+            accountName = "user@gmail.com",
+            ownerAccount = "user@gmail.com",
+            accountType = "com.google",
+            isPrimary = true
+        )
+        val MINISTRY_CALENDAR = CalendarInfo(
+            id = 2L,
+            displayName = "Ministry",
+            accountName = "user@gmail.com",
+            ownerAccount = "ministry123@group.calendar.google.com",
+            accountType = "com.google",
+            isPrimary = false
+        )
+    }
 ```
+
+Match the real `CalendarInfo` constructor order â€” use named arguments throughout.
+
+New imports: `com.msmobile.visitas.util.CalendarIdentity`, `com.msmobile.visitas.util.CalendarInfo`, `com.msmobile.visitas.preference.withPreferredCalendar`, `com.msmobile.visitas.preference.preferredCalendar`, `junit.framework.TestCase.assertNull`.
 
 - [ ] **Step 2: Write the failing tests**
 
-Add these to `SettingsDetailViewModelTest`, after the existing `CalendarPermissionDenied` test (line 179) and before `createViewModel`:
+Add after the existing `CalendarPermissionDenied` test:
 
 ```kotlin
     @Test
@@ -826,31 +848,31 @@ Add these to `SettingsDetailViewModelTest`, after the existing `CalendarPermissi
     }
 
     @Test
-    fun `onEvent with ViewCreated keeps a preferred calendar that is still available`() {
+    fun `onEvent with ViewCreated keeps a chosen calendar that is still available`() {
         val viewModel = createViewModel(
-            savedPreferredCalendarId = MINISTRY_CALENDAR.id,
+            savedPreferredCalendar = MINISTRY_CALENDAR.identity,
             availableCalendars = listOf(PERSONAL_CALENDAR, MINISTRY_CALENDAR)
         )
 
         viewModel.onEvent(SettingsDetailViewModel.UiEvent.ViewCreated)
 
-        assertEquals(MINISTRY_CALENDAR.id, viewModel.uiState.value.preferredCalendarId)
+        assertEquals(MINISTRY_CALENDAR.identity, viewModel.uiState.value.preferredCalendar)
     }
 
     @Test
-    fun `onEvent with ViewCreated clears a preferred calendar that no longer exists`() {
+    fun `onEvent with ViewCreated clears a chosen calendar that no longer exists`() {
         val preferenceRepositoryRef = MockReferenceHolder<PreferenceRepository>()
         val viewModel = createViewModel(
-            savedPreferredCalendarId = 999L,
+            savedPreferredCalendar = MINISTRY_CALENDAR.identity,
             availableCalendars = listOf(PERSONAL_CALENDAR),
             preferenceRepositoryRef = preferenceRepositoryRef
         )
 
         viewModel.onEvent(SettingsDetailViewModel.UiEvent.ViewCreated)
 
-        assertNull(viewModel.uiState.value.preferredCalendarId)
+        assertNull(viewModel.uiState.value.preferredCalendar)
         verifyBlocking(requireNotNull(preferenceRepositoryRef.value)) {
-            save(argThat { preferredCalendarId == null })
+            save(argThat { preferredCalendar == null })
         }
     }
 
@@ -860,11 +882,9 @@ Add these to `SettingsDetailViewModelTest`, after the existing `CalendarPermissi
             availableCalendars = listOf(PERSONAL_CALENDAR, MINISTRY_CALENDAR)
         )
 
-        viewModel.onEvent(
-            SettingsDetailViewModel.UiEvent.CalendarSelected(MINISTRY_CALENDAR.id)
-        )
+        viewModel.onEvent(SettingsDetailViewModel.UiEvent.CalendarSelected(MINISTRY_CALENDAR))
 
-        assertEquals(MINISTRY_CALENDAR.id, viewModel.uiState.value.preferredCalendarId)
+        assertEquals(MINISTRY_CALENDAR.identity, viewModel.uiState.value.preferredCalendar)
     }
 
     @Test
@@ -875,12 +895,10 @@ Add these to `SettingsDetailViewModelTest`, after the existing `CalendarPermissi
             preferenceRepositoryRef = preferenceRepositoryRef
         )
 
-        viewModel.onEvent(
-            SettingsDetailViewModel.UiEvent.CalendarSelected(MINISTRY_CALENDAR.id)
-        )
+        viewModel.onEvent(SettingsDetailViewModel.UiEvent.CalendarSelected(MINISTRY_CALENDAR))
 
         verifyBlocking(requireNotNull(preferenceRepositoryRef.value)) {
-            save(argThat { preferredCalendarId == MINISTRY_CALENDAR.id })
+            save(argThat { preferredCalendar == MINISTRY_CALENDAR.identity })
         }
     }
 
@@ -900,98 +918,39 @@ Add these to `SettingsDetailViewModelTest`, after the existing `CalendarPermissi
     }
 ```
 
-The `does not query calendars without permission` test needs a handle on the calendar mock, so add that parameter to `createViewModel` as well — the full signature line becomes:
-
-```kotlin
-    private fun createViewModel(
-        savedMapEngine: VisitMapEngineOption = VisitMapEngineOption.MapLibre,
-        savedAddVisitsToCalendar: Boolean = false,
-        savedPreferredCalendarId: Long? = null,
-        availableCalendars: List<CalendarInfo> = emptyList(),
-        hasCalendarPermission: Boolean = true,
-        preferenceRepositoryRef: MockReferenceHolder<PreferenceRepository>? = null,
-        calendarEventManagerRef: MockReferenceHolder<CalendarEventManager>? = null
-    ): SettingsDetailViewModel {
-```
-
-and add this line directly after the `calendarEventManager` mock is built:
-
-```kotlin
-        calendarEventManagerRef?.value = calendarEventManager
-```
-
-Add the test constants to the bottom of the class, after `createViewModel`:
-
-```kotlin
-    private companion object {
-        val PERSONAL_CALENDAR = CalendarInfo(
-            id = 1L,
-            displayName = "Personal",
-            accountName = "user@gmail.com",
-            accountType = "com.google",
-            isPrimary = true
-        )
-        val MINISTRY_CALENDAR = CalendarInfo(
-            id = 2L,
-            displayName = "Ministry",
-            accountName = "user@gmail.com",
-            accountType = "com.google",
-            isPrimary = false
-        )
-    }
-```
-
-Add the remaining import:
-
-```kotlin
-import junit.framework.TestCase.assertNull
-```
-
 - [ ] **Step 3: Run the tests to verify they fail**
 
 Run: `./gradlew testDebugUnitTest --tests "com.msmobile.visitas.settings.SettingsDetailViewModelTest"`
-Expected: FAIL — compilation errors, `Unresolved reference: availableCalendars` and `Unresolved reference: CalendarSelected`.
+Expected: FAIL â€” compilation errors, `Unresolved reference: availableCalendars` and `Unresolved reference: CalendarSelected`.
 
 - [ ] **Step 4: Add the state and event**
 
-In `SettingsDetailViewModel.kt`, add to `UiState` (line 249-258):
+In `SettingsDetailViewModel.kt`, `UiState` gains two properties:
 
 ```kotlin
-    data class UiState(
-        val isLoading: Boolean = false,
-        val backupResult: BackupResult? = null,
-        val eventState: UiEventState = UiEventState.Idle,
-        val selectedMapEngine: VisitMapEngineOption = VisitMapEngineOption.MapLibre,
-        val addVisitsToCalendar: Boolean = false,
         val availableCalendars: List<CalendarInfo> = emptyList(),
-        val preferredCalendarId: Long? = null,
-        val showCalendarRationale: Boolean = false,
-        val showCalendarPermissionDialog: Boolean = false,
-        val versionName: String = ""
-    )
+        val preferredCalendar: CalendarIdentity? = null,
 ```
 
-Add the event next to `AddVisitsToCalendarToggled` in the `UiEvent` sealed class:
+Add the event next to `AddVisitsToCalendarToggled`:
 
 ```kotlin
-        data class CalendarSelected(val calendarId: Long) : UiEvent()
+        data class CalendarSelected(val calendar: CalendarInfo) : UiEvent()
 ```
 
-Add the dispatch branch to `onEvent`, after the `AddVisitsToCalendarToggled` line:
+The event carries the whole `CalendarInfo`, not just an identity, because the ViewModel needs `identity` to persist and the UI already has the object in hand.
+
+Add the dispatch branch after `AddVisitsToCalendarToggled`:
 
 ```kotlin
-            is UiEvent.CalendarSelected -> calendarSelected(event.calendarId)
+            is UiEvent.CalendarSelected -> calendarSelected(event.calendar)
 ```
 
-Add the import:
-
-```kotlin
-import com.msmobile.visitas.util.CalendarInfo
-```
+Imports: `com.msmobile.visitas.util.CalendarIdentity`, `com.msmobile.visitas.util.CalendarInfo`, `com.msmobile.visitas.util.identity`, `com.msmobile.visitas.preference.preferredCalendar`, `com.msmobile.visitas.preference.withPreferredCalendar`.
 
 - [ ] **Step 5: Load the calendars and handle selection**
 
-Replace `viewCreated()` (lines 60-70) with:
+Replace `viewCreated()` with:
 
 ```kotlin
     private fun viewCreated() {
@@ -1001,7 +960,7 @@ Replace `viewCreated()` (lines 60-70) with:
                 it.copy(
                     selectedMapEngine = preference.visitMapEngineOption,
                     addVisitsToCalendar = preference.addVisitsToCalendar,
-                    preferredCalendarId = preference.preferredCalendarId
+                    preferredCalendar = preference.preferredCalendar
                 )
             }
             loadAvailableCalendars()
@@ -1009,9 +968,10 @@ Replace `viewCreated()` (lines 60-70) with:
     }
 
     /**
-     * Loads the calendars the dropdown offers, and drops a stored id that no longer resolves — the
-     * calendar was deleted, or its account was removed. Clearing it here rather than on the write
-     * path keeps saving a visit free of preference writes; the write path falls back on its own.
+     * Loads the calendars the dropdown offers, and drops a stored choice that no longer resolves â€”
+     * the calendar was deleted, or its account was removed. Clearing it here rather than on the
+     * write path keeps saving a visit free of preference writes; the write path falls back on its
+     * own.
      *
      * This runs whenever calendar permission is granted, not only while the checkbox is on, so the
      * dropdown can be populated even while it is disabled.
@@ -1020,29 +980,29 @@ Replace `viewCreated()` (lines 60-70) with:
         if (!calendarEventManager.hasCalendarPermission()) return
         val calendars = calendarEventManager.getAvailableCalendars()
         val preference = preferenceRepository.get()
-        val storedId = preference.preferredCalendarId
-        val isStale = storedId != null && calendars.none { it.id == storedId }
+        val stored = preference.preferredCalendar
+        val isStale = stored != null && calendars.none { it.identity == stored }
         if (isStale) {
-            preferenceRepository.save(preference.copy(preferredCalendarId = null))
+            preferenceRepository.save(preference.withPreferredCalendar(null))
         }
         _uiState.update {
             it.copy(
                 availableCalendars = calendars,
-                preferredCalendarId = if (isStale) null else storedId
+                preferredCalendar = if (isStale) null else stored
             )
         }
     }
 
-    private fun calendarSelected(calendarId: Long) {
+    private fun calendarSelected(calendar: CalendarInfo) {
+        val identity = calendar.identity
         viewModelScope.launch(dispatchers.io) {
-            val preference = preferenceRepository.get().copy(preferredCalendarId = calendarId)
-            preferenceRepository.save(preference)
+            preferenceRepository.save(preferenceRepository.get().withPreferredCalendar(identity))
         }
-        _uiState.update { it.copy(preferredCalendarId = calendarId) }
+        _uiState.update { it.copy(preferredCalendar = identity) }
     }
 ```
 
-Replace `calendarPermissionGranted()` (lines 116-119) with:
+Replace `calendarPermissionGranted()` with:
 
 ```kotlin
     private fun calendarPermissionGranted() {
@@ -1052,10 +1012,12 @@ Replace `calendarPermissionGranted()` (lines 116-119) with:
     }
 ```
 
+Note `calendarSelected` persists `calendar.identity`, which is null for a calendar whose provider omitted part of the triple. Selecting such a calendar therefore stores "no choice" and the app keeps auto-picking â€” the honest outcome, since there is nothing stable to remember.
+
 - [ ] **Step 6: Run the tests to verify they pass**
 
 Run: `./gradlew testDebugUnitTest --tests "com.msmobile.visitas.settings.SettingsDetailViewModelTest"`
-Expected: PASS — the 7 new tests plus the 11 that already existed.
+Expected: PASS â€” the 7 new tests plus the 11 that already existed.
 
 - [ ] **Step 7: Commit**
 
@@ -1064,8 +1026,9 @@ git add app/src/main/java/com/msmobile/visitas/settings/SettingsDetailViewModel.
 git commit -m "Load and persist the calendar choice in Settings
 
 The list loads whenever permission is granted rather than only while the
-checkbox is on, and a stored id that no longer resolves is dropped here rather
-than on the write path, so saving a visit never waits on a preference write."
+checkbox is on, and a stored choice that no longer resolves is dropped here
+rather than on the write path, so saving a visit never waits on a preference
+write."
 ```
 
 ---
@@ -1093,7 +1056,7 @@ In `app/src/main/res/values-pt-rBR/strings.xml`, after its `map_engine_label` li
 
 ```xml
     <string name="settings_calendar_selection_label">Salvar eventos em</string>
-    <string name="settings_calendar_selection_empty">Nenhuma agenda disponível</string>
+    <string name="settings_calendar_selection_empty">Nenhuma agenda disponÃ­vel</string>
 ```
 
 In `app/src/main/res/values-b+es+419/strings.xml`, after its `map_engine_label` line:
@@ -1169,7 +1132,7 @@ private fun CalendarSelectionDropdown(
 }
 
 /**
- * `displayName` is empty when the provider supplies no name for a calendar — rare, but it would
+ * `displayName` is empty when the provider supplies no name for a calendar â€” rare, but it would
  * otherwise render as a blank row identifiable only by its account. Falls back to the account name,
  * then to the same placeholder an empty list gets.
  */
@@ -1180,7 +1143,7 @@ private fun CalendarInfo.label(fallback: String): String = when {
 }
 ```
 
-That `label` helper is what makes `CalendarInfo.displayName`'s KDoc ("the dropdown substitutes a placeholder") true — without it the doc asserts behavior nothing implements.
+That `label` helper is what makes `CalendarInfo.displayName`'s KDoc ("the dropdown substitutes a placeholder") true â€” without it the doc asserts behavior nothing implements.
 
 Add these imports:
 
@@ -1237,7 +1200,7 @@ callback is guarded as well as the text field."
 
 ### Task 8: Preview variant and screenshot baselines
 
-**Read `AGENTS.md` § Screenshot Tests before this task.** The rule there is to add a variant at the end of the provider rather than edit shared preview state. Note what is different here: the dropdown is *always visible*, so every existing Settings baseline legitimately changes too. That is the intended UI change, not the noisy-diff failure mode the rule guards against — do not try to avoid it.
+**Read `AGENTS.md` Â§ Screenshot Tests before this task.** The rule there is to add a variant at the end of the provider rather than edit shared preview state. Note what is different here: the dropdown is *always visible*, so every existing Settings baseline legitimately changes too. That is the intended UI change, not the noisy-diff failure mode the rule guards against â€” do not try to avoid it.
 
 **Files:**
 - Modify: `app/src/main/java/com/msmobile/visitas/settings/SettingsPreviewConfigProvider.kt`
@@ -1295,7 +1258,7 @@ import com.msmobile.visitas.util.CalendarInfo
 - [ ] **Step 2: See which baselines the change affects**
 
 Run: `./gradlew validateDebugScreenshotTest`
-Expected: FAIL. Every Settings variant is reported as differing (the new dropdown row), plus one missing reference for "Calendar Selected". This failure is the expected signal, not a problem to debug — confirm the *only* diffs reported are Settings ones. A diff in any other screen's baseline means something unrelated broke; stop and investigate.
+Expected: FAIL. Every Settings variant is reported as differing (the new dropdown row), plus one missing reference for "Calendar Selected". This failure is the expected signal, not a problem to debug â€” confirm the *only* diffs reported are Settings ones. A diff in any other screen's baseline means something unrelated broke; stop and investigate.
 
 - [ ] **Step 3: Regenerate the baselines**
 
@@ -1310,7 +1273,7 @@ Expected: BUILD SUCCESSFUL.
 
 - [ ] **Step 5: Inspect the new reference image before committing**
 
-Open the newly written "Calendar Selected" PNG under `app/src/screenshotTestDebug/reference/`. Confirm the dropdown shows "Ministry" (id `2L`, the preferred one — not "Personal", which is first in the list). If it shows "Personal", `resolvePreferred` is not being applied in the composable.
+Open the newly written "Calendar Selected" PNG under `app/src/screenshotTestDebug/reference/`. Confirm the dropdown shows "Ministry" (id `2L`, the preferred one â€” not "Personal", which is first in the list). If it shows "Personal", `resolvePreferred` is not being applied in the composable.
 
 - [ ] **Step 6: Commit**
 
@@ -1347,7 +1310,7 @@ Use the `verify` skill. On a device with **two** calendar accounts, check the fo
 
 - [ ] **Step 4: Open the PR**
 
-Use the `add-pr` skill — it covers branch/commit/push, the Room-schema and screenshot gates, and the PR template. Include in the PR description:
+Use the `add-pr` skill â€” it covers branch/commit/push, the Room-schema and screenshot gates, and the PR template. Include in the PR description:
 
 - that pre-existing events keep their sage green, deliberately, with no cleanup pass;
 - the manual verification results from Step 3;
@@ -1357,8 +1320,8 @@ Use the `add-pr` skill — it covers branch/commit/push, the Room-schema and scr
 
 ## Self-review notes
 
-**Spec coverage:** persistence + migration → Task 4. Manager split → Task 3. Shared resolution rule → Task 2. Color removal → Task 1. Write path → Task 5. ViewModel + stale-id clearing → Task 6. UI + disabled state + strings → Task 7. Gated artifacts → Tasks 4 and 8. Manual verification → Task 9. No spec section is unimplemented.
+**Spec coverage:** persistence + migration â†’ Task 4. Manager split â†’ Task 3. Shared resolution rule â†’ Task 2. Color removal â†’ Task 1. Write path â†’ Task 5. ViewModel + stale-id clearing â†’ Task 6. UI + disabled state + strings â†’ Task 7. Gated artifacts â†’ Tasks 4 and 8. Manual verification â†’ Task 9. No spec section is unimplemented.
 
-**Naming consistency, checked across tasks:** `resolvePreferred` (Tasks 2, 3, 6, 7), `orderedByAutoPickPreference` (Tasks 2, 3), `CalendarInfo(id, displayName, accountName, accountType, isPrimary)` (Tasks 2, 3, 6, 7, 8 — every construction site must pass all five), `getAvailableCalendars` (Tasks 3, 6), `preferredCalendarId` (Tasks 4, 5, 6, 7, 8), `UiEvent.CalendarSelected(calendarId)` (Tasks 6, 7), `settings_calendar_selection_label` / `settings_calendar_selection_empty` (Task 7).
+**Naming consistency, checked across tasks:** `resolvePreferred` (Tasks 2, 3, 6, 7), `orderedByAutoPickPreference` (Tasks 2, 3), `CalendarInfo(id, displayName, accountName, accountType, isPrimary)` (Tasks 2, 3, 6, 7, 8 â€” every construction site must pass all five), `getAvailableCalendars` (Tasks 3, 6), `preferredCalendarId` (Tasks 4, 5, 6, 7, 8), `UiEvent.CalendarSelected(calendarId)` (Tasks 6, 7), `settings_calendar_selection_label` / `settings_calendar_selection_empty` (Task 7).
 
-**Ordering constraint:** Task 3 depends on Task 2 (`CalendarInfo` moves out of `CalendarEventManager`). Task 5 depends on Tasks 3 and 4. Tasks 6–8 depend on Task 4. Do not reorder.
+**Ordering constraint:** Task 3 depends on Task 2 (`CalendarInfo` moves out of `CalendarEventManager`). Task 5 depends on Tasks 3 and 4. Tasks 6â€“8 depend on Task 4. Do not reorder.
