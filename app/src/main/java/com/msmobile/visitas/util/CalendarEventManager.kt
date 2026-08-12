@@ -26,7 +26,7 @@ class CalendarEventManager(
 
     suspend fun saveEvent(
         eventId: Long? = null,
-        calendarId: Long? = null,
+        calendar: CalendarIdentity? = null,
         title: String,
         description: String,
         startTime: LocalDateTime,
@@ -37,7 +37,7 @@ class CalendarEventManager(
             return@withContext null
         }
 
-        val calendar = resolveCalendar(calendarId) ?: return@withContext null
+        val resolvedCalendar = resolveCalendar(calendar) ?: return@withContext null
         val eventTitle = if (isDone) "$CHECKMARK$title" else title
         val startMillis = startTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
         val endMillis = startMillis + duration.toMillis()
@@ -47,7 +47,7 @@ class CalendarEventManager(
         // omitting the column leaves any key an existing event already carries untouched — events
         // created before this change keep their old color, which is intended.
         val values = ContentValues().apply {
-            put(CalendarContract.Events.CALENDAR_ID, calendar.id)
+            put(CalendarContract.Events.CALENDAR_ID, resolvedCalendar.id)
             put(CalendarContract.Events.TITLE, eventTitle)
             put(CalendarContract.Events.DESCRIPTION, description)
             put(CalendarContract.Events.DTSTART, startMillis)
@@ -112,8 +112,8 @@ class CalendarEventManager(
         }
     }
 
-    private fun resolveCalendar(preferredCalendarId: Long?): CalendarInfo? =
-        queryWritableCalendars().resolvePreferred(preferredCalendarId)
+    private fun resolveCalendar(preferred: CalendarIdentity?): CalendarInfo? =
+        queryWritableCalendars().resolvePreferred(preferred)
 
     /**
      * The writable calendars, ranked by [orderedByAutoPickPreference]. The ordering is the contract:
@@ -137,6 +137,8 @@ class CalendarEventManager(
                 val isPrimaryIndex = cursor.getColumnIndex(CalendarContract.Calendars.IS_PRIMARY)
                 val accountNameIndex =
                     cursor.getColumnIndex(CalendarContract.Calendars.ACCOUNT_NAME)
+                val ownerAccountIndex =
+                    cursor.getColumnIndex(CalendarContract.Calendars.OWNER_ACCOUNT)
                 val accountTypeIndex =
                     cursor.getColumnIndex(CalendarContract.Calendars.ACCOUNT_TYPE)
 
@@ -152,6 +154,11 @@ class CalendarEventManager(
                                 },
                                 accountName = if (accountNameIndex >= 0) {
                                     cursor.getString(accountNameIndex)
+                                } else {
+                                    null
+                                },
+                                ownerAccount = if (ownerAccountIndex >= 0) {
+                                    cursor.getString(ownerAccountIndex)
                                 } else {
                                     null
                                 },
@@ -203,6 +210,7 @@ class CalendarEventManager(
             CalendarContract.Calendars.CALENDAR_DISPLAY_NAME,
             CalendarContract.Calendars.IS_PRIMARY,
             CalendarContract.Calendars.ACCOUNT_NAME,
+            CalendarContract.Calendars.OWNER_ACCOUNT,
             CalendarContract.Calendars.ACCOUNT_TYPE
         )
 

@@ -12,9 +12,37 @@ data class CalendarInfo(
     /** Empty when the provider supplies no name; the dropdown substitutes a placeholder. */
     val displayName: String,
     val accountName: String?,
+    val ownerAccount: String?,
     val accountType: String?,
     val isPrimary: Boolean
 )
+
+/**
+ * Identifies a calendar in a way that survives what a row id does not: provider id reuse, a
+ * reinstall, and a backup restored on another device signed into the same account.
+ *
+ * All three parts are needed. On a real device two rows shared the ownerAccount
+ * `pt.brazilian#holiday@group.v.calendar.google.com` — the same public holiday calendar subscribed
+ * under two different Google accounts — so [accountName] is what tells them apart.
+ */
+data class CalendarIdentity(
+    val accountType: String,
+    val accountName: String,
+    val ownerAccount: String
+)
+
+/**
+ * This calendar's stable identity, or null when the provider did not supply all three parts. A
+ * calendar without an identity can still be written to; it just cannot be remembered across a
+ * reinstall, so it is never matched against a stored preference.
+ */
+val CalendarInfo.identity: CalendarIdentity?
+    get() {
+        if (accountType.isNullOrBlank() || accountName.isNullOrBlank() || ownerAccount.isNullOrBlank()) {
+            return null
+        }
+        return CalendarIdentity(accountType, accountName, ownerAccount)
+    }
 
 /**
  * Orders calendars best-candidate-first: a Google account's primary calendar, then any other
@@ -31,12 +59,11 @@ fun List<CalendarInfo>.orderedByAutoPickPreference(): List<CalendarInfo> =
  * Picks the calendar events are written to.
  *
  * Falls back to the receiver's first entry — the best automatic candidate, provided the receiver is
- * ordered by [orderedByAutoPickPreference] — both when [preferredCalendarId] is null and when it
- * names a calendar that is no longer in the list, deleted or its account removed, so events keep
- * being written instead of silently stopping.
+ * ordered by [orderedByAutoPickPreference] — both when [preferred] is null and when it names a
+ * calendar that is no longer present, so events keep being written instead of silently stopping.
  */
-fun List<CalendarInfo>.resolvePreferred(preferredCalendarId: Long?): CalendarInfo? =
-    firstOrNull { it.id == preferredCalendarId } ?: firstOrNull()
+fun List<CalendarInfo>.resolvePreferred(preferred: CalendarIdentity?): CalendarInfo? =
+    preferred?.let { wanted -> firstOrNull { it.identity == wanted } } ?: firstOrNull()
 
 private fun CalendarInfo.autoPickScore(): Int {
     val isGoogle = accountType == GOOGLE_ACCOUNT_TYPE
