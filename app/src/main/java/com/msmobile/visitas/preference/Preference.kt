@@ -15,5 +15,7 @@ data class Preference(
     val visitListDistanceFilterOption: VisitListDistanceFilterOption,
     val visitMapEngineOption: VisitMapEngineOption = VisitMapEngineOption.MapLibre,
     val addVisitsToCalendar: Boolean = false,
-    val hasSeenAddVisitToCalendarMessage: Boolean = false
+    val hasSeenAddVisitToCalendarMessage: Boolean = false,
+    /** Null means "let the app pick" — see `resolvePreferred`. */
+    val preferredCalendarId: Long? = null
 )
