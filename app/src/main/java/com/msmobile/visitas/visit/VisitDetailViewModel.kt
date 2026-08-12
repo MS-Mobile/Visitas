@@ -1042,11 +1042,13 @@ class VisitDetailViewModel
         // calendar are left alone and re-enabling the setting keeps updating them instead of
         // creating duplicates.
         val preference = preferenceRepository.get()
+        val addVisitsToCalendar = preference.addVisitsToCalendar
+        val preferredCalendar = preference.preferredCalendar
         return visitList.map { visitState ->
-            val calendarEventId = if (preference.addVisitsToCalendar) {
+            val calendarEventId = if (addVisitsToCalendar) {
                 syncVisitCalendarEvent(
                     calendarEventId = visitState.calendarEventId,
-                    preferredCalendar = preference.preferredCalendar,
+                    preferredCalendar = preferredCalendar,
                     visitType = visitState.visitType.type,
                     subject = visitState.subject,
                     date = visitState.date,
