@@ -387,7 +387,7 @@ class VisitDetailViewModelTest {
 
         // Assert
         verifyBlocking(requireNotNull(syncVisitCalendarEventRef.value)) {
-            invoke(anyOrNull(), any(), any(), any(), any(), any())
+            invoke(anyOrNull(), anyOrNull(), any(), any(), any(), any(), any())
         }
     }
 
@@ -407,7 +407,7 @@ class VisitDetailViewModelTest {
 
         // Assert
         verifyBlocking(requireNotNull(syncVisitCalendarEventRef.value), never()) {
-            invoke(anyOrNull(), any(), any(), any(), any(), any())
+            invoke(anyOrNull(), anyOrNull(), any(), any(), any(), any(), any())
         }
     }
 

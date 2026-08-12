@@ -12,6 +12,7 @@ import com.msmobile.visitas.householder.Householder
 import com.msmobile.visitas.householder.HouseholderRepository
 import com.msmobile.visitas.householder.HouseholderSnapshot
 import com.msmobile.visitas.preference.PreferenceRepository
+import com.msmobile.visitas.preference.preferredCalendar
 import com.msmobile.visitas.util.AddressProvider
 import com.msmobile.visitas.util.CalendarEventManager
 import com.msmobile.visitas.util.ClipboardHandler
@@ -1033,14 +1034,19 @@ class VisitDetailViewModel
         householderName: String,
         visitList: List<VisitState>
     ): List<VisitState> {
-        // Read once for the whole batch rather than per visit. When calendar sync is off the
-        // existing event id is kept, so events already on the calendar are left alone and
-        // re-enabling the setting keeps updating them instead of creating duplicates.
-        val addVisitsToCalendar = preferenceRepository.get().addVisitsToCalendar
+        // The preference is read once for the whole batch rather than per visit. Note this does
+        // not batch the calendar-provider lookup: saveEvent still resolves the target calendar
+        // per event, as it did before calendar selection existed.
+        //
+        // When calendar sync is off the existing event id is kept, so events already on the
+        // calendar are left alone and re-enabling the setting keeps updating them instead of
+        // creating duplicates.
+        val preference = preferenceRepository.get()
         return visitList.map { visitState ->
-            val calendarEventId = if (addVisitsToCalendar) {
+            val calendarEventId = if (preference.addVisitsToCalendar) {
                 syncVisitCalendarEvent(
                     calendarEventId = visitState.calendarEventId,
+                    preferredCalendar = preference.preferredCalendar,
                     visitType = visitState.visitType.type,
                     subject = visitState.subject,
                     date = visitState.date,

@@ -11,6 +11,7 @@ class SyncVisitCalendarEventUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(
         calendarEventId: Long?,
+        preferredCalendar: CalendarIdentity?,
         visitType: VisitType,
         subject: String,
         date: LocalDateTime,
@@ -26,6 +27,7 @@ class SyncVisitCalendarEventUseCase @Inject constructor(
         }
         return calendarEventManager.saveEvent(
             eventId = calendarEventId,
+            calendar = preferredCalendar,
             title = title,
             description = subject,
             startTime = date,
