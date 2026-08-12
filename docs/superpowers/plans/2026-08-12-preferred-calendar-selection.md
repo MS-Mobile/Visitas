@@ -4,7 +4,16 @@
 
 **Goal:** Let the user choose which device calendar visit events are written to, via a dropdown in the Settings screen grouped with the existing "add visits to calendar" checkbox.
 
-**Architecture:** `Preference` gains a nullable `preferredCalendarId`; null means "auto-pick", preserving today's scoring. `CalendarEventManager` splits its single `getFirstCalendar()` query into a list query plus a resolver, and the resolution rule lives in one shared extension used by both the write path and the Settings ViewModel. The app's hardcoded event color is removed so events take their calendar's own color.
+> **Design changed during execution — read this first.** Tasks 1–4 are implemented and merged, but
+> *not* in the shape written below. The chosen calendar is identified by a
+> `CalendarIdentity(accountType, accountName, ownerAccount)` triple, **not** by a `Long` row id: a
+> provider row id is reused after a delete and names an unrelated calendar on another device, and a
+> reused id resolves *successfully* to the wrong calendar rather than failing, so nothing detects it.
+> The design spec — `docs/superpowers/specs/2026-08-12-preferred-calendar-selection-design.md` — is
+> the authority and is up to date. Task blocks below that still show `preferredCalendarId: Long?`
+> are historical; each remaining task is corrected in place before it is executed.
+
+**Architecture:** `Preference` stores the chosen calendar as a nullable `CalendarIdentity`; null means "auto-pick", preserving today's scoring. `CalendarEventManager` splits its single `getFirstCalendar()` query into a list query plus a resolver, and the resolution rule lives in one shared extension used by both the write path and the Settings ViewModel. The app's hardcoded event color is removed so events take their calendar's own color.
 
 **Tech Stack:** Kotlin, Jetpack Compose (Material 3), Room, Hilt, Mockito-Kotlin 6.3.0, Compose Preview screenshot tests.
 
@@ -598,7 +607,7 @@ to
             invoke(anyOrNull(), anyOrNull(), any(), any(), any(), any(), any())
 ```
 
-The second `anyOrNull()` is the new nullable `preferredCalendarId`.
+The second `anyOrNull()` is the new nullable `preferredCalendar`.
 
 - [ ] **Step 2: Run the tests to verify they fail**
 
@@ -616,7 +625,7 @@ class SyncVisitCalendarEventUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(
         calendarEventId: Long?,
-        preferredCalendarId: Long?,
+        preferredCalendar: CalendarIdentity?,
         visitType: VisitType,
         subject: String,
         date: LocalDateTime,
@@ -632,7 +641,7 @@ class SyncVisitCalendarEventUseCase @Inject constructor(
         }
         return calendarEventManager.saveEvent(
             eventId = calendarEventId,
-            calendarId = preferredCalendarId,
+            calendar = preferredCalendar,
             title = title,
             description = subject,
             startTime = date,
@@ -664,7 +673,7 @@ Replace `addOrUpdateVisits` (lines 1031-1058) with:
             val calendarEventId = if (preference.addVisitsToCalendar) {
                 syncVisitCalendarEvent(
                     calendarEventId = visitState.calendarEventId,
-                    preferredCalendarId = preference.preferredCalendarId,
+                    preferredCalendar = preference.preferredCalendar,
                     visitType = visitState.visitType.type,
                     subject = visitState.subject,
                     date = visitState.date,
@@ -693,7 +702,7 @@ Replace lines 259-272 with:
             val calendarEventId = if (preference.addVisitsToCalendar) {
                 syncVisitCalendarEvent(
                     calendarEventId = visitModel.calendarEventId,
-                    preferredCalendarId = preference.preferredCalendarId,
+                    preferredCalendar = preference.preferredCalendar,
                     visitType = visitModel.visitType,
                     subject = visitModel.subject,
                     date = visitModel.date,
