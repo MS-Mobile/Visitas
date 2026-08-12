@@ -13,6 +13,7 @@ import com.msmobile.visitas.util.CalendarIdentity
 import com.msmobile.visitas.util.CalendarInfo
 import com.msmobile.visitas.util.DispatcherProvider
 import com.msmobile.visitas.util.identity
+import com.msmobile.visitas.util.resolvePreferred
 import com.msmobile.visitas.visit.VisitMapEngineOption
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -88,7 +89,9 @@ class SettingsDetailViewModel @Inject constructor(
      */
     private suspend fun loadAvailableCalendars() {
         if (!calendarEventManager.hasCalendarPermission()) return
-        val calendars = calendarEventManager.getAvailableCalendars()
+        // A calendar whose provider omits part of its identity cannot be remembered across a
+        // restart, so offering it would be offering a control that silently does nothing.
+        val calendars = calendarEventManager.getAvailableCalendars().filter { it.identity != null }
         val preference = preferenceRepository.get()
         val stored = preference.preferredCalendar
         val isStale = stored != null && calendars.none { it.identity == stored }
@@ -156,9 +159,16 @@ class SettingsDetailViewModel @Inject constructor(
     }
 
     private fun calendarPermissionGranted() {
-        _uiState.update { it.copy(showCalendarPermissionDialog = false) }
-        saveAddVisitsToCalendar(enabled = true)
-        viewModelScope.launch(dispatchers.io) { loadAvailableCalendars() }
+        _uiState.update {
+            it.copy(showCalendarPermissionDialog = false, addVisitsToCalendar = true)
+        }
+        // One coroutine, ordered: enabling the setting must land before the calendar load, which
+        // does its own read-modify-write of the same row. Two coroutines here would both read the
+        // pre-write preference and the second write would silently revert the first.
+        viewModelScope.launch(dispatchers.io) {
+            persistAddVisitsToCalendar(enabled = true)
+            loadAvailableCalendars()
+        }
     }
 
     private fun calendarPermissionDenied() {
@@ -167,11 +177,12 @@ class SettingsDetailViewModel @Inject constructor(
     }
 
     private fun saveAddVisitsToCalendar(enabled: Boolean) {
-        viewModelScope.launch(dispatchers.io) {
-            val preference = preferenceRepository.get().copy(addVisitsToCalendar = enabled)
-            preferenceRepository.save(preference)
-        }
+        viewModelScope.launch(dispatchers.io) { persistAddVisitsToCalendar(enabled) }
         _uiState.update { it.copy(addVisitsToCalendar = enabled) }
+    }
+
+    private suspend fun persistAddVisitsToCalendar(enabled: Boolean) {
+        preferenceRepository.save(preferenceRepository.get().copy(addVisitsToCalendar = enabled))
     }
 
     private fun handleCreateBackup(successMessage: String, errorMessage: String) {
@@ -301,5 +312,9 @@ class SettingsDetailViewModel @Inject constructor(
         val showCalendarRationale: Boolean = false,
         val showCalendarPermissionDialog: Boolean = false,
         val versionName: String = ""
-    )
+    ) {
+        /** The calendar events actually go to — the chosen one, else the best automatic pick. */
+        val selectedCalendar: CalendarInfo?
+            get() = availableCalendars.resolvePreferred(preferredCalendar)
+    }
 }

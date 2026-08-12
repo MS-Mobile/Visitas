@@ -20,11 +20,14 @@ import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertNull
 import junit.framework.TestCase.assertTrue
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.test.StandardTestDispatcher
 import org.junit.Rule
 import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doSuspendableAnswer
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verifyBlocking
@@ -185,6 +188,53 @@ class SettingsDetailViewModelTest {
     }
 
     @Test
+    fun `onEvent with CalendarPermissionGranted does not let the calendar load revert the setting`() {
+        // Regression test for a race: enabling the setting and loading the calendar list each did an
+        // independent read-modify-write of the same preference row, from two separate coroutines.
+        // StandardTestDispatcher lets their get() calls interleave before either save() lands, the
+        // way real Room I/O on Dispatchers.IO can; UnconfinedTestDispatcher (used by
+        // mainDispatcherRule elsewhere in this file) runs everything eagerly to completion and
+        // cannot reproduce it. So this test builds its own dispatcher and a small stateful fake
+        // repository instead of going through createViewModel.
+        val testDispatcher = StandardTestDispatcher()
+        var stored = Preference(
+            visitListDateFilterOption = VisitListDateFilterOption.All,
+            visitListDistanceFilterOption = VisitListDistanceFilterOption.All,
+            addVisitsToCalendar = false
+        ).withPreferredCalendar(MINISTRY_CALENDAR.identity) // stale: not in availableCalendars below
+        val preferenceRepository = mock<PreferenceRepository> {
+            on { get() } doSuspendableAnswer {
+                // Snapshot before suspending, like a real query racing a concurrent write.
+                val snapshot = stored
+                delay(1)
+                snapshot
+            }
+            on { save(any()) } doSuspendableAnswer { invocation ->
+                stored = invocation.getArgument(0)
+            }
+        }
+        val calendarEventManager = mock<CalendarEventManager> {
+            on { hasCalendarPermission() } doReturn true
+            on { getAvailableCalendars() } doReturn listOf(PERSONAL_CALENDAR)
+        }
+        val viewModel = SettingsDetailViewModel(
+            preferenceRepository = preferenceRepository,
+            calendarEventManager = calendarEventManager,
+            backupHandler = mock(),
+            dispatchers = DispatcherProvider(io = testDispatcher),
+            appVersionProvider = AppVersionProvider
+        )
+
+        viewModel.onEvent(SettingsDetailViewModel.UiEvent.CalendarPermissionGranted)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(
+            "addVisitsToCalendar was reverted by a losing, stale write from loadAvailableCalendars",
+            stored.addVisitsToCalendar
+        )
+    }
+
+    @Test
     fun `onEvent with ViewCreated loads the available calendars when permission is granted`() {
         val viewModel = createViewModel(
             hasCalendarPermission = true,
@@ -218,14 +268,47 @@ class SettingsDetailViewModelTest {
 
     @Test
     fun `onEvent with ViewCreated keeps a chosen calendar that is still available`() {
+        val preferenceRepositoryRef = MockReferenceHolder<PreferenceRepository>()
         val viewModel = createViewModel(
             savedPreferredCalendar = MINISTRY_CALENDAR.identity,
-            availableCalendars = listOf(PERSONAL_CALENDAR, MINISTRY_CALENDAR)
+            availableCalendars = listOf(PERSONAL_CALENDAR, MINISTRY_CALENDAR),
+            preferenceRepositoryRef = preferenceRepositoryRef
         )
 
         viewModel.onEvent(SettingsDetailViewModel.UiEvent.ViewCreated)
 
         assertEquals(MINISTRY_CALENDAR.identity, viewModel.uiState.value.preferredCalendar)
+        verifyBlocking(requireNotNull(preferenceRepositoryRef.value), never()) { save(any()) }
+    }
+
+    @Test
+    fun `onEvent with ViewCreated excludes calendars whose provider omits part of their identity`() {
+        val unidentifiable = PERSONAL_CALENDAR.copy(id = 3L, accountName = null)
+        val viewModel = createViewModel(
+            availableCalendars = listOf(PERSONAL_CALENDAR, unidentifiable)
+        )
+
+        viewModel.onEvent(SettingsDetailViewModel.UiEvent.ViewCreated)
+
+        assertEquals(listOf(PERSONAL_CALENDAR), viewModel.uiState.value.availableCalendars)
+    }
+
+    @Test
+    fun `onEvent with CalendarPermissionGranted clears a chosen calendar that no longer exists`() {
+        val preferenceRepositoryRef = MockReferenceHolder<PreferenceRepository>()
+        val viewModel = createViewModel(
+            hasCalendarPermission = true,
+            savedPreferredCalendar = MINISTRY_CALENDAR.identity,
+            availableCalendars = listOf(PERSONAL_CALENDAR),
+            preferenceRepositoryRef = preferenceRepositoryRef
+        )
+
+        viewModel.onEvent(SettingsDetailViewModel.UiEvent.CalendarPermissionGranted)
+
+        assertNull(viewModel.uiState.value.preferredCalendar)
+        verifyBlocking(requireNotNull(preferenceRepositoryRef.value)) {
+            save(argThat { preferredCalendar == null })
+        }
     }
 
     @Test
