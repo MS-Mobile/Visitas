@@ -56,6 +56,7 @@ import com.msmobile.visitas.ui.theme.PreviewFoldable
 import com.msmobile.visitas.ui.views.PermissionRationaleSheet
 import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
+import com.msmobile.visitas.util.CalendarInfo
 import com.msmobile.visitas.util.DetailScreenStyle
 import com.msmobile.visitas.util.borderPadding
 import com.msmobile.visitas.util.cardInnerPadding
@@ -170,6 +171,17 @@ private fun SettingsScreenContent(
                 checked = uiState.addVisitsToCalendar,
                 onCheckedChange = { enabled ->
                     onEvent(SettingsDetailViewModel.UiEvent.AddVisitsToCalendarToggled(enabled))
+                }
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            CalendarSelectionDropdown(
+                calendars = uiState.availableCalendars,
+                selectedCalendar = uiState.selectedCalendar,
+                enabled = uiState.addVisitsToCalendar,
+                onCalendarSelected = { calendar ->
+                    onEvent(SettingsDetailViewModel.UiEvent.CalendarSelected(calendar))
                 }
             )
         }
@@ -351,6 +363,76 @@ private fun MapEngineDropdown(
             }
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CalendarSelectionDropdown(
+    calendars: List<CalendarInfo>,
+    selectedCalendar: CalendarInfo?,
+    enabled: Boolean,
+    onCalendarSelected: (CalendarInfo) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val emptyLabel = stringResource(R.string.settings_calendar_selection_empty)
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        // ExposedDropdownMenuBox has no `enabled` flag of its own: without this guard the menu
+        // still opens on tap while the checkbox is off.
+        onExpandedChange = { if (enabled) expanded = it },
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        OutlinedTextField(
+            // Shows the calendar events actually go to, so it never reads as "nothing selected"
+            // while events are being written to the automatic pick.
+            value = selectedCalendar?.label(emptyLabel) ?: emptyLabel,
+            onValueChange = {},
+            readOnly = true,
+            enabled = enabled,
+            label = { Text(text = stringResource(R.string.settings_calendar_selection_label)) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                .fillMaxWidth()
+        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            calendars.forEach { calendar ->
+                DropdownMenuItem(
+                    text = {
+                        Column {
+                            Text(text = calendar.label(emptyLabel))
+                            // Two calendars on different accounts can share a display name.
+                            if (!calendar.accountName.isNullOrBlank()) {
+                                Text(
+                                    text = calendar.accountName,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    },
+                    onClick = {
+                        onCalendarSelected(calendar)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+/**
+ * `displayName` is empty when the provider supplies no name for a calendar — rare, but it would
+ * otherwise render as a blank row identifiable only by its account. Falls back to the account name,
+ * then to the same placeholder an empty list gets.
+ */
+private fun CalendarInfo.label(fallback: String): String = when {
+    displayName.isNotBlank() -> displayName
+    !accountName.isNullOrBlank() -> accountName
+    else -> fallback
 }
 
 @VisibleForTesting
