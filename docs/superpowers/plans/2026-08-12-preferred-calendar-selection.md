@@ -28,7 +28,7 @@ Three things that will bite you if you skip them:
 2. **Screenshot baselines are gated.** This feature adds an always-visible dropdown to the Settings screen, so **every** Settings reference PNG changes, not just the new one. See Task 8.
 3. **A pre-commit hook fires on `VisitasDatabase.kt`.** It runs `BackupHandlerTest`, which needs a connected device/emulator. Have one running before the Task 4 commit.
 
-**Test command form:** `./gradlew test` runs unit tests. In PowerShell use `.\gradlew.bat test`. If `./gradlew` fails at *"Downloading gradle-…-bin.zip … 403 Forbidden"*, you are in a Claude Code web/remote session — do not work around it; push the branch and read results off the PR Build check run (see `AGENTS.md` § "No Gradle in Claude Code web/remote sessions").
+**Test command form:** `./gradlew test` runs the whole unit-test suite. To run a single test class you must use the per-variant task — `./gradlew testDebugUnitTest --tests "fully.qualified.ClassName"` — because `test` is an aggregate lifecycle task and rejects `--tests` with "Unknown command-line option". In PowerShell use `.\gradlew.bat` instead of `./gradlew`. If `./gradlew` fails at *"Downloading gradle-…-bin.zip … 403 Forbidden"*, you are in a Claude Code web/remote session — do not work around it; push the branch and read results off the PR Build check run (see `AGENTS.md` § "No Gradle in Claude Code web/remote sessions").
 
 **Branch:** work on `preferred-calendar-selection`, which already holds the design spec.
 
@@ -217,7 +217,7 @@ class CalendarSelectionTest {
 
 - [ ] **Step 2: Run the test to verify it fails**
 
-Run: `./gradlew test --tests "com.msmobile.visitas.util.CalendarSelectionTest"`
+Run: `./gradlew testDebugUnitTest --tests "com.msmobile.visitas.util.CalendarSelectionTest"`
 Expected: FAIL — compilation error, `Unresolved reference: CalendarInfo`.
 
 - [ ] **Step 3: Write the implementation**
@@ -256,7 +256,7 @@ fun List<CalendarInfo>.resolvePreferred(preferredCalendarId: Long?): CalendarInf
 
 - [ ] **Step 4: Run the test to verify it passes**
 
-Run: `./gradlew test --tests "com.msmobile.visitas.util.CalendarSelectionTest"`
+Run: `./gradlew testDebugUnitTest --tests "com.msmobile.visitas.util.CalendarSelectionTest"`
 Expected: PASS, 4 tests.
 
 - [ ] **Step 5: Commit**
@@ -568,7 +568,7 @@ The second `anyOrNull()` is the new nullable `preferredCalendarId`.
 
 - [ ] **Step 2: Run the tests to verify they fail**
 
-Run: `./gradlew test --tests "com.msmobile.visitas.visit.VisitDetailViewModelTest"`
+Run: `./gradlew testDebugUnitTest --tests "com.msmobile.visitas.visit.VisitDetailViewModelTest"`
 Expected: FAIL — compilation error, `Too many arguments for public open suspend operator fun invoke(...)`.
 
 - [ ] **Step 3: Add the parameter to the use case**
@@ -900,7 +900,7 @@ import junit.framework.TestCase.assertNull
 
 - [ ] **Step 3: Run the tests to verify they fail**
 
-Run: `./gradlew test --tests "com.msmobile.visitas.settings.SettingsDetailViewModelTest"`
+Run: `./gradlew testDebugUnitTest --tests "com.msmobile.visitas.settings.SettingsDetailViewModelTest"`
 Expected: FAIL — compilation errors, `Unresolved reference: availableCalendars` and `Unresolved reference: CalendarSelected`.
 
 - [ ] **Step 4: Add the state and event**
@@ -1005,7 +1005,7 @@ Replace `calendarPermissionGranted()` (lines 116-119) with:
 
 - [ ] **Step 6: Run the tests to verify they pass**
 
-Run: `./gradlew test --tests "com.msmobile.visitas.settings.SettingsDetailViewModelTest"`
+Run: `./gradlew testDebugUnitTest --tests "com.msmobile.visitas.settings.SettingsDetailViewModelTest"`
 Expected: PASS — the 7 new tests plus the 11 that already existed.
 
 - [ ] **Step 7: Commit**
