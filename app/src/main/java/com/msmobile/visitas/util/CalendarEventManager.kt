@@ -42,7 +42,9 @@ class CalendarEventManager(
         val endMillis = startMillis + duration.toMillis()
 
         // EVENT_COLOR_KEY is deliberately not written: an event with no color of its own renders
-        // in the color of the calendar it belongs to, which is what the user picked in Settings.
+        // in the color of the calendar it belongs to. Note this block also feeds updateEvent, and
+        // omitting the column leaves any key an existing event already carries untouched — events
+        // created before this change keep their old color, which is intended.
         val values = ContentValues().apply {
             put(CalendarContract.Events.CALENDAR_ID, calendar.id)
             put(CalendarContract.Events.TITLE, eventTitle)
