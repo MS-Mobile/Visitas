@@ -10,7 +10,7 @@ dedicated ministry calendar — cannot direct visits anywhere but the one the ap
 ## Goal
 
 Add a calendar dropdown to the Settings screen, grouped with the existing "add visits to calendar"
-checkbox, listing the device's writable calendars. Persist the choice as `preferredCalendarId` and
+checkbox, listing the device's writable calendars. Persist the choice as a stable calendar identity and
 use it on the write path. Drop the app's custom event color so events take the color of whichever
 calendar the user picked.
 
@@ -29,7 +29,7 @@ feature only picks among them.
 
 ## Behavior
 
-**Fallback is silent and automatic.** `preferredCalendarId` is nullable. Null means "auto-pick" and
+**Fallback is silent and automatic.** The stored identity is nullable. Null means "auto-pick" and
 keeps today's scoring. A stored id that is no longer writable (calendar deleted, account removed)
 also falls back to auto-pick, so events never silently stop being written. The dead id is cleared
 lazily by the Settings screen when it loads the list — never on the write path, so a save never
@@ -44,27 +44,47 @@ selected" while events are in fact being written somewhere. When the list is emp
 yet, or no writable calendars — it shows a "No calendar available" placeholder. One string covers
 both cases honestly.
 
-**Backup restore drops the chosen calendar.** `preferredCalendarId` holds a `CalendarContract`
-row id, assigned by the device's calendar provider. Restore the same backup on another device and
-that integer very likely names a different calendar there — and `resolvePreferred` matches on id
-alone, so it resolves cleanly and writes visits into a calendar the user never picked. The
-nullable fallback covers "id not found"; this is "id found, wrong calendar", which nothing can
-detect after the fact. So `BackupHandler.restoreDataFrom` clears the field and the restored install
-falls back to the automatic pick. Re-picking costs the user one tap; the alternative silently files
-appointments into a shared or work calendar.
+**A backup carries the choice safely.** Because the identity is account-based rather than a row id,
+`BackupHandler.restoreDataFrom` copies it verbatim. On a device signed into the same account it
+names the same calendar, so the user's choice survives moving to a new phone. Anywhere else it
+simply fails to match and the app falls back to the automatic pick. No special-casing is needed in
+the backup path — the identity is what makes that true.
 
 ## Design
 
 ### Persistence
 
-`Preference` gains `val preferredCalendarId: Long? = null`. Room bumps to schema **v15** with
+**The chosen calendar is identified by account, not by row id.** `CalendarContract.Calendars._ID` is
+assigned by the device's calendar provider: it is reused after a calendar is deleted, and the same
+integer names an unrelated calendar on another device. Remembering one risks writing visits into a
+calendar the user never picked — and worse, that failure is undetectable, because a reused id
+resolves *successfully* to the wrong calendar rather than failing to resolve.
+
+Querying a real device settled what a stable identity looks like:
+
+- `OWNER_ACCOUNT` is populated for every calendar and is globally meaningful — an account's primary
+  calendar owns its own address, a shared one looks like `family1753…@group.calendar.google.com`.
+- `OWNER_ACCOUNT` alone is **not** unique. That device had two rows sharing
+  `pt.brazilian#holiday@group.v.calendar.google.com` — one public holiday calendar subscribed under
+  two different Google accounts. `ACCOUNT_NAME` is what separates them.
+- `_SYNC_ID` was NULL on every Google calendar, so it is useless here.
+
+So the identity is the triple `(ACCOUNT_TYPE, ACCOUNT_NAME, OWNER_ACCOUNT)`, modelled as
+`CalendarIdentity` and stored as three nullable columns. Room bumps to schema **v15** with
 `Migration_14_15`:
 
 ```sql
-ALTER TABLE `preference` ADD COLUMN `preferredCalendarId` INTEGER
+ALTER TABLE `preference` ADD COLUMN `preferredCalendarAccountType` TEXT
+ALTER TABLE `preference` ADD COLUMN `preferredCalendarAccountName` TEXT
+ALTER TABLE `preference` ADD COLUMN `preferredCalendarOwnerAccount` TEXT
 ```
 
-Nullable with no default — null is the meaningful "auto-pick" value, not a placeholder.
+All nullable with no default — null is the meaningful "auto-pick" value, not a placeholder. The
+three columns are an implementation detail: `Preference.preferredCalendar` and
+`Preference.withPreferredCalendar(…)` are how the rest of the app reads and writes the choice.
+
+A calendar whose provider omits any part of the triple has no identity and is simply never matched
+against a stored preference. It can still be written to as the automatic pick.
 
 ### `CalendarEventManager`
 
@@ -73,29 +93,31 @@ the write path needs one winner, so split them:
 
 - `private fun queryWritableCalendars(): List<CalendarInfo>` — the existing selection
   (`CALENDAR_ACCESS_LEVEL >= CAL_ACCESS_CONTRIBUTOR AND VISIBLE = 1 AND SYNC_EVENTS = 1`) unchanged,
-  plus `CALENDAR_DISPLAY_NAME` in the projection. It maps the cursor and delegates ranking to
-  `orderedByAutoPickPreference()`, so the auto-pick candidate is always first.
-- `private fun resolveCalendar(preferredCalendarId: Long?): CalendarInfo?` — delegates to
+  plus `CALENDAR_DISPLAY_NAME` and `OWNER_ACCOUNT` in the projection. It maps the cursor and
+  delegates ranking to `orderedByAutoPickPreference()`, so the auto-pick candidate is always first.
+- `private fun resolveCalendar(preferred: CalendarIdentity?): CalendarInfo?` — delegates to
   `resolvePreferred` (below). Replaces `getFirstCalendar()`, which is removed.
 - `suspend fun getAvailableCalendars(): List<CalendarInfo>` — public; returns `emptyList()` without
-  `READ_CALENDAR`.
-- `saveEvent(…, calendarId: Long? = null)` routes through `resolveCalendar`. The default argument
-  keeps existing call sites compiling with today's behavior.
+  `READ_CALENDAR`, and also on a provider error, which is logged.
+- `saveEvent(…, calendar: CalendarIdentity? = null)` routes through `resolveCalendar`. The default
+  argument keeps existing call sites compiling with today's behavior.
 
-`CalendarInfo` becomes public and gains a display name and the primary flag:
+`CalendarInfo` becomes public and gains a display name, the owner account, and the primary flag:
 
 ```kotlin
 data class CalendarInfo(
     val id: Long,
     val displayName: String,
     val accountName: String?,
+    val ownerAccount: String?,
     val accountType: String?,
     val isPrimary: Boolean
 )
 ```
 
-`accountType` and `isPrimary` stay as the inputs to the automatic ranking; `accountName` stays as the
-dropdown's secondary label.
+`accountType` and `isPrimary` are the inputs to the automatic ranking; `accountName` doubles as the
+dropdown's secondary label and as part of the identity; `ownerAccount` completes the identity. `id`
+is still carried because the provider needs it to write the event — it is simply never persisted.
 
 `calculateCalendarScore` and `GOOGLE_ACCOUNT_TYPE` leave `CalendarEventManager` entirely — the
 ranking moves to `CalendarSelection.kt` (below), which leaves this class holding only what genuinely
@@ -136,9 +158,13 @@ actually be wrong sitting untested inside a `ContentResolver` wrapper:
 fun List<CalendarInfo>.orderedByAutoPickPreference(): List<CalendarInfo> =
     sortedByDescending { it.autoPickScore() }
 
-fun List<CalendarInfo>.resolvePreferred(preferredCalendarId: Long?): CalendarInfo? =
-    firstOrNull { it.id == preferredCalendarId } ?: firstOrNull()
+fun List<CalendarInfo>.resolvePreferred(preferred: CalendarIdentity?): CalendarInfo? =
+    preferred?.let { wanted -> firstOrNull { it.identity == wanted } } ?: firstOrNull()
 ```
+
+The `preferred?.let { }` wrapper is load-bearing. A plain `firstOrNull { it.identity == preferred }`
+would, when no calendar is chosen, match the first calendar that happens to *have* no identity —
+returning an arbitrary calendar instead of falling back to the best-ranked one.
 
 `CalendarEventManager.resolveCalendar` and `SettingsDetailViewModel` both call `resolvePreferred`;
 `queryWritableCalendars` is the sole caller of `orderedByAutoPickPreference`. One rule, one test
@@ -152,9 +178,9 @@ calendars, relocating their events on upgrade with no warning.
 
 ### Write path
 
-`SyncVisitCalendarEventUseCase.invoke` gains `preferredCalendarId: Long?` and forwards it to
-`saveEvent`. Both call sites — `VisitDetailViewModel.kt:1039` and `VisitListViewModel.kt:261` —
-already read `Preference` before invoking the use case, so they pass `preference.preferredCalendarId`
+`SyncVisitCalendarEventUseCase.invoke` gains `preferredCalendar: CalendarIdentity?` and forwards it
+to `saveEvent`. Both call sites — `VisitDetailViewModel.kt:1039` and `VisitListViewModel.kt:261` —
+already read `Preference` before invoking the use case, so they pass `preference.preferredCalendar`
 with no extra query.
 
 ### Settings UI
@@ -175,14 +201,14 @@ display name only.
 ### `SettingsDetailViewModel`
 
 `UiState` gains `availableCalendars: List<CalendarInfo> = emptyList()` and
-`preferredCalendarId: Long? = null`. A new `UiEvent.CalendarSelected(calendarId: Long)` persists
-`preference.copy(preferredCalendarId = …)` and updates state, following the shape of
-`mapEngineSelected`.
+`preferredCalendar: CalendarIdentity? = null`. A new `UiEvent.CalendarSelected(calendar: CalendarInfo)`
+persists `preference.withPreferredCalendar(calendar.identity)` and updates state, following the shape
+of `mapEngineSelected`.
 
 The list loads in `viewCreated()` when `hasCalendarPermission()` is true, and again in
 `calendarPermissionGranted()` after `saveAddVisitsToCalendar` — so enabling the checkbox populates
-the dropdown in the same pass. Both load paths perform the lazy stale-id clear: if a stored id is
-absent from the freshly loaded list, persist null.
+the dropdown in the same pass. Both load paths perform the lazy stale-choice clear: if a stored
+identity matches nothing in the freshly loaded list, persist null.
 
 ## Testing
 
@@ -190,25 +216,31 @@ absent from the freshly loaded list, persist null.
 neither the ranking nor the fallback has ever been directly tested. Moving both into
 `CalendarSelection.kt` makes the whole selection policy testable without a provider.
 
-**`resolvePreferred`** (new test): preferred id present → returns it; preferred id absent (stale) →
-returns first; preferred null → returns first; empty list → null; and a case pinning that it trusts
-the receiver's order rather than re-ranking, so slipping a sort in at a call site fails loudly
-instead of showing one calendar while writing to another.
+**`resolvePreferred`** (new test): preferred identity present → returns it; absent → returns first;
+preferred null → returns first; empty list → null; a case pinning that it trusts the receiver's
+order rather than re-ranking, so slipping a sort in at a call site fails loudly instead of showing
+one calendar while writing to another; and the two cases that justify identity at all — the same
+shared calendar subscribed under two accounts stays distinguishable, and a calendar whose row id
+changed still matches. Plus the null-preference trap: a calendar with no identity must not be
+matched when nothing is chosen.
 
 **`orderedByAutoPickPreference`** (new test): Google primary ranks first; a secondary Google calendar
 outranks a non-Google primary; equal-ranked calendars keep provider order (the stability guarantee
 above); an empty list comes back empty.
 
 **`SettingsDetailViewModelTest`** (existing Mockito + `createViewModel(...)` + `MockReferenceHolder`
-pattern; `createViewModel` gains `availableCalendars` and `savedPreferredCalendarId` parameters):
+pattern; `createViewModel` gains `availableCalendars` and `savedPreferredCalendar` parameters):
 
 - `ViewCreated` with permission granted loads the calendars into state
 - `ViewCreated` without permission leaves the list empty and never calls `getAvailableCalendars`
   (`verifyBlocking(…, never())`)
-- `ViewCreated` with a stored id absent from the list saves the preference with
-  `preferredCalendarId = null` (`argThat`)
-- `CalendarSelected` updates state and persists the id
+- `ViewCreated` with a stored identity matching nothing in the list saves the preference with the
+  choice cleared (`argThat`)
+- `CalendarSelected` updates state and persists the identity
 - `CalendarPermissionGranted` loads the list
+
+**`BackupHandlerTest`** (instrumented): a restored backup keeps the chosen calendar, since the
+identity stays meaningful across the trip — the case that a row id could not have satisfied.
 
 **Expected fallout:** `SyncVisitCalendarEventUseCase.invoke` gains a parameter, so verification
 blocks in `VisitDetailViewModelTest` and `VisitListViewModelTest` need the extra argument. A `= null`
@@ -219,7 +251,9 @@ worth faking:
 
 - an event actually lands in a non-default, cross-account calendar, rendered in that calendar's
   color;
-- the dropdown is inert while the checkbox is off.
+- the dropdown is inert while the checkbox is off;
+- a chosen calendar is still chosen after the app is force-stopped and reopened, proving the
+  identity round-trips through the provider rather than merely through memory.
 
 ## Gated artifacts
 
