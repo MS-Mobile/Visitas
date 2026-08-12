@@ -652,9 +652,13 @@ Replace `addOrUpdateVisits` (lines 1031-1058) with:
         householderName: String,
         visitList: List<VisitState>
     ): List<VisitState> {
-        // Read once for the whole batch rather than per visit. When calendar sync is off the
-        // existing event id is kept, so events already on the calendar are left alone and
-        // re-enabling the setting keeps updating them instead of creating duplicates.
+        // The preference is read once for the whole batch rather than per visit. Note this does
+        // not batch the calendar-provider lookup: saveEvent still resolves the target calendar
+        // per event, as it did before calendar selection existed.
+        //
+        // When calendar sync is off the existing event id is kept, so events already on the
+        // calendar are left alone and re-enabling the setting keeps updating them instead of
+        // creating duplicates.
         val preference = preferenceRepository.get()
         return visitList.map { visitState ->
             val calendarEventId = if (preference.addVisitsToCalendar) {
@@ -1107,6 +1111,7 @@ private fun CalendarSelectionDropdown(
     // The field shows the calendar events actually go to, not the raw stored id, so it never reads
     // as "nothing selected" while events are being written to the automatic choice.
     val selectedCalendar = calendars.resolvePreferred(preferredCalendarId)
+    val emptyLabel = stringResource(R.string.settings_calendar_selection_empty)
     ExposedDropdownMenuBox(
         expanded = expanded,
         // ExposedDropdownMenuBox has no `enabled` flag of its own: without this guard the menu
@@ -1115,8 +1120,7 @@ private fun CalendarSelectionDropdown(
         modifier = Modifier.fillMaxWidth()
     ) {
         OutlinedTextField(
-            value = selectedCalendar?.displayName
-                ?: stringResource(R.string.settings_calendar_selection_empty),
+            value = selectedCalendar?.label(emptyLabel) ?: emptyLabel,
             onValueChange = {},
             readOnly = true,
             enabled = enabled,
@@ -1134,7 +1138,7 @@ private fun CalendarSelectionDropdown(
                 DropdownMenuItem(
                     text = {
                         Column {
-                            Text(text = calendar.displayName)
+                            Text(text = calendar.label(emptyLabel))
                             // Two calendars on different accounts can share a display name.
                             if (!calendar.accountName.isNullOrBlank()) {
                                 Text(
@@ -1154,7 +1158,20 @@ private fun CalendarSelectionDropdown(
         }
     }
 }
+
+/**
+ * `displayName` is empty when the provider supplies no name for a calendar — rare, but it would
+ * otherwise render as a blank row identifiable only by its account. Falls back to the account name,
+ * then to the same placeholder an empty list gets.
+ */
+private fun CalendarInfo.label(fallback: String): String = when {
+    displayName.isNotBlank() -> displayName
+    !accountName.isNullOrBlank() -> accountName
+    else -> fallback
+}
 ```
+
+That `label` helper is what makes `CalendarInfo.displayName`'s KDoc ("the dropdown substitutes a placeholder") true — without it the doc asserts behavior nothing implements.
 
 Add these imports:
 
