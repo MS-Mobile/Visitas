@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.res.stringResource
 import com.msmobile.visitas.R
+import com.msmobile.visitas.ui.views.WEB_VIEW_ASSET_BASE_URL
 import com.msmobile.visitas.ui.views.WebView
 import com.msmobile.visitas.ui.views.WebViewViewBridge
 @Composable
@@ -39,7 +40,6 @@ fun VisitsMap(
         isJavaScriptEnabled = true,
         isZoomEnabled = true,
         isDomStorageEnabled = true,
-        isFileAccessAllowed = true,
         onInitializationComplete = { webViewBridge ->
             webViewBridgeState.value = webViewBridge
             val initScript = "initializeMap('${currentLocationText}', $isDarkTheme);"
@@ -65,6 +65,6 @@ sealed class VisitsMapEvent {
  * file documents its own conversion.
  */
 private fun assetPath(engine: VisitMapEngineOption) = when (engine) {
-    VisitMapEngineOption.MapLibre -> "file:///android_asset/map/maplibre/visits-map.html"
-    VisitMapEngineOption.Leaflet -> "file:///android_asset/map/leaflet/visits-map.html"
+    VisitMapEngineOption.MapLibre -> "${WEB_VIEW_ASSET_BASE_URL}map/maplibre/visits-map.html"
+    VisitMapEngineOption.Leaflet -> "${WEB_VIEW_ASSET_BASE_URL}map/leaflet/visits-map.html"
 }

@@ -185,6 +185,7 @@ dependencies {
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
     implementation(libs.androidx.security.crypto)
+    implementation(libs.webkit)
     implementation(platform(libs.kotlinx.coroutines.bom))
     implementation(platform(libs.sentry.bom))
     implementation(libs.sentry.android)

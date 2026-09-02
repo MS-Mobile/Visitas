@@ -14,8 +14,17 @@
 </head>
 <body>
 <div id="map"></div>
-<script src="maplibre-gl.js"></script>
 <script>
+    // MapLibre v6 ships an ES module only: there is no `maplibre-gl.js` UMD build any more, and
+    // so no automatic `maplibregl` global. The module tag at the end of this file imports it and
+    // settles this promise. Everything below waits on it rather than assuming the library is
+    // already there, because module scripts are deferred and Kotlin can call in before the
+    // import has landed.
+    const mapLibreReady = new Promise((resolve, reject) => {
+        window.__resolveMapLibre = (lib) => { window.maplibregl = lib; resolve(lib); };
+        window.__rejectMapLibre = reject;
+    });
+
     // Vector map styles. Dark mode uses a genuinely dark-styled basemap
     // (proper dark land/water/roads with readable labels) rather than a
     // brightness/inversion filter over the light style.
@@ -46,9 +55,9 @@
         try {
             log('Initializing map');
 
-            if (typeof maplibregl === 'undefined') {
-                throw new Error('MapLibre GL library not loaded');
-            }
+            // Resolves once the module tag below has imported the library, and rejects if that
+            // import failed - the catch turns either outcome into onMapInitializationError.
+            await mapLibreReady;
 
             labels.currentLocation = currentLocationText;
             isDarkMode = !!darkMode;
@@ -110,12 +119,10 @@
     // so every coordinate handed to it below must be swapped to [longitude, latitude].
     async function setMarkers(latitude, longitude, visits) {
         try {
-            if (!map) {
-                logError('Map not initialized');
-                return;
-            }
-
-            if (!routeAdded) {
+            // Kotlin fires setMarkers right after initializeMap returns, which now happens
+            // while the module import may still be in flight, so `map` need not exist yet.
+            // Both the pre-map and pre-route cases stash; the map's `load` handler drains them.
+            if (!map || !routeAdded) {
                 pendingSetMarkers = { latitude, longitude, visits };
                 return;
             }
@@ -237,6 +244,15 @@
             window.Visits.onMapInitializationError(message);
         }
     };
+</script>
+<script type="module">
+    // A dynamic import so a failed load is catchable and reaches the same error path as any
+    // other map failure, rather than dying silently as an uncaught module script error.
+    try {
+        window.__resolveMapLibre(await import('./maplibre-gl.mjs'));
+    } catch (error) {
+        window.__rejectMapLibre(error);
+    }
 </script>
 </body>
 </html>
