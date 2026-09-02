@@ -36,6 +36,7 @@ screenshot-validation-api = "0.0.1-alpha16"
 security-crypto = "1.1.0"
 sentry = "8.53.0"
 sentry-gradle-plugin = "6.19.0"
+webkit = "1.17.0"
 
 [libraries]
 activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activity-compose" }
@@ -92,6 +93,7 @@ ui = { group = "androidx.compose.ui", name = "ui", version.ref = "compose" }
 ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics", version.ref = "compose" }
 ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling", version.ref = "compose" }
 ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview", version.ref = "compose" }
+webkit = { group = "androidx.webkit", name = "webkit", version.ref = "webkit" }
 
 [plugins]
 androidx-room = { id = "androidx.room", version.ref = "room" }

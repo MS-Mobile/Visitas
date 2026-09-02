@@ -1,0 +1,14 @@
+# Vendored map libraries are committed verbatim so a checkout can be verified against the
+# upstream release (e.g. md5sum against MapLibre's dist.zip or unpkg's leaflet-global.js).
+#
+# The committed blobs already match upstream byte for byte. What breaks verification is
+# core.autocrlf, which rewrites them to CRLF on checkout, so every locally computed hash
+# disagrees with upstream even though the repo content is correct. `-text` disables that
+# conversion in both directions and leaves the blobs untouched.
+#
+# Only third-party bundles belong here. Our own page, visits-map.html, is ordinary text and
+# is deliberately not listed.
+app/src/main/assets/map/maplibre/maplibre-gl*.mjs -text
+app/src/main/assets/map/maplibre/maplibre-gl.css  -text
+app/src/main/assets/map/leaflet/leaflet-*.js      -text
+app/src/main/assets/map/leaflet/leaflet-*.css     -text
