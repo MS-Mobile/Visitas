@@ -105,7 +105,7 @@ constructor(
             .flowOn(dispatchers.io)
             .launchIn(viewModelScope)
         uiState
-            .map(::needsUserLocation)
+            .map { state -> needsUserLocation(state) && hasLocationPermission() }
             .distinctUntilChanged()
             .onEach(::updateLocationTracking)
             .launchIn(viewModelScope)
@@ -161,6 +161,10 @@ constructor(
             showVisitMapAfterPermission = false
             handleVisitMapSheetClicked()
         }
+
+        // A grant changes no UiState of its own, and the screen that asked for location may
+        // already be showing, so the flow above has nothing new to react to. Reconcile here too.
+        updateLocationTracking(needsUserLocation(_uiState.value) && hasLocationPermission())
     }
 
     private fun handleDistanceBottomSheetConfirmed() {
@@ -500,8 +504,7 @@ constructor(
         return state.showNearbyVisits || state.showVisitMapSheet
     }
 
-    private fun updateLocationTracking(needsUserLocation: Boolean) {
-        val shouldTrack = needsUserLocation && hasLocationPermission()
+    private fun updateLocationTracking(shouldTrack: Boolean) {
         if (shouldTrack == userLocationProvider.isTracking.value) return
         if (shouldTrack) {
             startTrackingLocation()

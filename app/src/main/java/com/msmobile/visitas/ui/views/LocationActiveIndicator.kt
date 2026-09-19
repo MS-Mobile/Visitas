@@ -62,6 +62,9 @@ import kotlin.time.TimeSource
  * Nothing about where it sits belongs here — the caller anchors it (above the floating bar on the
  * visit list, at the top of the visits map), so neither surface has to know about the other.
  *
+ * The caller supplies the sentence TalkBack reads: the reason differs by surface, and only the
+ * caller knows whether the nearby filter or the map turned tracking on.
+ *
  * The icon never leaves. The collapsed state is the one the user looks at the longest, and a
  * coloured dot on its own would carry the whole meaning in colour — the shape keeps it legible in
  * greyscale and with colour vision deficiency.
@@ -69,11 +72,16 @@ import kotlin.time.TimeSource
 @Composable
 fun LocationActiveIndicator(
     isTracking: Boolean,
+    contentDescription: String,
     modifier: Modifier = Modifier
 ) {
     val startsCollapsed = LocalDensity.current.fontScale > COLLAPSE_FONT_SCALE
-    var isShown by remember { mutableStateOf(false) }
-    var isExpanded by remember { mutableStateOf(false) }
+    // Previews and screenshot tests never run the effect below, so the indicator would render as
+    // nothing at all and the list baselines would not show it. They open on the state the user
+    // spends the first seconds looking at instead.
+    val isInspecting = LocalInspectionMode.current
+    var isShown by remember { mutableStateOf(isTracking && isInspecting) }
+    var isExpanded by remember { mutableStateOf(isTracking && isInspecting) }
     var shownAt by remember { mutableStateOf<TimeMark?>(null) }
 
     LaunchedEffect(isTracking, startsCollapsed) {
@@ -110,7 +118,10 @@ fun LocationActiveIndicator(
         exit = fadeOut(animationSpec = tween(EXIT_DURATION_MILLIS)) +
             scaleOut(animationSpec = tween(EXIT_DURATION_MILLIS), targetScale = EXIT_SCALE)
     ) {
-        LocationActiveIndicatorPill(isExpanded = isExpanded)
+        LocationActiveIndicatorPill(
+            isExpanded = isExpanded,
+            contentDescription = contentDescription
+        )
     }
 }
 
@@ -120,15 +131,15 @@ fun LocationActiveIndicator(
 @Composable
 internal fun LocationActiveIndicatorPill(
     isExpanded: Boolean,
+    contentDescription: String,
     modifier: Modifier = Modifier
 ) {
-    val description = stringResource(R.string.location_active_indicator_content_description)
     Row(
         modifier = modifier
             // Collapsing is visual, not semantic: TalkBack reads the same sentence either way,
             // once, without interrupting whatever is being read.
             .semantics(mergeDescendants = true) {
-                this.contentDescription = description
+                this.contentDescription = contentDescription
                 liveRegion = LiveRegionMode.Polite
             }
             .heightIn(min = INDICATOR_HEIGHT)
@@ -237,6 +248,9 @@ internal fun LocationActiveIndicatorPreview(
     @PreviewParameter(LocationActiveIndicatorPreviewConfigProvider::class) config: LocationActiveIndicatorPreviewConfig
 ) {
     VisitasTheme(config.isDarkMode) {
-        LocationActiveIndicatorPill(isExpanded = config.isExpanded)
+        LocationActiveIndicatorPill(
+            isExpanded = config.isExpanded,
+            contentDescription = stringResource(R.string.location_active_indicator_nearby_content_description)
+        )
     }
 }

@@ -156,5 +156,6 @@
     <string name="navigate_back_content_description">Voltar</string>
     <string name="app_version">Versão %1$s</string>
     <string name="location_active_indicator_label">Localização ativa</string>
-    <string name="location_active_indicator_content_description">Sua localização está sendo usada para mostrar visitas próximas.</string>
+    <string name="location_active_indicator_nearby_content_description">Sua localização está sendo usada para mostrar visitas próximas.</string>
+    <string name="location_active_indicator_map_content_description">Sua localização está sendo usada para mostrar onde você está no mapa.</string>
 </resources>

@@ -51,6 +51,10 @@ class UserLocationProvider(private val context: Context) {
             location?.let {
                 _location.value = UserLocation.Available(it.latitude, it.longitude)
             }
+            // The last known position arrives a beat later, and the screen that asked for it may
+            // already be gone by then. Without this check a start/stop inside that window would
+            // register a callback nobody stops afterwards: updates running with isTracking false.
+            if (!_isTracking.value) return@addOnSuccessListener
             fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null)
         }
     }

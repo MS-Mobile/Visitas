@@ -31,6 +31,7 @@ import org.mockito.kotlin.verifyBlocking
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicBoolean
 
 class VisitListViewModelTest {
     @get:Rule
@@ -591,10 +592,62 @@ class VisitListViewModelTest {
         assertFalse(viewModel.uiState.value.isTrackingLocation)
     }
 
+    @Test
+    fun `granting the permission starts tracking for a screen already asking for it`() {
+        // Arrange
+        val providerRef = MockReferenceHolder<UserLocationProvider>()
+        val permissionState = AtomicBoolean(false)
+        val viewModel = createViewModel(
+            hasLocationPermission = false,
+            locationPermissionState = permissionState,
+            userLocationProviderRef = providerRef,
+            visitListDistanceFilterOption = VisitListDistanceFilterOption.Nearby
+        )
+        viewModel.onEvent(VisitListViewModel.UiEvent.ViewCreated)
+        assertTrue(viewModel.uiState.value.showNearbyVisits)
+        assertFalse(viewModel.uiState.value.isTrackingLocation)
+
+        // Act
+        permissionState.set(true)
+        viewModel.onEvent(VisitListViewModel.UiEvent.LocationPermissionGranted)
+
+        // Assert
+        verify(requireNotNull(providerRef.value)).startLocationUpdates()
+        assertTrue(viewModel.uiState.value.isTrackingLocation)
+    }
+
+    @Test
+    fun `granting the permission starts tracking for the map the user was waiting on`() {
+        // Arrange
+        val providerRef = MockReferenceHolder<UserLocationProvider>()
+        val permissionState = AtomicBoolean(false)
+        val viewModel = createViewModel(
+            hasLocationPermission = false,
+            locationPermissionState = permissionState,
+            userLocationProviderRef = providerRef,
+            visitListDistanceFilterOption = VisitListDistanceFilterOption.Nearby
+        )
+        viewModel.onEvent(VisitListViewModel.UiEvent.ViewCreated)
+        // Nearby is already on, so opening the map does not change what the screen needs
+        viewModel.onEvent(VisitListViewModel.UiEvent.VisitMapSheetClicked)
+        assertTrue(viewModel.uiState.value.showLocationRationale)
+
+        // Act
+        permissionState.set(true)
+        viewModel.onEvent(VisitListViewModel.UiEvent.LocationPermissionGranted)
+
+        // Assert
+        assertTrue(viewModel.uiState.value.showVisitMapSheet)
+        verify(requireNotNull(providerRef.value)).startLocationUpdates()
+        assertTrue(viewModel.uiState.value.isTrackingLocation)
+    }
+
     private fun createViewModel(
         visitHouseholderRepositoryRef: MockReferenceHolder<VisitHouseholderRepository>? = null,
         uriRef: MockReferenceHolder<Uri>? = null,
         hasLocationPermission: Boolean = false,
+        // Held rather than fixed so a test can grant the permission mid-flight, the way the user does.
+        locationPermissionState: AtomicBoolean = AtomicBoolean(hasLocationPermission),
         locationFlowRef: MockReferenceHolder<MutableStateFlow<UserLocationProvider.UserLocation>>? = null,
         userLocationProviderRef: MockReferenceHolder<UserLocationProvider>? = null,
         visitListDistanceFilterOption: VisitListDistanceFilterOption = VisitListDistanceFilterOption.All,
@@ -622,7 +675,7 @@ class VisitListViewModelTest {
         }
         userLocationProviderRef?.value = userLocationProvider
         val permissionChecker = mock<PermissionChecker> {
-            on { hasPermissions(any(), any()) } doReturn hasLocationPermission
+            on { hasPermissions(any(), any()) } doAnswer { locationPermissionState.get() }
         }
         val visitHouseholderRepository = mock<VisitHouseholderRepository> {
             on { getAll() } doReturn visits

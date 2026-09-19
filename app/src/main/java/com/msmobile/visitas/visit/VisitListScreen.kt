@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -421,13 +422,15 @@ private fun VisitListScreenContent(
         }
 
         // The pill floats over the list rather than in it, so nothing reflows while tracking
-        // starts and stops. It clears the floating bar the same way the snackbar does, without
-        // either component having to know about the other.
+        // starts and stops. It clears the floating bar on the same constant the list reserves for
+        // it, and rides above the keyboard, so neither one has to know the pill is there.
         LocationActiveIndicator(
             isTracking = visitListUiState.isTrackingLocation,
+            contentDescription = stringResource(R.string.location_active_indicator_nearby_content_description),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
+                .imePadding()
                 .padding(bottom = verticalFieldPadding + floatingBarBottomPadding)
         )
     }
@@ -1256,6 +1259,7 @@ private fun ColumnScope.VisitMapSheet(
 
                 LocationActiveIndicator(
                     isTracking = isTrackingLocation,
+                    contentDescription = stringResource(R.string.location_active_indicator_map_content_description),
                     modifier = Modifier
                         .align(Alignment.TopStart)
                         .padding(MAP_OVERLAY_PADDING)
