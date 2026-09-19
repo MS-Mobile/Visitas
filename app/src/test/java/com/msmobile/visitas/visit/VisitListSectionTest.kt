@@ -29,7 +29,7 @@ class VisitListSectionTest {
 
     @Test
     fun `toSections by period orders morning, afternoon, evening and keeps incoming order within`() {
-        // Arrange — incoming order is the view model's (nearby first), not chronological
+        // Arrange — incoming order is the view model's, not chronological
         val evening = visit(at(19, 0))
         val lateMorning = visit(at(11, 0))
         val afternoon = visit(at(14, 0))
@@ -37,7 +37,7 @@ class VisitListSectionTest {
 
         // Act
         val sections = listOf(evening, lateMorning, afternoon, earlyMorning)
-            .toSections(groupByPeriod = true)
+            .toSections(groupByPeriod = true, showNearby = false)
 
         // Assert
         assertEquals(
@@ -53,7 +53,7 @@ class VisitListSectionTest {
 
     @Test
     fun `toSections leaves out periods with no visits`() {
-        val sections = listOf(visit(at(9, 0)), visit(at(20, 0))).toSections(groupByPeriod = true)
+        val sections = listOf(visit(at(9, 0)), visit(at(20, 0))).toSections(groupByPeriod = true, showNearby = false)
 
         assertEquals(
             listOf(
@@ -70,7 +70,7 @@ class VisitListSectionTest {
         val regular = visit(at(9, 0))
 
         listOf(true, false).forEach { groupByPeriod ->
-            val sections = listOf(regular, draft).toSections(groupByPeriod = groupByPeriod)
+            val sections = listOf(regular, draft).toSections(groupByPeriod = groupByPeriod, showNearby = false)
 
             assertEquals(VisitListSection.Header.Drafts, sections.first().header)
             assertEquals(listOf(draft), sections.first().visits)
@@ -84,7 +84,7 @@ class VisitListSectionTest {
         val dayOneLate = visit(LocalDateTime.of(2026, 9, 20, 19, 0))
         val dayOneEarly = visit(LocalDateTime.of(2026, 9, 20, 8, 0))
 
-        val sections = listOf(dayTwo, dayOneLate, dayOneEarly).toSections(groupByPeriod = false)
+        val sections = listOf(dayTwo, dayOneLate, dayOneEarly).toSections(groupByPeriod = false, showNearby = false)
 
         assertEquals(
             listOf(
@@ -98,12 +98,58 @@ class VisitListSectionTest {
 
     @Test
     fun `toSections of an empty list is empty`() {
-        assertTrue(emptyList<VisitListViewModel.VisitHouseholderState>().toSections(true).isEmpty())
+        assertTrue(emptyList<VisitListViewModel.VisitHouseholderState>().toSections(groupByPeriod = true, showNearby = false).isEmpty())
+    }
+
+    @Test
+    fun `toSections puts nearby visits from any day in their own section after drafts`() {
+        // Arrange — the Nearby filter shows nearby visits whatever their date
+        val draft = visit(at(8, 0), hasDrafts = true)
+        val nearbyOtherDay = visit(LocalDateTime.of(2026, 10, 2, 9, 30), nearby = true)
+        val nearbyToday = visit(at(19, 0), nearby = true)
+        val regular = visit(at(9, 0))
+
+        // Act
+        val sections = listOf(draft, nearbyOtherDay, nearbyToday, regular)
+            .toSections(groupByPeriod = true, showNearby = true)
+
+        // Assert
+        assertEquals(
+            listOf(
+                VisitListSection.Header.Drafts,
+                VisitListSection.Header.Nearby,
+                VisitListSection.Header.Period(VisitPreferredTime.MORNING)
+            ),
+            sections.map { it.header }
+        )
+        assertEquals(listOf(nearbyOtherDay, nearbyToday), sections[1].visits)
+        assertEquals(listOf(regular), sections[2].visits)
+    }
+
+    @Test
+    fun `toSections keeps a nearby draft in the drafts section`() {
+        val nearbyDraft = visit(at(9, 0), hasDrafts = true, nearby = true)
+
+        val sections = listOf(nearbyDraft).toSections(groupByPeriod = false, showNearby = true)
+
+        assertEquals(listOf(VisitListSection.Header.Drafts), sections.map { it.header })
+    }
+
+    @Test
+    fun `toSections has no nearby section while the nearby filter is off`() {
+        val nearby = visit(at(9, 0), nearby = true)
+
+        val sections = listOf(nearby).toSections(groupByPeriod = true, showNearby = false)
+
+        assertEquals(
+            listOf(VisitListSection.Header.Period(VisitPreferredTime.MORNING)),
+            sections.map { it.header }
+        )
     }
 
     private fun at(hour: Int, minute: Int) = LocalDateTime.of(2026, 9, 19, hour, minute)
 
-    private fun visit(date: LocalDateTime, hasDrafts: Boolean = false) =
+    private fun visit(date: LocalDateTime, hasDrafts: Boolean = false, nearby: Boolean = false) =
         VisitListViewModel.VisitHouseholderState(
             visitId = UUID.randomUUID(),
             subject = "",
@@ -113,7 +159,11 @@ class VisitListSectionTest {
             hasDrafts = hasDrafts,
             householderId = UUID.randomUUID(),
             householderName = "",
-            householderAddressDistance = AddressProvider.AddressDistance.NoData,
+            householderAddressDistance = if (nearby) {
+                AddressProvider.AddressDistance.Nearby(100f)
+            } else {
+                AddressProvider.AddressDistance.NoData
+            },
             householderAddressState = VisitListViewModel.HouseholderAddressState.NoData,
             hide = false,
             isPendingVisitMenuExpanded = false,

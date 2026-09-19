@@ -145,6 +145,8 @@ internal class VisitListPreviewConfigProvider : PreviewParameterProvider<VisitLi
             summaryUiState = previewSummaryUiState,
             visitListUiState = previewVisitListUiState.copy(
                 selectedVisitFilterOption = VisitListDateFilterOption.ScheduledForToday,
+                // Off, so the nearby visit stays in its period instead of the Nearby section
+                showNearbyVisits = false,
                 visitList = listOf(
                     previewVisitListUiState.visitList[0].copy(date = previewDate1.withHour(9)),
                     previewVisitListUiState.visitList[1].copy(date = previewDate1.withHour(14)),

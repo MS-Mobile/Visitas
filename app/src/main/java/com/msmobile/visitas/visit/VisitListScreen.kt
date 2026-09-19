@@ -614,8 +614,8 @@ private fun VisitsList(
     val isLoadingVisits = visitListUiState.isLoadingVisits
     val showNearbyVisits = visitListUiState.showNearbyVisits
     val groupByPeriod = visitListUiState.groupsVisitsByPeriod
-    val sections = remember(visitList, groupByPeriod) {
-        visitList.toSections(groupByPeriod = groupByPeriod)
+    val sections = remember(visitList, groupByPeriod, showNearbyVisits) {
+        visitList.toSections(groupByPeriod = groupByPeriod, showNearby = showNearbyVisits)
     }
 
     LaunchedEffect(key1 = null) {
@@ -715,6 +715,7 @@ private fun VisitSectionHeader(section: VisitListSection) {
 private fun VisitListSection.Header.label(): String {
     return when (this) {
         VisitListSection.Header.Drafts -> stringResource(R.string.visit_list_section_drafts)
+        VisitListSection.Header.Nearby -> stringResource(R.string.nearby_visits)
         is VisitListSection.Header.Period -> when (period) {
             VisitPreferredTime.MORNING -> stringResource(R.string.preferred_time_morning)
             VisitPreferredTime.AFTERNOON -> stringResource(R.string.preferred_time_afternoon)
@@ -735,6 +736,7 @@ private fun VisitListSection.Header.label(): String {
 private val VisitListSection.Header.key: String
     get() = when (this) {
         VisitListSection.Header.Drafts -> "section-drafts"
+        VisitListSection.Header.Nearby -> "section-nearby"
         is VisitListSection.Header.Period -> "section-period-${period.name}"
         is VisitListSection.Header.Day -> "section-day-$date"
     }
