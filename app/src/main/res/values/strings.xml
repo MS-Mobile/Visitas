@@ -128,6 +128,8 @@
     <string name="preferred_time_afternoon">Afternoon</string>
     <string name="preferred_time_evening">Evening</string>
     <string name="visit_list_section_drafts">Drafts</string>
+    <string name="visit_list_section_collapse_action">Collapse section</string>
+    <string name="visit_list_section_expand_action">Expand section</string>
     <string name="visit_time_error">Visit time doesn\'t match householder\'s preferred schedule</string>
     <string name="calendar_permission_message">Calendar permission is needed to schedule visit reminders.</string>
     <string name="update_downloaded_restart">Update downloaded. Restarting app…</string>
