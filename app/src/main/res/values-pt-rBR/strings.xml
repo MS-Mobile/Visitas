@@ -125,6 +125,7 @@
     <string name="preferred_time_morning">Manhã</string>
     <string name="preferred_time_afternoon">Tarde</string>
     <string name="preferred_time_evening">Noite</string>
+    <string name="visit_list_section_drafts">Rascunhos</string>
     <string name="visit_time_error">Horário da visita não corresponde à preferência do morador</string>
     <string name="calendar_permission_message">Permissão de calendário é necessária para agendar lembretes de visitas.</string>
     <string name="update_downloaded_restart">Atualização baixada. Reiniciando o app…</string>

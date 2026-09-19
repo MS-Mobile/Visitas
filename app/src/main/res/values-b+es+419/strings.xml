@@ -126,6 +126,7 @@
     <string name="preferred_time_morning">Mañana</string>
     <string name="preferred_time_afternoon">Tarde</string>
     <string name="preferred_time_evening">Noche</string>
+    <string name="visit_list_section_drafts">Borradores</string>
     <string name="visit_time_error">El horario de la visita no coincide con la preferencia del residente</string>
     <string name="calendar_permission_message">Se necesita permiso de calendario para programar recordatorios de visitas.</string>
     <string name="update_downloaded_restart">Actualización descargada. Reiniciando la aplicación…</string>

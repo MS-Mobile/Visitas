@@ -69,6 +69,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -127,6 +129,8 @@ import com.ramcosta.composedestinations.spec.Direction
 import kotlinx.coroutines.delay
 import java.time.DayOfWeek
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.util.UUID
 
 private const val LOADING_VISITS_COUNT = 5
@@ -609,6 +613,10 @@ private fun VisitsList(
     val visitList = visitListUiState.visitList.filter { !it.hide }
     val isLoadingVisits = visitListUiState.isLoadingVisits
     val showNearbyVisits = visitListUiState.showNearbyVisits
+    val groupByPeriod = visitListUiState.groupsVisitsByPeriod
+    val sections = remember(visitList, groupByPeriod, showNearbyVisits) {
+        visitList.toSections(groupByPeriod = groupByPeriod, showNearby = showNearbyVisits)
+    }
 
     LaunchedEffect(key1 = null) {
         onVisitListEvent(VisitListViewModel.UiEvent.ViewCreated)
@@ -650,22 +658,88 @@ private fun VisitsList(
                         }
                     }
                 } else {
-                    items(
-                        items = visitList,
-                        key = { visit -> visit.visitId }) { visit ->
-                        VisitCard(
-                            visit = visit,
-                            isLoading = false,
-                            showNearbyVisits = showNearbyVisits,
-                            onEvent = onVisitListEvent,
-                            onNavigate = onNavigate
-                        )
+                    sections.forEach { section ->
+                        item(key = section.header.key) {
+                            VisitSectionHeader(section = section)
+                        }
+                        items(
+                            items = section.visits,
+                            key = { visit -> visit.visitId }) { visit ->
+                            VisitCard(
+                                visit = visit,
+                                isLoading = false,
+                                showNearbyVisits = showNearbyVisits,
+                                onEvent = onVisitListEvent,
+                                onNavigate = onNavigate
+                            )
+                        }
                     }
                 }
             }
         }
     }
 }
+
+/**
+ * Title row above a run of cards: the section name, how many visits it holds, and a rule running
+ * to the edge so the break between sections reads even while scrolling fast.
+ */
+@Composable
+private fun VisitSectionHeader(section: VisitListSection) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = verticalFieldPadding)
+            .semantics(mergeDescendants = true) { heading() },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(horizontalFieldPadding)
+    ) {
+        Text(
+            text = section.header.label(),
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Text(
+            text = section.visits.size.toString(),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        HorizontalDivider(
+            modifier = Modifier.weight(1f),
+            color = MaterialTheme.colorScheme.outlineVariant
+        )
+    }
+}
+
+@Composable
+private fun VisitListSection.Header.label(): String {
+    return when (this) {
+        VisitListSection.Header.Drafts -> stringResource(R.string.visit_list_section_drafts)
+        VisitListSection.Header.Nearby -> stringResource(R.string.nearby_visits)
+        is VisitListSection.Header.Period -> when (period) {
+            VisitPreferredTime.MORNING -> stringResource(R.string.preferred_time_morning)
+            VisitPreferredTime.AFTERNOON -> stringResource(R.string.preferred_time_afternoon)
+            VisitPreferredTime.EVENING -> stringResource(R.string.preferred_time_evening)
+            VisitPreferredTime.ANY -> stringResource(R.string.preferred_time_any)
+        }
+
+        is VisitListSection.Header.Day -> {
+            val locale = LocalConfiguration.current.locales[0]
+            remember(date, locale) {
+                DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).withLocale(locale).format(date)
+            }
+        }
+    }
+}
+
+/** Lazy-list key for a section header; must be saveable, so a plain string. */
+private val VisitListSection.Header.key: String
+    get() = when (this) {
+        VisitListSection.Header.Drafts -> "section-drafts"
+        VisitListSection.Header.Nearby -> "section-nearby"
+        is VisitListSection.Header.Period -> "section-period-${period.name}"
+        is VisitListSection.Header.Day -> "section-day-$date"
+    }
 
 @Composable
 fun VisitCardSkeleton() {
