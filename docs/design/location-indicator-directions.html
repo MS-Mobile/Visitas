@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Visitas — Active location indicator</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 32px 28px 80px;
+  background: #FAFAFC; color: #16181D;
+  font: 15px/1.55 -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+.wrap { max-width: 1180px; margin: 0 auto; }
+h1 { font-size: 27px; margin: 0 0 6px; letter-spacing: -.4px; }
+h2 { font-size: 20px; margin: 0 0 4px; letter-spacing: -.2px; }
+h3 { font-size: 14px; margin: 0 0 8px; text-transform: uppercase; letter-spacing: .8px; color: #6A7086; }
+.sub { color: #5A6072; margin: 0 0 26px; max-width: 830px; }
+.rule { height: 1px; background: #E3E5EC; border: 0; margin: 40px 0 32px; }
+
+.panel { background: #fff; border: 1px solid #E3E5EC; border-radius: 14px; padding: 18px 20px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.kv { display: grid; grid-template-columns: 138px 1fr; gap: 4px 12px; font-size: 13.5px; }
+.kv dt { color: #6A7086; }
+.kv dd { margin: 0; }
+code, .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12.5px;
+  background: #F1F2F6; padding: 1px 5px; border-radius: 4px; }
+.sw { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+.sw div { font-size: 11px; font-family: ui-monospace, Menlo, monospace; padding: 8px 10px;
+  border-radius: 8px; border: 1px solid #DDE0E8; min-width: 128px; }
+
+.dir { margin-bottom: 8px; }
+.dirhead { display: flex; align-items: baseline; gap: 12px; margin-bottom: 4px; }
+.tag { font: 600 11px/1 ui-monospace, Menlo, monospace; letter-spacing: .6px;
+  background: #1F2430; color: #fff; padding: 6px 9px; border-radius: 6px; }
+.tag.win { background: #1C6B45; }
+.lede { color: #5A6072; margin: 0 0 18px; max-width: 880px; }
+
+.scenes { display: flex; gap: 28px; flex-wrap: wrap; align-items: flex-start; }
+.scene > span { display: block; font-size: 12px; color: #6A7086; margin-bottom: 8px;
+  text-transform: uppercase; letter-spacing: .7px; }
+
+.phone {
+  width: 268px; height: 556px; border-radius: 26px; overflow: hidden;
+  position: relative; border: 6px solid #2A2E39; background: var(--bg);
+  font-family: Roboto, -apple-system, "Segoe UI", sans-serif;
+  --bg:#F7F7FC; --surf:#E7EAF8; --surfHi:#DCE0F3; --onsurf:#1A1B21; --onvar:#454B63;
+  --prim:#3A5BA9; --fab:#F1D8F6; --outline:#C4C7D6;
+}
+.phone.dark {
+  --bg:#000000; --surf:#0D0D0D; --surfHi:#292929; --onsurf:#E6E6EA; --onvar:#ACB0C2;
+  --prim:#AEC3FF; --fab:#3A2A40; --outline:#3A3C46; border-color:#15171C;
+}
+.p-status { height: 22px; }
+.p-bar { display: flex; align-items: center; padding: 0 12px 0 14px; height: 44px; gap: 4px; }
+.p-title { font-size: 19px; color: var(--onsurf); flex: 1; }
+.p-ico { width: 26px; height: 26px; display: grid; place-items: center; color: var(--onsurf); opacity: .88; }
+.p-ico svg { width: 15px; height: 15px; }
+.p-search { margin: 6px 10px 0; display: flex; gap: 7px; align-items: center; }
+.p-field { flex: 1; background: var(--surf); border-radius: 22px; height: 34px;
+  display: flex; align-items: center; padding: 0 12px; color: var(--onvar); font-size: 12px; }
+.p-sec { display: flex; align-items: center; gap: 7px; padding: 0 12px; height: 26px;
+  color: var(--prim); font-size: 11.5px; font-weight: 600; }
+.p-sec .ln { flex: 1; height: 1px; background: var(--outline); }
+.p-card { margin: 5px 10px; background: var(--surf); border-radius: 12px; padding: 9px 11px; }
+.p-card .nm { font-size: 12.5px; font-weight: 700; color: var(--onsurf); display: flex; justify-content: space-between; }
+.p-card .nm em { font-style: normal; color: var(--prim); font-size: 10.5px; font-weight: 600; }
+.p-card .dt { font-size: 10.5px; color: var(--onvar); margin-top: 1px; }
+.p-card .tx { font-size: 11.5px; color: var(--onsurf); margin-top: 2px; opacity: .92; }
+.p-dock { position: absolute; left: 0; right: 0; bottom: 10px; display: flex;
+  justify-content: center; align-items: center; gap: 7px; }
+.p-pillbar { background: var(--surfHi); border-radius: 30px; height: 44px; width: 128px;
+  display: flex; align-items: center; justify-content: center; gap: 26px; color: var(--onsurf);
+  box-shadow: 0 3px 10px rgba(0,0,0,.14); }
+.p-pillbar svg { width: 16px; height: 16px; }
+.p-fab { background: var(--fab); width: 44px; height: 44px; border-radius: 13px;
+  display: grid; place-items: center; color: var(--onsurf); font-size: 20px; box-shadow: 0 3px 10px rgba(0,0,0,.14); }
+
+.p-map { position: absolute; inset: 0; background:
+  radial-gradient(circle at 34% 44%, rgba(58,91,169,.14), transparent 55%), var(--mapbg, #E8EBF2); }
+.phone.dark .p-map { --mapbg:#12141A; }
+.p-map .road { position: absolute; background: var(--road, #D3D8E4); }
+.phone.dark .p-map .road { --road:#232733; }
+.p-map .blob { position: absolute; background: var(--blob, #DDE3EE); border-radius: 12px; }
+.phone.dark .p-map .blob { --blob:#1A1E27; }
+.mkr { position: absolute; width: 17px; height: 17px; border-radius: 50% 50% 50% 2px;
+  transform: rotate(-45deg); background: var(--prim); border: 2px solid var(--bg); }
+.me { position: absolute; width: 13px; height: 13px; border-radius: 50%; background: #2E7D5B;
+  border: 2.5px solid #fff; box-shadow: 0 0 0 7px rgba(46,125,91,.18); }
+.p-close { position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; border-radius: 50%;
+  background: var(--surfHi); display: grid; place-items: center; color: var(--onsurf); font-size: 15px; }
+
+.ind {
+  display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 11px 0 9px;
+  border-radius: 20px; background: var(--surfHi); color: var(--onvar);
+  font-size: 10.5px; font-weight: 500; letter-spacing: .15px; white-space: nowrap;
+  box-shadow: 0 2px 7px rgba(0,0,0,.13);
+}
+.ind svg { width: 12px; height: 12px; flex: none; color: var(--prim); }
+.ind .dot { width: 6px; height: 6px; border-radius: 50%; background: #2E7D5B; flex: none;
+  animation: breathe 2s ease-in-out infinite; }
+@keyframes breathe { 0%,100% { opacity: .45 } 50% { opacity: 1 } }
+.ind.collapsed { width: 28px; padding: 0; justify-content: center; gap: 0; }
+.ind.collapsed svg, .ind.collapsed .lbl { display: none; }
+
+.floatA { position: absolute; left: 50%; transform: translateX(-50%); bottom: 62px; }
+.floatA.onmap { position: absolute; left: 12px; top: 12px; transform: none; bottom: auto; }
+
+.banner { display: flex; align-items: center; justify-content: center; gap: 6px;
+  height: 26px; background: var(--surfHi); color: var(--onvar); font-size: 10.5px; font-weight: 500; }
+.banner svg { width: 11px; height: 11px; color: var(--prim); }
+.banner .dot { width: 5px; height: 5px; border-radius: 50%; background: #2E7D5B;
+  animation: breathe 2s ease-in-out infinite; }
+.banner.onmap { position: absolute; top: 0; left: 0; right: 0; z-index: 3;
+  background: color-mix(in srgb, var(--surfHi) 92%, transparent); }
+
+.pulseIco { position: relative; }
+.pulseIco::after { content: ""; position: absolute; inset: -3px; border-radius: 50%;
+  background: var(--prim); opacity: .14; animation: halo 2s ease-in-out infinite; }
+@keyframes halo { 0%,100% { transform: scale(.75); opacity: .05 } 50% { transform: scale(1.12); opacity: .2 } }
+.cFloat { position: absolute; top: 12px; left: 12px; width: 32px; height: 32px; border-radius: 50%;
+  background: var(--surfHi); display: grid; place-items: center; color: var(--prim); }
+.cFloat svg { width: 14px; height: 14px; }
+
+.p-sec .live { display: inline-flex; align-items: center; gap: 4px; font-weight: 500;
+  font-size: 9.5px; color: var(--onvar); }
+.p-sec .live .dot { width: 5px; height: 5px; border-radius: 50%; background: #2E7D5B;
+  animation: breathe 2s ease-in-out infinite; }
+.mapcap { position: absolute; left: 0; right: 0; bottom: 0; padding: 7px 12px;
+  display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--onvar);
+  background: linear-gradient(to top, color-mix(in srgb, var(--bg) 88%, transparent), transparent); }
+.mapcap .dot { width: 5px; height: 5px; border-radius: 50%; background: #2E7D5B;
+  animation: breathe 2s ease-in-out infinite; }
+
+.p-pillbar .slot { position: relative; display: grid; place-items: center; }
+.badge { position: absolute; top: -2px; right: -4px; width: 9px; height: 9px; border-radius: 50%;
+  background: #2E7D5B; border: 2px solid var(--surfHi); animation: breathe 2s ease-in-out infinite; }
+.recenter { position: absolute; right: 12px; bottom: 16px; width: 36px; height: 36px; border-radius: 12px;
+  background: var(--surfHi); display: grid; place-items: center; color: var(--onsurf); box-shadow: 0 2px 8px rgba(0,0,0,.18); }
+.recenter svg { width: 16px; height: 16px; }
+
+.states { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 16px;
+  background: #fff; border: 1px solid #E3E5EC; border-radius: 12px; padding: 14px 16px; }
+.st { text-align: center; }
+.st .box { background: #EDEFF6; border-radius: 10px; padding: 14px 12px; min-width: 128px;
+  display: grid; place-items: center; min-height: 58px; }
+.st b { display: block; font-size: 10.5px; font-weight: 600; color: #4A5060; margin-top: 6px; }
+.st small { display: block; font-size: 10px; color: #8087A0; font-family: ui-monospace, Menlo, monospace; }
+.arrow { color: #B4B9C8; font-size: 18px; align-self: center; margin-top: -14px; }
+.mini { --surfHi:#DCE0F3; --onvar:#454B63; --prim:#3A5BA9; }
+.mini.fade { opacity: .35; transform: scale(.93); }
+
+.pc { display: grid; grid-template-columns: 1fr 1fr; margin-top: 18px;
+  border: 1px solid #E3E5EC; border-radius: 12px; overflow: hidden; background: #fff; }
+.pc > div { padding: 14px 18px; }
+.pc > div:first-child { border-right: 1px solid #E3E5EC; }
+.pc h4 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .7px; }
+.pc .ok h4 { color: #1C6B45; }
+.pc .no h4 { color: #A03A46; }
+.pc ul { margin: 0; padding-left: 17px; font-size: 13.5px; color: #3D4354; }
+.pc li { margin-bottom: 5px; }
+.where { margin-top: 12px; font-size: 12.5px; color: #6A7086; }
+
+.rec { border: 2px solid #1C6B45; border-radius: 16px; padding: 22px 24px; background: #F4FBF7; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; margin-top: 8px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid #DCE6E0; vertical-align: top; }
+th { color: #4A5060; font-size: 11px; text-transform: uppercase; letter-spacing: .6px; }
+td.mono2 { font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+.note { font-size: 12.5px; color: #6A7086; margin-top: 10px; }
+@media (max-width: 900px) { .grid2, .pc { grid-template-columns: 1fr; } .pc > div:first-child { border-right: 0; border-bottom: 1px solid #E3E5EC; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Active location indicator — Visitas</h1>
+<p class="sub">
+Five directions for telling the user, without alarming them, that location is in use during the only two
+moments the app actually tracks: the <b>visits map</b> and the <b>Nearby visits</b> filter in the list.
+This is not a permission request — that is already <code>PermissionRationaleSheet</code>. It is a state
+indicator. The mockups use the app's real theme and the existing strings from <code>values/strings.xml</code>.
+</p>
+
+<div class="grid2">
+  <div class="panel">
+    <h3>What the codebase already establishes</h3>
+    <dl class="kv">
+      <dt>UI</dt><dd>Compose + Material 3 <i>Expressive</i> (<code>FloatingToolbarDefaults</code>, <code>FloatingBar</code>)</dd>
+      <dt>Color</dt><dd>Dynamic Material You (API 31+), with dark-scheme overrides</dd>
+      <dt>Typography</dt><dd>Default <code>Typography</code>; only <code>bodyLarge</code> customized</dd>
+      <dt>Spacing</dt><dd><code>borderPadding</code> 6dp · <code>verticalFieldPadding</code> 12dp · <code>cardInnerPadding</code> 12dp</dd>
+      <dt>Map</dt><dd><b>Not a screen.</b> It is <code>VisitMapSheet</code> — a full-screen <code>BasicAlertDialog</code> entering with <code>slideInVertically + fadeIn</code>, holding a WebView (Leaflet/MapLibre) and a single <code>FilledTonalIconButton</code> close button at <code>TopEnd</code>. <b>No app bar.</b></dd>
+      <dt>Nearby</dt><dd>A <code>Checkbox</code> in the filter dropdown → produces the <i>Nearby visits</i> section at the top of the list and the <code>(Nearby)</code> label on cards</dd>
+      <dt>Tracking</dt><dd><code>UserLocationProvider</code>: <code>PRIORITY_HIGH_ACCURACY</code>, 10s / 5s / 10m; started and stopped from <code>VisitListViewModel</code></dd>
+    </dl>
+    <p class="note" style="margin-top:12px">
+      The design consequence: the map has <b>no app bar and no FloatingBar</b>. Any direction anchored to
+      that chrome needs a second implementation for the map — and that is what separates the five options.
+    </p>
+  </div>
+  <div class="panel">
+    <h3>Tokens used in these mockups</h3>
+    <div class="sw">
+      <div style="background:#F7F7FC">background<br>#F7F7FC <span style="color:#888">/ #000000</span></div>
+      <div style="background:#E7EAF8">surfaceContainer<br>#E7EAF8 <span style="color:#888">/ #0D0D0D</span></div>
+      <div style="background:#DCE0F3">surfaceContainerHigh<br>#DCE0F3 <span style="color:#888">/ #292929</span></div>
+      <div style="background:#DCE3FB">primaryContainer<br>dynamic</div>
+      <div style="background:#F1D8F6">FAB container<br>dynamic</div>
+      <div style="background:#D15D67;color:#fff">error (fixed)<br>#D15D67</div>
+    </div>
+    <p class="note">
+      The green dot in these mockups is <b>illustrative only</b>. In production it should not become a new
+      hard-coded color: use <code>colorScheme.primary</code> (or <code>tertiary</code>) so it inherits the
+      user's Material You palette. A fixed green breaks against warm dynamic themes and guarantees nothing
+      about contrast.
+    </p>
+  </div>
+</div>
+
+<hr class="rule">
+
+<!-- ============ A ============ -->
+<div class="dir">
+  <div class="dirhead"><span class="tag win">DIRECTION A</span><h2>Floating pill that collapses</h2></div>
+  <p class="lede">
+    A 28dp pill that appears, says what is happening for four seconds, then shrinks down to just the dot.
+    It floats above the content — <b>no layout is pushed</b> — and it is the same composable in both
+    scenarios, with only the anchor changing: above the <code>FloatingBar</code> in the list,
+    at <code>TopStart</code> over the map.
+  </p>
+
+  <div class="scenes">
+    <div class="scene"><span>List · Nearby active · light</span>
+      <div class="phone">
+        <div class="p-status"></div>
+        <div class="p-bar"><div class="p-title">Visits</div>
+          <div class="p-ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M15 19l-6-2.1L4.4 18.7c-.3.1-.6.1-.8-.1s-.4-.4-.4-.7V5.7c0-.2.1-.4.2-.6s.3-.3.5-.3L9 3l6 2.1 4.6-1.8c.3-.1.6-.1.8.1s.4.4.4.7v12.2c0 .2-.1.4-.2.6s-.3.3-.5.3L15 19z"/></svg></div>
+          <div class="p-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 15v-3M12 15V9M16 15v-5"/></svg></div>
+          <div class="p-ico">⋮</div>
+        </div>
+        <div class="p-search"><div class="p-field">Search</div><div class="p-ico">☰</div></div>
+        <div class="p-sec" style="margin-top:8px">Nearby visits <span style="color:var(--onvar);font-weight:400">1</span><span class="ln"></span>⌃</div>
+        <div class="p-card"><div class="nm">Mary Magdalene <em>(Nearby)</em></div><div class="dt">15/01/2024 10:12</div><div class="tx">What is God's Kingdom? — Daniel 2:44</div></div>
+        <div class="p-sec" style="margin-top:8px">Monday, January 22 <span style="color:var(--onvar);font-weight:400">1</span><span class="ln"></span>⌃</div>
+        <div class="p-card"><div class="nm">Joseph of Arimathea</div><div class="dt">22/01/2024 10:12</div><div class="tx">The resurrection of the dead — John 5:28</div></div>
+        <div class="ind floatA"><span class="dot"></span><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 8a4 4 0 100 8 4 4 0 000-8zm8.9 3a9 9 0 00-7.9-7.9V1h-2v2.1A9 9 0 003.1 11H1v2h2.1a9 9 0 007.9 7.9V23h2v-2.1a9 9 0 007.9-7.9H23v-2h-2.1zM12 19a7 7 0 110-14 7 7 0 010 14z"/></svg><span class="lbl">Using your location</span></div>
+        <div class="p-dock"><div class="p-pillbar"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3L2 12h3v8h6v-5h2v5h6v-8h3z"/></svg><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 5h7v14H4zM13 5h7v14h-7z"/></svg></div><div class="p-fab">+</div></div>
+      </div>
+    </div>
+
+    <div class="scene"><span>Map · dark</span>
+      <div class="phone dark">
+        <div class="p-map">
+          <div class="road" style="left:0;right:0;top:38%;height:9px"></div>
+          <div class="road" style="left:0;right:0;top:66%;height:6px"></div>
+          <div class="road" style="left:31%;top:0;bottom:0;width:8px"></div>
+          <div class="road" style="left:72%;top:0;bottom:0;width:5px"></div>
+          <div class="blob" style="left:8%;top:44%;width:56px;height:38px"></div>
+          <div class="blob" style="left:42%;top:12%;width:70px;height:48px"></div>
+          <div class="blob" style="left:50%;top:72%;width:62px;height:44px"></div>
+          <div class="mkr" style="left:24%;top:30%"></div>
+          <div class="mkr" style="left:60%;top:24%"></div>
+          <div class="mkr" style="left:46%;top:58%"></div>
+          <div class="mkr" style="left:76%;top:70%"></div>
+          <div class="me" style="left:37%;top:46%"></div>
+        </div>
+        <div class="p-close">✕</div>
+        <div class="ind floatA onmap"><span class="dot"></span><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 8a4 4 0 100 8 4 4 0 000-8zm8.9 3a9 9 0 00-7.9-7.9V1h-2v2.1A9 9 0 003.1 11H1v2h2.1a9 9 0 007.9 7.9V23h2v-2.1a9 9 0 007.9-7.9H23v-2h-2.1zM12 19a7 7 0 110-14 7 7 0 010 14z"/></svg><span class="lbl">Using your location</span></div>
+      </div>
+    </div>
+
+    <div class="scene" style="flex:1;min-width:300px"><span>Lifecycle</span>
+      <div class="states" style="margin-top:0">
+        <div class="st"><div class="box"><div class="ind mini fade"><span class="dot"></span><span class="lbl">Using your location</span></div></div><b>Entering</b><small>400ms delay · 220ms</small></div>
+        <div class="arrow">→</div>
+        <div class="st"><div class="box"><div class="ind mini"><span class="dot"></span><span class="lbl">Using your location</span></div></div><b>Active</b><small>4000ms</small></div>
+        <div class="arrow">→</div>
+        <div class="st"><div class="box"><div class="ind mini collapsed"><span class="dot"></span></div></div><b>Collapsed</b><small>180ms width</small></div>
+        <div class="arrow">→</div>
+        <div class="st"><div class="box"><div class="ind mini collapsed fade"><span class="dot"></span></div></div><b>Leaving</b><small>160ms</small></div>
+      </div>
+      <p class="note">
+        The 400ms entry delay is the detail that decides how this feels: without it, opening and closing
+        the map quickly makes the pill flash. The 4s dwell is long enough to read, short enough not to
+        become furniture.
+      </p>
+    </div>
+  </div>
+
+  <div class="pc">
+    <div class="ok"><h4>For</h4><ul>
+      <li>One composable serves both scenarios — the only difference is the <code>Alignment</code>.</li>
+      <li>Nothing reflows: it floats, so the list and the <code>SummaryCard</code> stay put.</li>
+      <li>The collapsed state is honest — the text goes, the presence stays. It is the pattern Maps and Waze already taught users.</li>
+      <li>Big enough for TalkBack to find, and big enough to become tappable later (e.g. open the filter).</li>
+    </ul></div>
+    <div class="no"><h4>Against</h4><ul>
+      <li>It covers pixels; in the list it must respect <code>floatingBarBottomPadding</code> so it does not collide with the FAB.</li>
+      <li>Two states (expanded/collapsed) means more animation logic and another screenshot-test case.</li>
+      <li>On short screens it overlaps part of a card while expanded.</li>
+    </ul></div>
+  </div>
+  <p class="where">Where it would live: a new <code>ui/views/LocationActiveIndicator.kt</code>, placed in a <code>Box</code> in <code>VisitListScreenContent</code> and inside the <code>Box</code> of <code>VisitMapSheet</code>.</p>
+</div>
+
+<hr class="rule">
+
+<!-- ============ B ============ -->
+<div class="dir">
+  <div class="dirhead"><span class="tag">DIRECTION B</span><h2>Thin banner at the top</h2></div>
+  <p class="lede">
+    A 26dp strip below the app bar (list) and flush to the top of the overlay (map), driven by
+    <code>AnimatedVisibility(expandVertically)</code>. It is the most legible option available — and the
+    one that costs the most layout.
+  </p>
+
+  <div class="scenes">
+    <div class="scene"><span>List · light</span>
+      <div class="phone">
+        <div class="p-status"></div>
+        <div class="p-bar"><div class="p-title">Visits</div><div class="p-ico">🗺</div><div class="p-ico">▥</div><div class="p-ico">⋮</div></div>
+        <div class="banner"><span class="dot"></span><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 00-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 00-7-7zm0 9.5A2.5 2.5 0 1112 6.5a2.5 2.5 0 010 5z"/></svg>Using your location to show nearby visits</div>
+        <div class="p-search"><div class="p-field">Search</div><div class="p-ico">☰</div></div>
+        <div class="p-sec" style="margin-top:8px">Nearby visits <span style="color:var(--onvar);font-weight:400">1</span><span class="ln"></span>⌃</div>
+        <div class="p-card"><div class="nm">Mary Magdalene <em>(Nearby)</em></div><div class="dt">15/01/2024 10:12</div><div class="tx">What is God's Kingdom? — Daniel 2:44</div></div>
+        <div class="p-sec" style="margin-top:8px">Monday, January 22 <span style="color:var(--onvar);font-weight:400">1</span><span class="ln"></span>⌃</div>
+        <div class="p-card"><div class="nm">Joseph of Arimathea</div><div class="dt">22/01/2024 10:12</div><div class="tx">The resurrection of the dead — John 5:28</div></div>
+        <div class="p-dock"><div class="p-pillbar"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3L2 12h3v8h6v-5h2v5h6v-8h3z"/></svg><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 5h7v14H4zM13 5h7v14h-7z"/></svg></div><div class="p-fab">+</div></div>
+      </div>
+    </div>
+    <div class="scene"><span>Map · dark</span>
+      <div class="phone dark">
+        <div class="p-map">
+          <div class="road" style="left:0;right:0;top:38%;height:9px"></div>
+          <div class="road" style="left:0;right:0;top:66%;height:6px"></div>
+          <div class="road" style="left:31%;top:0;bottom:0;width:8px"></div>
+          <div class="blob" style="left:8%;top:44%;width:56px;height:38px"></div>
+          <div class="blob" style="left:42%;top:12%;width:70px;height:48px"></div>
+          <div class="mkr" style="left:24%;top:34%"></div><div class="mkr" style="left:62%;top:26%"></div>
+          <div class="mkr" style="left:46%;top:60%"></div>
+          <div class="me" style="left:37%;top:48%"></div>
+        </div>
+        <div class="banner onmap"><span class="dot"></span>Using your location</div>
+        <div class="p-close">✕</div>
+      </div>
+    </div>
+    <div class="scene" style="flex:1;min-width:290px"><span>Lifecycle</span>
+      <div class="states" style="margin-top:0">
+        <div class="st"><div class="box" style="padding:6px 0;width:150px"><div style="height:4px;background:#DCE0F3;width:100%;border-radius:2px"></div></div><b>Expanding</b><small>expandVertically 200ms</small></div>
+        <div class="arrow">→</div>
+        <div class="st"><div class="box" style="padding:0;width:150px;overflow:hidden"><div class="banner mini" style="width:100%"><span class="dot"></span>Using your location</div></div><b>Active</b><small>persistent</small></div>
+        <div class="arrow">→</div>
+        <div class="st"><div class="box" style="padding:6px 0;width:150px"><div style="height:4px;background:#DCE0F3;width:100%;border-radius:2px"></div></div><b>Collapsing</b><small>shrinkVertically 160ms</small></div>
+      </div>
+      <p class="note">It stays on screen for the whole tracking session. It cannot collapse — collapsing would leave a 26dp hole flickering open and shut.</p>
+    </div>
+  </div>
+
+  <div class="pc">
+    <div class="ok"><h4>For</h4><ul>
+      <li>Impossible to miss, and there is room for a full sentence — it can explain <i>why</i>, not just <i>that</i>.</li>
+      <li>Trivial accessibility story: it is text, in natural focus order, right after the app bar.</li>
+      <li>Zero overlap: it hides nothing.</li>
+    </ul></div>
+    <div class="no"><h4>Against</h4><ul>
+      <li><b>It pushes layout.</b> Toggling <i>Nearby visits</i> shifts the <code>SummaryCard</code> and the whole list by 26dp — the opposite of discreet.</li>
+      <li>It takes 26dp permanently on an already dense screen (summary + search + sections).</li>
+      <li>It reads like a warning. A strip under the app bar is where Android puts bad news.</li>
+      <li>On the map it needs a translucent background over the WebView, so contrast depends on whatever tile is underneath.</li>
+    </ul></div>
+  </div>
+  <p class="where">Where it would live: first item of the <code>Column</code> in <code>VisitListScreenContent</code>, above <code>SummaryCard</code>; plus the <code>Box</code> in <code>VisitMapSheet</code>.</p>
+</div>
+
+<hr class="rule">
+
+<!-- ============ C ============ -->
+<div class="dir">
+  <div class="dirhead"><span class="tag">DIRECTION C</span><h2>Breathing icon in the app bar</h2></div>
+  <p class="lede">
+    An extra <code>TopBarAction</code> that exists only while tracking is on: a location icon with a slow
+    2s halo. Near-zero space cost — and the direction that suffers most from the map having no app bar.
+  </p>
+
+  <div class="scenes">
+    <div class="scene"><span>List · light</span>
+      <div class="phone">
+        <div class="p-status"></div>
+        <div class="p-bar"><div class="p-title">Visits</div>
+          <div class="p-ico pulseIco" style="color:var(--prim)"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 8a4 4 0 100 8 4 4 0 000-8zm8.9 3a9 9 0 00-7.9-7.9V1h-2v2.1A9 9 0 003.1 11H1v2h2.1a9 9 0 007.9 7.9V23h2v-2.1a9 9 0 007.9-7.9H23v-2h-2.1zM12 19a7 7 0 110-14 7 7 0 010 14z"/></svg></div>
+          <div class="p-ico">🗺</div><div class="p-ico">▥</div><div class="p-ico">⋮</div>
+        </div>
+        <div class="p-search"><div class="p-field">Search</div><div class="p-ico">☰</div></div>
+        <div class="p-sec" style="margin-top:8px">Nearby visits <span style="color:var(--onvar);font-weight:400">1</span><span class="ln"></span>⌃</div>
+        <div class="p-card"><div class="nm">Mary Magdalene <em>(Nearby)</em></div><div class="dt">15/01/2024 10:12</div><div class="tx">What is God's Kingdom? — Daniel 2:44</div></div>
+        <div class="p-sec" style="margin-top:8px">Monday, January 22 <span style="color:var(--onvar);font-weight:400">1</span><span class="ln"></span>⌃</div>
+        <div class="p-card"><div class="nm">Joseph of Arimathea</div><div class="dt">22/01/2024 10:12</div><div class="tx">The resurrection of the dead — John 5:28</div></div>
+        <div class="p-dock"><div class="p-pillbar"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3L2 12h3v8h6v-5h2v5h6v-8h3z"/></svg><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 5h7v14H4zM13 5h7v14h-7z"/></svg></div><div class="p-fab">+</div></div>
+      </div>
+    </div>
+    <div class="scene"><span>Map · dark (no app bar → floating clone)</span>
+      <div class="phone dark">
+        <div class="p-map">
+          <div class="road" style="left:0;right:0;top:38%;height:9px"></div>
+          <div class="road" style="left:31%;top:0;bottom:0;width:8px"></div>
+          <div class="blob" style="left:42%;top:12%;width:70px;height:48px"></div>
+          <div class="blob" style="left:8%;top:52%;width:56px;height:38px"></div>
+          <div class="mkr" style="left:24%;top:34%"></div><div class="mkr" style="left:62%;top:26%"></div>
+          <div class="me" style="left:37%;top:48%"></div>
+        </div>
+        <div class="cFloat pulseIco"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 8a4 4 0 100 8 4 4 0 000-8zm8.9 3a9 9 0 00-7.9-7.9V1h-2v2.1A9 9 0 003.1 11H1v2h2.1a9 9 0 007.9 7.9V23h2v-2.1a9 9 0 007.9-7.9H23v-2h-2.1zM12 19a7 7 0 110-14 7 7 0 010 14z"/></svg></div>
+        <div class="p-close">✕</div>
+      </div>
+    </div>
+    <div class="scene" style="flex:1;min-width:250px"><span>Lifecycle</span>
+      <div class="states" style="margin-top:0">
+        <div class="st"><div class="box"><div class="p-ico pulseIco mini" style="color:#3A5BA9;width:26px;height:26px"><svg viewBox="0 0 24 24" fill="currentColor" style="width:15px"><path d="M12 8a4 4 0 100 8 4 4 0 000-8zm8.9 3a9 9 0 00-7.9-7.9V1h-2v2.1A9 9 0 003.1 11H1v2h2.1a9 9 0 007.9 7.9V23h2v-2.1a9 9 0 007.9-7.9H23v-2h-2.1zM12 19a7 7 0 110-14 7 7 0 010 14z"/></svg></div></div><b>Active</b><small>2s halo loop</small></div>
+        <div class="arrow">→</div>
+        <div class="st"><div class="box"><div style="width:26px;height:26px"></div></div><b>Inactive</b><small>fadeOut 150ms</small></div>
+      </div>
+      <p class="note">No intermediate states, and no text. The whole message lives in the <code>contentDescription</code>.</p>
+    </div>
+  </div>
+
+  <div class="pc">
+    <div class="ok"><h4>For</h4><ul>
+      <li>The quietest and cheapest of the five: one more entry in the <code>topBarActions</code> list the screen already publishes.</li>
+      <li>Neither overlaps nor reflows — the app bar already reserves space for actions.</li>
+      <li>No screen cost at all on small devices.</li>
+    </ul></div>
+    <div class="no"><h4>Against</h4><ul>
+      <li><b>It communicates nothing on its own.</b> A pulsing icon among three others is noise; the user has to discover the tooltip.</li>
+      <li>It fails on the map: <code>VisitMapSheet</code> is a dialog with no app bar, so it becomes a floating clone — which is Direction A with less information.</li>
+      <li>Continuous, infinite motion in the app bar keeps pulling the eye. That is the opposite of gentle.</li>
+      <li>The app bar is shared <code>AppScaffold</code> chrome; an action that appears and disappears based on another screen's state muddies that contract.</li>
+    </ul></div>
+  </div>
+  <p class="where">Where it would live: <code>visitListTopBarActions()</code> in <code>VisitListScreen.kt</code>, with a conditional <code>TopBarAction</code>.</p>
+</div>
+
+<hr class="rule">
+
+<!-- ============ D ============ -->
+<div class="dir">
+  <div class="dirhead"><span class="tag">DIRECTION D</span><h2>Inline in the content</h2></div>
+  <p class="lede">
+    No new chrome at all: the notice goes into the <i>Nearby visits</i> section header that already exists
+    (<code>VisitSectionHeader</code>), as supporting text next to the count. On the map it becomes a quiet
+    caption over a bottom scrim.
+  </p>
+
+  <div class="scenes">
+    <div class="scene"><span>List · light</span>
+      <div class="phone">
+        <div class="p-status"></div>
+        <div class="p-bar"><div class="p-title">Visits</div><div class="p-ico">🗺</div><div class="p-ico">▥</div><div class="p-ico">⋮</div></div>
+        <div class="p-search"><div class="p-field">Search</div><div class="p-ico">☰</div></div>
+        <div class="p-sec" style="margin-top:8px;height:30px">Nearby visits <span style="color:var(--onvar);font-weight:400">1</span>
+          <span class="live"><span class="dot"></span>location in use</span><span class="ln"></span>⌃</div>
+        <div class="p-card"><div class="nm">Mary Magdalene <em>(Nearby)</em></div><div class="dt">15/01/2024 10:12</div><div class="tx">What is God's Kingdom? — Daniel 2:44</div></div>
+        <div class="p-sec" style="margin-top:8px">Monday, January 22 <span style="color:var(--onvar);font-weight:400">1</span><span class="ln"></span>⌃</div>
+        <div class="p-card"><div class="nm">Joseph of Arimathea</div><div class="dt">22/01/2024 10:12</div><div class="tx">The resurrection of the dead — John 5:28</div></div>
+        <div class="p-sec" style="margin-top:8px">Monday, January 29 <span style="color:var(--onvar);font-weight:400">1</span><span class="ln"></span>⌃</div>
+        <div class="p-card"><div class="nm">Nicodemus</div><div class="dt">29/01/2024 10:12</div><div class="tx">Who is Jesus Christ? — Luke 1:31</div></div>
+        <div class="p-dock"><div class="p-pillbar"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3L2 12h3v8h6v-5h2v5h6v-8h3z"/></svg><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 5h7v14H4zM13 5h7v14h-7z"/></svg></div><div class="p-fab">+</div></div>
+      </div>
+    </div>
+    <div class="scene"><span>Map · dark</span>
+      <div class="phone dark">
+        <div class="p-map">
+          <div class="road" style="left:0;right:0;top:38%;height:9px"></div>
+          <div class="road" style="left:0;right:0;top:66%;height:6px"></div>
+          <div class="road" style="left:31%;top:0;bottom:0;width:8px"></div>
+          <div class="blob" style="left:42%;top:12%;width:70px;height:48px"></div>
+          <div class="blob" style="left:8%;top:48%;width:56px;height:38px"></div>
+          <div class="mkr" style="left:24%;top:34%"></div><div class="mkr" style="left:62%;top:26%"></div>
+          <div class="mkr" style="left:46%;top:58%"></div>
+          <div class="me" style="left:37%;top:46%"></div>
+        </div>
+        <div class="p-close">✕</div>
+        <div class="mapcap"><span class="dot"></span>Current location — updating</div>
+      </div>
+    </div>
+    <div class="scene" style="flex:1;min-width:250px"><span>Lifecycle</span>
+      <div class="states" style="margin-top:0">
+        <div class="st"><div class="box"><span class="live mini" style="color:#454B63;font-size:9.5px;display:inline-flex;gap:4px;align-items:center;opacity:.3"><span class="dot"></span>location in use</span></div><b>Entering</b><small>fadeIn 200ms</small></div>
+        <div class="arrow">→</div>
+        <div class="st"><div class="box"><span class="live mini" style="color:#454B63;font-size:9.5px;display:inline-flex;gap:4px;align-items:center"><span class="dot"></span>location in use</span></div><b>Active</b><small>persistent</small></div>
+        <div class="arrow">→</div>
+        <div class="st"><div class="box"><span style="font-size:9.5px;color:#B4B9C8">—</span></div><b>Inactive</b><small>fadeOut 150ms</small></div>
+      </div>
+      <p class="note">It disappears with the section: turning <i>Nearby visits</i> off already removes the whole header, so the indicator never outlives the state it describes.</p>
+    </div>
+  </div>
+
+  <div class="pc">
+    <div class="ok"><h4>For</h4><ul>
+      <li>Maximum gentleness: it is not chrome, it is content. Nothing sits on top of anything.</li>
+      <li>It ties cause to effect — the notice is attached to the very section that exists because of location.</li>
+      <li>Reuses <code>VisitSectionHeader</code>, which already has careful semantics and a <code>stateDescription</code>.</li>
+    </ul></div>
+    <div class="no"><h4>Against</h4><ul>
+      <li><b>It can vanish.</b> A collapsed header, or one scrolled out of the viewport, means no notice on screen at all.</li>
+      <li>Two implementations with nothing in common between list and map.</li>
+      <li>The header already carries title + count + rule + chevron inside 48dp; one more text element crowds it and wraps at large font scales.</li>
+      <li>It conflicts with the header's <code>onToggle</code> — the indicator is not clickable but sits inside a row that is.</li>
+    </ul></div>
+  </div>
+  <p class="where">Where it would live: <code>VisitSectionHeader</code> (only for <code>Header.Nearby</code>) plus a <code>Box</code>/<code>Alignment.BottomStart</code> in <code>VisitMapSheet</code>.</p>
+</div>
+
+<hr class="rule">
+
+<!-- ============ E ============ -->
+<div class="dir">
+  <div class="dirhead"><span class="tag">DIRECTION E</span><h2>Badge on existing chrome</h2></div>
+  <p class="lede">
+    A dot on chrome the app already draws: a location item with a badge in the list's
+    <code>FloatingBar</code>, and a badge on the map's recenter control. It wins on economy and loses
+    because those two pieces of chrome are not the same thing — the <code>FloatingBar</code> does not
+    exist on the map.
+  </p>
+
+  <div class="scenes">
+    <div class="scene"><span>List · light</span>
+      <div class="phone">
+        <div class="p-status"></div>
+        <div class="p-bar"><div class="p-title">Visits</div><div class="p-ico">🗺</div><div class="p-ico">▥</div><div class="p-ico">⋮</div></div>
+        <div class="p-search"><div class="p-field">Search</div><div class="p-ico">☰</div></div>
+        <div class="p-sec" style="margin-top:8px">Nearby visits <span style="color:var(--onvar);font-weight:400">1</span><span class="ln"></span>⌃</div>
+        <div class="p-card"><div class="nm">Mary Magdalene <em>(Nearby)</em></div><div class="dt">15/01/2024 10:12</div><div class="tx">What is God's Kingdom? — Daniel 2:44</div></div>
+        <div class="p-sec" style="margin-top:8px">Monday, January 22 <span style="color:var(--onvar);font-weight:400">1</span><span class="ln"></span>⌃</div>
+        <div class="p-card"><div class="nm">Joseph of Arimathea</div><div class="dt">22/01/2024 10:12</div><div class="tx">The resurrection of the dead — John 5:28</div></div>
+        <div class="p-dock">
+          <div class="p-pillbar" style="width:170px;gap:22px">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3L2 12h3v8h6v-5h2v5h6v-8h3z"/></svg>
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 5h7v14H4zM13 5h7v14h-7z"/></svg>
+            <span class="slot"><svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;color:var(--prim)"><path d="M12 8a4 4 0 100 8 4 4 0 000-8zm8.9 3a9 9 0 00-7.9-7.9V1h-2v2.1A9 9 0 003.1 11H1v2h2.1a9 9 0 007.9 7.9V23h2v-2.1a9 9 0 007.9-7.9H23v-2h-2.1z"/></svg><span class="badge"></span></span>
+          </div>
+          <div class="p-fab">+</div>
+        </div>
+      </div>
+    </div>
+    <div class="scene"><span>Map · dark</span>
+      <div class="phone dark">
+        <div class="p-map">
+          <div class="road" style="left:0;right:0;top:38%;height:9px"></div>
+          <div class="road" style="left:0;right:0;top:66%;height:6px"></div>
+          <div class="road" style="left:31%;top:0;bottom:0;width:8px"></div>
+          <div class="blob" style="left:42%;top:12%;width:70px;height:48px"></div>
+          <div class="blob" style="left:8%;top:48%;width:56px;height:38px"></div>
+          <div class="mkr" style="left:24%;top:34%"></div><div class="mkr" style="left:62%;top:26%"></div>
+          <div class="mkr" style="left:46%;top:58%"></div>
+          <div class="me" style="left:37%;top:46%"></div>
+        </div>
+        <div class="p-close">✕</div>
+        <div class="recenter"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 8a4 4 0 100 8 4 4 0 000-8zm8.9 3a9 9 0 00-7.9-7.9V1h-2v2.1A9 9 0 003.1 11H1v2h2.1a9 9 0 007.9 7.9V23h2v-2.1a9 9 0 007.9-7.9H23v-2h-2.1zM12 19a7 7 0 110-14 7 7 0 010 14z"/></svg><span class="badge" style="border-color:var(--surfHi)"></span></div>
+      </div>
+    </div>
+    <div class="scene" style="flex:1;min-width:250px"><span>Lifecycle</span>
+      <div class="states" style="margin-top:0">
+        <div class="st"><div class="box"><span class="slot" style="display:inline-grid"><svg viewBox="0 0 24 24" fill="#3A5BA9" style="width:18px;height:18px"><path d="M12 8a4 4 0 100 8 4 4 0 000-8zm8.9 3a9 9 0 00-7.9-7.9V1h-2v2.1A9 9 0 003.1 11H1v2h2.1a9 9 0 007.9 7.9V23h2v-2.1a9 9 0 007.9-7.9H23v-2h-2.1z"/></svg><span class="badge" style="border-color:#EDEFF6"></span></span></div><b>Active</b><small>scaleIn 150ms</small></div>
+        <div class="arrow">→</div>
+        <div class="st"><div class="box"><span style="width:18px;height:18px;display:block"></span></div><b>Inactive</b><small>scaleOut 120ms</small></div>
+      </div>
+      <p class="note">In the list, the new item changes the <code>FloatingBar</code>'s width as it enters — it would need <code>animateContentSize</code> to avoid a jolt.</p>
+    </div>
+  </div>
+
+  <div class="pc">
+    <div class="ok"><h4>For</h4><ul>
+      <li>Uses chrome that already exists; no new layer over the content.</li>
+      <li>On the map, a badge on the recenter control is semantically perfect: that control <i>is</i> about your position.</li>
+      <li>Leaves room to make the indicator actionable later (tap → recenter / open filter) without inventing an affordance.</li>
+    </ul></div>
+    <div class="no"><h4>Against</h4><ul>
+      <li><b>A 9dp dot is not a notice.</b> With no text it says even less than Direction C.</li>
+      <li>The map's recenter control currently lives <b>inside the WebView</b> (Leaflet/MapLibre), so badging it means touching both vendored HTML files or pixel-aligning Compose chrome on top.</li>
+      <li>The <code>FloatingBar</code> changes width when <i>Nearby visits</i> is toggled.</li>
+      <li>Badges are notoriously poor for TalkBack: either a decorative node or a <code>stateDescription</code> nobody goes looking for.</li>
+    </ul></div>
+  </div>
+  <p class="where">Where it would live: <code>ui/views/FloatingBar.kt</code> (extra slot) and <code>assets/map/*/visits-map.html</code> — note the bridge contract is duplicated across both engines.</p>
+</div>
+
+<hr class="rule">
+
+<!-- ============ REC ============ -->
+<div class="rec">
+  <h2 style="margin-bottom:10px">Recommendation: Direction A — the floating pill that collapses</h2>
+  <p style="margin:0 0 14px;max-width:880px">
+    The deciding reason is structural rather than aesthetic: the map is a full-screen
+    <code>BasicAlertDialog</code> with <b>no app bar and no FloatingBar</b>. Directions B, C, D and E all
+    anchor to chrome that exists only in the list, so each needs two implementations — two composables,
+    two sets of screenshot tests, two chances to drift apart. A is the only one that is
+    <b>one composable with two anchors</b>.
+  </p>
+  <p style="margin:0 0 14px;max-width:880px">
+    It is also the only one that resolves the tension in the brief. "Gentle" has two halves: it has to be
+    noticed the first time, and it has to get out of the way afterwards. The banner (B) is noticed and
+    never leaves. The icon (C) and the badge (E) are out of the way from the start — they were never
+    noticed. Inline (D) is elegant but scrolls away, so the notice is absent exactly while tracking
+    continues. The pill is seen, is read, and then shrinks to a dot that stays: presence remains,
+    the noise goes.
+  </p>
+
+  <h3 style="margin-top:20px">Timing spec</h3>
+  <table>
+    <tr><th>Moment</th><th>Value</th><th>Why</th></tr>
+    <tr><td>Entry delay</td><td class="mono2">400 ms</td><td>Swallows short sessions. Opening and closing the map quickly flashes nothing.</td></tr>
+    <tr><td>Enter</td><td class="mono2">fadeIn 220ms + scaleIn 0.92→1.0</td><td><code>FastOutSlowInEasing</code>. Subtle scale: it grows, it does not pop.</td></tr>
+    <tr><td>Expanded dwell</td><td class="mono2">4000 ms</td><td>Long enough to read three words unhurried, short enough not to become furniture.</td></tr>
+    <tr><td>Collapse</td><td class="mono2">animateContentSize 180ms + label fadeOut 120ms</td><td>The label leaves before the width closes, otherwise it gets squeezed.</td></tr>
+    <tr><td>Dot pulse</td><td class="mono2">2000 ms, alpha .45↔1.0</td><td>Slow enough to read as breathing rather than as an alert.</td></tr>
+    <tr><td>Exit</td><td class="mono2">fadeOut 160ms + scaleOut 1.0→0.96</td><td>Leaves faster than it arrives — an exit should not ask for attention.</td></tr>
+    <tr><td>Minimum visibility</td><td class="mono2">1200 ms</td><td>If tracking stops sooner it still completes; prevents a flash.</td></tr>
+  </table>
+
+  <h3 style="margin-top:22px">Accessibility</h3>
+  <table>
+    <tr><th>Item</th><th>Decision</th></tr>
+    <tr><td>Not color-only</td><td>The icon (<code>Icons.Rounded.MyLocation</code>) and the text carry the entire meaning. The dot and its pulse are reinforcement; the pill still works in greyscale and with color vision deficiency.</td></tr>
+    <tr><td>Contrast</td><td><code>surfaceContainerHigh</code> + <code>onSurfaceVariant</code> clears 4.5:1 in both schemes. The icon in <code>primary</code> only if validated against the dynamic container — if it fails, fall back to <code>onSurfaceVariant</code>.</td></tr>
+    <tr><td>Announcement</td><td><code>liveRegion = LiveRegionMode.Polite</code> — TalkBack announces once on appearance without interrupting whatever is being read.</td></tr>
+    <tr><td>Content description</td><td>"Your location is being used to show nearby visits." One string, identical in the expanded and collapsed states — collapsing is visual, not semantic.</td></tr>
+    <tr><td>Decorative dot</td><td><code>clearAndSetSemantics {}</code>, so it does not become a stray node in the tree.</td></tr>
+    <tr><td>Motion</td><td>Honor <code>ANIMATOR_DURATION_SCALE == 0</code>: no pulse, no animated entry, just the end state. Infinite motion is a known vestibular-discomfort trigger.</td></tr>
+    <tr><td>Large fonts</td><td>Start collapsed on the first frame once font scale exceeds roughly 1.3 — the expanded pill cannot fit without truncating.</td></tr>
+    <tr><td>Touch target</td><td>If it ever becomes clickable, <code>minimumInteractiveComponentSize()</code> (48dp) without growing the visual.</td></tr>
+  </table>
+
+  <h3 style="margin-top:22px">Optional reinforcement</h3>
+  <p style="margin:0;max-width:880px">
+    A and D do not compete. If a second level of explanation is wanted, D's supporting text in the
+    <i>Nearby visits</i> header answers "why does this section exist?", while the pill answers "location
+    is on right now". Those are different questions. It is just not worth shipping both in the same
+    release — measure whether the pill alone already covers it.
+  </p>
+
+  <h3 style="margin-top:22px">Where this would fit (high level — not the implementation plan)</h3>
+  <table>
+    <tr><th>Piece</th><th>Place</th></tr>
+    <tr><td>Composable</td><td>New <code>ui/views/LocationActiveIndicator.kt</code> — one class/composable per file, matching the rest of <code>ui/views/</code>.</td></tr>
+    <tr><td>Source of truth</td><td>Today <code>startTrackingLocation()</code>/<code>stopTrackingLocation()</code> leave no trace in state. The clean path is for <code>UserLocationProvider</code> to expose a tracking <code>StateFlow&lt;Boolean&gt;</code> that <code>VisitListViewModel</code> reflects into <code>UiState</code> — deriving it in the UI from <code>showNearbyVisits || showVisitMapSheet</code> would duplicate the rule in two places.</td></tr>
+    <tr><td>List scenario</td><td><code>VisitListScreenContent</code>, in a <code>Box</code>, <code>Alignment.BottomCenter</code>, with <code>floatingBarBottomPadding + 8.dp</code> so it clears the FAB.</td></tr>
+    <tr><td>Map scenario</td><td>Inside the <code>Box</code> in <code>VisitMapSheet</code>, <code>Alignment.TopStart</code>, <code>padding(16.dp)</code> — same line as the close button.</td></tr>
+    <tr><td>Strings</td><td>New entries in <code>values/</code>, <code>values-pt-rBR/</code> and <code>values-b+es+419/</code> — all three already exist.</td></tr>
+    <tr><td>Previews</td><td>Follow the repo pattern: <code>@PreviewPhone</code>/<code>@PreviewFoldable</code> plus a <code>PreviewConfigProvider</code> covering expanded, collapsed, light and dark, so the screenshot test catches regressions.</td></tr>
+  </table>
+</div>
+
+<p class="note" style="margin-top:26px">
+  Mockups reconstructed in HTML from the app's actual theme (<code>Theme.kt</code>, <code>Color.kt</code>,
+  <code>DpConstants.kt</code>) and from <code>VisitListScreen.kt</code> / <code>VisitMapSheet</code>.
+  Light-mode colors approximate the Material You palette captured in
+  <code>docs/screenshots/visit-list.png</code>; on device they come from the wallpaper.
+</p>
+
+</div>
+</body>
+</html>

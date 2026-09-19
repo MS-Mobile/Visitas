@@ -111,6 +111,7 @@ import com.msmobile.visitas.summary.SummaryViewModel
 import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.ui.views.LazyColumnWithScrollbar
+import com.msmobile.visitas.ui.views.LocationActiveIndicator
 import com.msmobile.visitas.ui.views.MonthNavigator
 import com.msmobile.visitas.ui.views.MonthNavigatorEvent
 import com.msmobile.visitas.ui.views.PermissionRationaleSheet
@@ -150,6 +151,9 @@ private val FILTER_MENU_VERTICAL_PADDING = 8.dp
 
 /** Sized down from the 24.dp icon default so the chevron sits with the section title, not over it. */
 private val SECTION_CHEVRON_SIZE = 20.dp
+
+/** The inset the map's floating controls share, so the indicator lines up with the close button. */
+private val MAP_OVERLAY_PADDING = 16.dp
 
 /**
  * The section header is the only way to fold a section, and the card directly below it navigates
@@ -288,130 +292,144 @@ private fun VisitListScreenContent(
     onIntentStateHandled: OnIntentStateHandled,
     onMapError: (String) -> Unit
 ) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(verticalFieldPadding)
-    ) {
-        SummaryCard(
-            summaryUiState = summaryUiState,
-            visitListUiState = visitListUiState,
-            onSummaryEvent = onSummaryEvent,
-            onVisitListEvent = onVisitListEvent,
-            onMonthPickerEvent = onMonthPickerEvent,
-        )
-        VisitsList(
-            modifier = Modifier.padding(
-                start = borderPadding,
-                end = borderPadding
-            ),
-            visitListUiState = visitListUiState,
-            onVisitListEvent = onVisitListEvent,
-            onNavigate = onNavigate
-        )
-        VisitMapSheet(
-            isVisible = visitListUiState.showVisitMapSheet,
-            currentCoordinate = visitListUiState.currentCoordinates,
-            visitMapState = visitListUiState.visitMapState,
-            engine = visitListUiState.visitMapEngine,
-            onDismiss = {
-                onVisitListEvent(VisitListViewModel.UiEvent.VisitMapSheetDismissed)
-            },
-            onMapError = onMapError
-        )
-        visitListUiState.addressOptionsSheet?.let { address ->
-            AddressOptionsSheet(
-                address = address,
-                onEvent = onVisitListEvent
+    Box {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(verticalFieldPadding)
+        ) {
+            SummaryCard(
+                summaryUiState = summaryUiState,
+                visitListUiState = visitListUiState,
+                onSummaryEvent = onSummaryEvent,
+                onVisitListEvent = onVisitListEvent,
+                onMonthPickerEvent = onMonthPickerEvent,
             )
-        }
-        BibleStudentsSheet(
-            isVisible = summaryUiState.isBibleStudentsSheetVisible,
-            bibleStudentNames = summaryUiState.bibleStudentNames,
-            onDismiss = {
-                onSummaryEvent(SummaryViewModel.UiEvent.BibleStudentsSheetDismissed)
-            }
-        )
-        PermissionRationaleSheet(
-            isVisible = visitListUiState.showLocationRationale,
-            message = stringResource(R.string.location_permission_message),
-            icon = Icons.Rounded.LocationOn,
-            onDismiss = {
-                onVisitListEvent(VisitListViewModel.UiEvent.LocationRationaleDismissed)
-            },
-            onConfirm = {
-                onVisitListEvent(VisitListViewModel.UiEvent.LocationRationaleAccepted)
-            }
-        )
-        // TODO: Remove backup sheet code
-        BackupSheet(
-            isVisible = visitListUiState.showBackupSheet,
-            uiState = backupUiState,
-            onBackupSheetEvent = { backupEvent ->
-                onBackupSheetEvent(backupEvent)
-                onVisitListEvent(VisitListViewModel.UiEvent.BackupSheetDismissed)
-            },
-            onDismiss = {
-                onVisitListEvent(VisitListViewModel.UiEvent.BackupSheetDismissed)
-                onBackupSheetEvent(BackupViewModel.UiEvent.BackupCanceled)
-            }
-        )
-        when (val previewBackupFileState = visitListUiState.previewBackupFileState) {
-            VisitListViewModel.PreviewBackupFileState.None -> {
-                // No preview state, do nothing
-            }
-
-            is VisitListViewModel.PreviewBackupFileState.Previewing -> {
-                val confirmRestoreEvent = BackupViewModel.UiEvent.RestoreBackup(
-                    previewBackupFileState.fileUri,
-                    successMessage = stringResource(id = R.string.restore_backup_success),
-                    errorMessage = stringResource(id = R.string.restore_backup_failure)
-                )
-                RestoreBackupDialog(
-                    onDismiss = {
-                        onVisitListEvent(VisitListViewModel.UiEvent.RestorePreviewedBackupDialogDismissed)
-                    },
-                    onConfirm = {
-                        onBackupSheetEvent(confirmRestoreEvent)
-                        onVisitListEvent(VisitListViewModel.UiEvent.RestorePreviewedBackupDialogDismissed)
-                    }
+            VisitsList(
+                modifier = Modifier.padding(
+                    start = borderPadding,
+                    end = borderPadding
+                ),
+                visitListUiState = visitListUiState,
+                onVisitListEvent = onVisitListEvent,
+                onNavigate = onNavigate
+            )
+            VisitMapSheet(
+                isVisible = visitListUiState.showVisitMapSheet,
+                isTrackingLocation = visitListUiState.isTrackingLocation,
+                currentCoordinate = visitListUiState.currentCoordinates,
+                visitMapState = visitListUiState.visitMapState,
+                engine = visitListUiState.visitMapEngine,
+                onDismiss = {
+                    onVisitListEvent(VisitListViewModel.UiEvent.VisitMapSheetDismissed)
+                },
+                onMapError = onMapError
+            )
+            visitListUiState.addressOptionsSheet?.let { address ->
+                AddressOptionsSheet(
+                    address = address,
+                    onEvent = onVisitListEvent
                 )
             }
-        }
-        if (visitListUiState.showLocationPermissionDialog) {
-            RequestLocationPermission {
-                onVisitListEvent(VisitListViewModel.UiEvent.LocationPermissionDialogShown)
-                onVisitListEvent(VisitListViewModel.UiEvent.LocationPermissionGranted)
-            }
-        }
-        when (backupUiState.backupResult) {
-            is BackupViewModel.BackupResult.BackupCreationSuccess -> {
-                onBackupSheetEvent(BackupViewModel.UiEvent.BackupResultAcknowledged)
-            }
+            BibleStudentsSheet(
+                isVisible = summaryUiState.isBibleStudentsSheetVisible,
+                bibleStudentNames = summaryUiState.bibleStudentNames,
+                onDismiss = {
+                    onSummaryEvent(SummaryViewModel.UiEvent.BibleStudentsSheetDismissed)
+                }
+            )
+            PermissionRationaleSheet(
+                isVisible = visitListUiState.showLocationRationale,
+                message = stringResource(R.string.location_permission_message),
+                icon = Icons.Rounded.LocationOn,
+                onDismiss = {
+                    onVisitListEvent(VisitListViewModel.UiEvent.LocationRationaleDismissed)
+                },
+                onConfirm = {
+                    onVisitListEvent(VisitListViewModel.UiEvent.LocationRationaleAccepted)
+                }
+            )
+            // TODO: Remove backup sheet code
+            BackupSheet(
+                isVisible = visitListUiState.showBackupSheet,
+                uiState = backupUiState,
+                onBackupSheetEvent = { backupEvent ->
+                    onBackupSheetEvent(backupEvent)
+                    onVisitListEvent(VisitListViewModel.UiEvent.BackupSheetDismissed)
+                },
+                onDismiss = {
+                    onVisitListEvent(VisitListViewModel.UiEvent.BackupSheetDismissed)
+                    onBackupSheetEvent(BackupViewModel.UiEvent.BackupCanceled)
+                }
+            )
+            when (val previewBackupFileState = visitListUiState.previewBackupFileState) {
+                VisitListViewModel.PreviewBackupFileState.None -> {
+                    // No preview state, do nothing
+                }
 
-            is BackupViewModel.BackupResult.RestoreFailure -> {
-                onBackupSheetEvent(BackupViewModel.UiEvent.BackupResultAcknowledged)
+                is VisitListViewModel.PreviewBackupFileState.Previewing -> {
+                    val confirmRestoreEvent = BackupViewModel.UiEvent.RestoreBackup(
+                        previewBackupFileState.fileUri,
+                        successMessage = stringResource(id = R.string.restore_backup_success),
+                        errorMessage = stringResource(id = R.string.restore_backup_failure)
+                    )
+                    RestoreBackupDialog(
+                        onDismiss = {
+                            onVisitListEvent(VisitListViewModel.UiEvent.RestorePreviewedBackupDialogDismissed)
+                        },
+                        onConfirm = {
+                            onBackupSheetEvent(confirmRestoreEvent)
+                            onVisitListEvent(VisitListViewModel.UiEvent.RestorePreviewedBackupDialogDismissed)
+                        }
+                    )
+                }
             }
-
-            is BackupViewModel.BackupResult.RestoreSuccess -> {
-                onBackupSheetEvent(BackupViewModel.UiEvent.BackupResultAcknowledged)
-                onVisitListEvent(VisitListViewModel.UiEvent.BackupRestoredSuccessfully)
+            if (visitListUiState.showLocationPermissionDialog) {
+                RequestLocationPermission {
+                    onVisitListEvent(VisitListViewModel.UiEvent.LocationPermissionDialogShown)
+                    onVisitListEvent(VisitListViewModel.UiEvent.LocationPermissionGranted)
+                }
             }
+            when (backupUiState.backupResult) {
+                is BackupViewModel.BackupResult.BackupCreationSuccess -> {
+                    onBackupSheetEvent(BackupViewModel.UiEvent.BackupResultAcknowledged)
+                }
 
-            null -> {
-                // No backup result, do nothing
+                is BackupViewModel.BackupResult.RestoreFailure -> {
+                    onBackupSheetEvent(BackupViewModel.UiEvent.BackupResultAcknowledged)
+                }
+
+                is BackupViewModel.BackupResult.RestoreSuccess -> {
+                    onBackupSheetEvent(BackupViewModel.UiEvent.BackupResultAcknowledged)
+                    onVisitListEvent(VisitListViewModel.UiEvent.BackupRestoredSuccessfully)
+                }
+
+                null -> {
+                    // No backup result, do nothing
+                }
+            }
+            when (intentState) {
+                IntentState.None -> {
+                    // No intent state, do nothing
+                }
+
+                is IntentState.PreviewBackupFile -> {
+                    onVisitListEvent(
+                        VisitListViewModel.UiEvent.BackupFilePreviewed(intentState.uri)
+                    )
+                    onIntentStateHandled()
+                }
             }
         }
-        when (intentState) {
-            IntentState.None -> {
-                // No intent state, do nothing
-            }
 
-            is IntentState.PreviewBackupFile -> {
-                onVisitListEvent(
-                    VisitListViewModel.UiEvent.BackupFilePreviewed(intentState.uri)
-                )
-                onIntentStateHandled()
-            }
-        }
+        // The pill floats over the list rather than in it, so nothing reflows while tracking
+        // starts and stops. It clears the floating bar the same way the snackbar does, without
+        // either component having to know about the other.
+        LocationActiveIndicator(
+            isTracking = visitListUiState.isTrackingLocation,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(bottom = verticalFieldPadding + floatingBarBottomPadding)
+        )
     }
 }
 
@@ -1202,6 +1220,7 @@ private fun PendingVisitMenu(
 @Composable
 private fun ColumnScope.VisitMapSheet(
     isVisible: Boolean,
+    isTrackingLocation: Boolean,
     currentCoordinate: Pair<Double, Double>,
     visitMapState: VisitMapState,
     engine: VisitMapEngineOption,
@@ -1235,11 +1254,18 @@ private fun ColumnScope.VisitMapSheet(
                     onMapError = onMapError
                 )
 
+                LocationActiveIndicator(
+                    isTracking = isTrackingLocation,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(MAP_OVERLAY_PADDING)
+                )
+
                 FilledTonalIconButton(
                     onClick = onDismiss,
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(16.dp),
+                        .padding(MAP_OVERLAY_PADDING),
                     colors = tonalButtonColors()
                 ) {
                     Icon(
