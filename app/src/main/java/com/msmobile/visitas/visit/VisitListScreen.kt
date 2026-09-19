@@ -689,7 +689,7 @@ private fun VisitSectionHeader(section: VisitListSection) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = verticalFieldPadding)
+            .padding(top = verticalFieldPadding, start = cardInnerPadding)
             .semantics(mergeDescendants = true) { heading() },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(horizontalFieldPadding)
