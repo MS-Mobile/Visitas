@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -29,6 +30,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.Analytics
+import androidx.compose.material.icons.outlined.ExpandLess
+import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Explore
 import androidx.compose.material.icons.rounded.FilterList
@@ -61,9 +64,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -71,6 +78,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -139,6 +147,16 @@ private const val VISIT_MAP_ANIMATION_DURATION = 300
 // DropdownMenu container values mirrored so the filter-menu preview matches the real popup.
 private val FILTER_MENU_ELEVATION = 3.dp
 private val FILTER_MENU_VERTICAL_PADDING = 8.dp
+
+/** Sized down from the 24.dp icon default so the chevron sits with the section title, not over it. */
+private val SECTION_CHEVRON_SIZE = 20.dp
+
+/**
+ * The section header is the only way to fold a section, and the card directly below it navigates
+ * to a visit on tap, so the row carries the 48.dp minimum touch target rather than the ~32.dp its
+ * title alone would measure.
+ */
+private val SECTION_HEADER_MIN_HEIGHT = 48.dp
 
 @Destination<RootGraph>(style = ListScreenStyle::class, start = true)
 @Composable
@@ -617,6 +635,24 @@ private fun VisitsList(
     val sections = remember(visitList, groupByPeriod, showNearbyVisits) {
         visitList.toSections(groupByPeriod = groupByPeriod, showNearby = showNearbyVisits)
     }
+    // Which sections the reader has collapsed, by header key. Collapsing is a view affordance
+    // with no other consumer, so it stays out of the ViewModel; rememberSaveable is what carries
+    // it across rotation and process death. Holding the *collapsed* keys rather than the expanded
+    // ones keeps a section that appears later — a new day, a re-run filter — open by default.
+    val collapsedSections = rememberSaveable(
+        saver = listSaver(save = { it.toList() }, restore = { it.toMutableStateList() })
+    ) { mutableStateListOf<String>() }
+    // Drop keys no section answers to any more. Without this the list only grows: every day
+    // collapsed in date mode leaves a key behind, and all of them are written into the saved
+    // instance state on every save. Collapsing is therefore deliberately not sticky across a
+    // trip away from a section — a day reopened next month comes back expanded. The empty guard
+    // keeps the first frames, when the visits have not loaded yet, from wiping a restored set.
+    val sectionKeys = remember(sections) { sections.map { section -> section.header.key } }
+    LaunchedEffect(sectionKeys) {
+        if (sectionKeys.isNotEmpty()) {
+            collapsedSections.retainAll(sectionKeys.toSet())
+        }
+    }
 
     LaunchedEffect(key1 = null) {
         onVisitListEvent(VisitListViewModel.UiEvent.ViewCreated)
@@ -659,19 +695,35 @@ private fun VisitsList(
                     }
                 } else {
                     sections.forEach { section ->
-                        item(key = section.header.key) {
-                            VisitSectionHeader(section = section)
-                        }
-                        items(
-                            items = section.visits,
-                            key = { visit -> visit.visitId }) { visit ->
-                            VisitCard(
-                                visit = visit,
-                                isLoading = false,
-                                showNearbyVisits = showNearbyVisits,
-                                onEvent = onVisitListEvent,
-                                onNavigate = onNavigate
+                        val sectionKey = section.header.key
+                        val isCollapsed = sectionKey in collapsedSections
+                        item(key = sectionKey) {
+                            VisitSectionHeader(
+                                section = section,
+                                isCollapsed = isCollapsed,
+                                onToggle = {
+                                    if (isCollapsed) {
+                                        collapsedSections.remove(sectionKey)
+                                    } else {
+                                        collapsedSections.add(sectionKey)
+                                    }
+                                },
+                                modifier = Modifier.animateItem()
                             )
+                        }
+                        if (!isCollapsed) {
+                            items(
+                                items = section.visits,
+                                key = { visit -> visit.visitId }) { visit ->
+                                VisitCard(
+                                    visit = visit,
+                                    isLoading = false,
+                                    showNearbyVisits = showNearbyVisits,
+                                    onEvent = onVisitListEvent,
+                                    onNavigate = onNavigate,
+                                    modifier = Modifier.animateItem()
+                                )
+                            }
                         }
                     }
                 }
@@ -681,16 +733,45 @@ private fun VisitsList(
 }
 
 /**
- * Title row above a run of cards: the section name, how many visits it holds, and a rule running
- * to the edge so the break between sections reads even while scrolling fast.
+ * Title row above a run of cards: the section name, how many visits it holds, a rule running
+ * across so the break between sections reads even while scrolling fast, and a chevron closing the
+ * row. The whole row is the hit target for folding the section away, so the count stays readable
+ * as a summary of what is hidden.
+ *
+ * The chevron trails rather than leads so the title keeps its alignment with the card text. It
+ * carries no content description: the row merges its descendants, and the action it stands for is
+ * already announced by the click label. The click label names the *action*, though, so the row
+ * also carries a state description — without it the count of a collapsed section is announced with
+ * nothing to say the cards behind it are folded away, and reads as a miscount.
  */
 @Composable
-private fun VisitSectionHeader(section: VisitListSection) {
+private fun VisitSectionHeader(
+    section: VisitListSection,
+    isCollapsed: Boolean,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val toggleLabel = if (isCollapsed) {
+        stringResource(R.string.visit_list_section_expand_action)
+    } else {
+        stringResource(R.string.visit_list_section_collapse_action)
+    }
+    val collapsedState = if (isCollapsed) {
+        stringResource(R.string.visit_list_section_state_collapsed)
+    } else {
+        stringResource(R.string.visit_list_section_state_expanded)
+    }
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(top = verticalFieldPadding)
-            .semantics(mergeDescendants = true) { heading() },
+            .heightIn(min = SECTION_HEADER_MIN_HEIGHT)
+            .clickable(onClickLabel = toggleLabel, onClick = onToggle)
+            .padding(start = cardInnerPadding, end = cardInnerPadding)
+            .semantics(mergeDescendants = true) {
+                heading()
+                stateDescription = collapsedState
+            },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(horizontalFieldPadding)
     ) {
@@ -707,6 +788,12 @@ private fun VisitSectionHeader(section: VisitListSection) {
         HorizontalDivider(
             modifier = Modifier.weight(1f),
             color = MaterialTheme.colorScheme.outlineVariant
+        )
+        Icon(
+            imageVector = if (isCollapsed) Icons.Outlined.ExpandMore else Icons.Outlined.ExpandLess,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(SECTION_CHEVRON_SIZE)
         )
     }
 }
@@ -859,11 +946,12 @@ private fun VisitCard(
     showNearbyVisits: Boolean,
     onEvent: (VisitListViewModel.UiEvent) -> Unit,
     onNavigate: (Direction) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val isHouseholderAddressNearby =
         visit.householderAddressDistance is AddressProvider.AddressDistance.Nearby
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .wrapContentHeight(),
         colors = CardDefaults.cardColors()
