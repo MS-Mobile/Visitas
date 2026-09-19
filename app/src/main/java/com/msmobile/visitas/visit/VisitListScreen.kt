@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -77,6 +78,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -148,6 +150,13 @@ private val FILTER_MENU_VERTICAL_PADDING = 8.dp
 
 /** Sized down from the 24.dp icon default so the chevron sits with the section title, not over it. */
 private val SECTION_CHEVRON_SIZE = 20.dp
+
+/**
+ * The section header is the only way to fold a section, and the card directly below it navigates
+ * to a visit on tap, so the row carries the 48.dp minimum touch target rather than the ~32.dp its
+ * title alone would measure.
+ */
+private val SECTION_HEADER_MIN_HEIGHT = 48.dp
 
 @Destination<RootGraph>(style = ListScreenStyle::class, start = true)
 @Composable
@@ -629,11 +638,21 @@ private fun VisitsList(
     // Which sections the reader has collapsed, by header key. Collapsing is a view affordance
     // with no other consumer, so it stays out of the ViewModel; rememberSaveable is what carries
     // it across rotation and process death. Holding the *collapsed* keys rather than the expanded
-    // ones keeps a section that appears later — a new day, a re-run filter — open by default, and
-    // keys that stop matching when the grouping flips between period and day simply fall away.
+    // ones keeps a section that appears later — a new day, a re-run filter — open by default.
     val collapsedSections = rememberSaveable(
         saver = listSaver(save = { it.toList() }, restore = { it.toMutableStateList() })
     ) { mutableStateListOf<String>() }
+    // Drop keys no section answers to any more. Without this the list only grows: every day
+    // collapsed in date mode leaves a key behind, and all of them are written into the saved
+    // instance state on every save. Collapsing is therefore deliberately not sticky across a
+    // trip away from a section — a day reopened next month comes back expanded. The empty guard
+    // keeps the first frames, when the visits have not loaded yet, from wiping a restored set.
+    val sectionKeys = remember(sections) { sections.map { section -> section.header.key } }
+    LaunchedEffect(sectionKeys) {
+        if (sectionKeys.isNotEmpty()) {
+            collapsedSections.retainAll(sectionKeys.toSet())
+        }
+    }
 
     LaunchedEffect(key1 = null) {
         onVisitListEvent(VisitListViewModel.UiEvent.ViewCreated)
@@ -721,7 +740,9 @@ private fun VisitsList(
  *
  * The chevron trails rather than leads so the title keeps its alignment with the card text. It
  * carries no content description: the row merges its descendants, and the action it stands for is
- * already announced by the click label.
+ * already announced by the click label. The click label names the *action*, though, so the row
+ * also carries a state description — without it the count of a collapsed section is announced with
+ * nothing to say the cards behind it are folded away, and reads as a miscount.
  */
 @Composable
 private fun VisitSectionHeader(
@@ -735,16 +756,22 @@ private fun VisitSectionHeader(
     } else {
         stringResource(R.string.visit_list_section_collapse_action)
     }
+    val collapsedState = if (isCollapsed) {
+        stringResource(R.string.visit_list_section_state_collapsed)
+    } else {
+        stringResource(R.string.visit_list_section_state_expanded)
+    }
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .padding(top = verticalFieldPadding)
+            .heightIn(min = SECTION_HEADER_MIN_HEIGHT)
             .clickable(onClickLabel = toggleLabel, onClick = onToggle)
-            .padding(
-                top = verticalFieldPadding,
-                start = cardInnerPadding,
-                end = cardInnerPadding
-            )
-            .semantics(mergeDescendants = true) { heading() },
+            .padding(start = cardInnerPadding, end = cardInnerPadding)
+            .semantics(mergeDescendants = true) {
+                heading()
+                stateDescription = collapsedState
+            },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(horizontalFieldPadding)
     ) {
