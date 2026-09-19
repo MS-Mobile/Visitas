@@ -16,6 +16,15 @@ class UserLocationProvider(private val context: Context) {
     private val _location = MutableStateFlow<UserLocation>(UserLocation.NotAvailable)
     val location: StateFlow<UserLocation> = _location
 
+    private val _isTracking = MutableStateFlow(false)
+
+    /**
+     * Whether location updates are being requested right now. This is the single source of truth
+     * behind the indicator the user sees, so it has to reflect what the fused client is actually
+     * doing rather than what a screen intends — the two only agree while nothing throws.
+     */
+    val isTracking: StateFlow<Boolean> = _isTracking
+
     private val fusedLocationClient: FusedLocationProviderClient by lazy {
         LocationServices.getFusedLocationProviderClient(context)
     }
@@ -36,6 +45,8 @@ class UserLocationProvider(private val context: Context) {
 
     @RequiresPermission(anyOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
     fun startLocationUpdates() {
+        if (_isTracking.value) return
+        _isTracking.value = true
         fusedLocationClient.lastLocation.addOnSuccessListener { location ->
             location?.let {
                 _location.value = UserLocation.Available(it.latitude, it.longitude)
@@ -45,6 +56,8 @@ class UserLocationProvider(private val context: Context) {
     }
 
     fun stopLocationUpdates() {
+        if (!_isTracking.value) return
+        _isTracking.value = false
         fusedLocationClient.removeLocationUpdates(locationCallback)
     }
 
