@@ -156,4 +156,7 @@
     <string name="settings">Configuración</string>
     <string name="navigate_back_content_description">Volver</string>
     <string name="app_version">Versión %1$s</string>
+    <string name="location_active_indicator_label">Ubicación activa</string>
+    <string name="location_active_indicator_nearby_content_description">Se está usando tu ubicación para mostrar visitas cercanas.</string>
+    <string name="location_active_indicator_map_content_description">Se está usando tu ubicación para mostrar dónde estás en el mapa.</string>
 </resources>

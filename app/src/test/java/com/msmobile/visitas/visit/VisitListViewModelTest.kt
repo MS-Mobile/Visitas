@@ -22,12 +22,16 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Rule
 import org.junit.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyBlocking
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicBoolean
 
 class VisitListViewModelTest {
     @get:Rule
@@ -448,11 +452,205 @@ class VisitListViewModelTest {
         assertEquals(VisitMapEngineOption.Leaflet, viewModel.uiState.value.visitMapEngine)
     }
 
+    @Test
+    fun `location is not tracked while neither nearby visits nor the map needs it`() {
+        // Arrange
+        val providerRef = MockReferenceHolder<UserLocationProvider>()
+
+        // Act
+        val viewModel = createViewModel(
+            hasLocationPermission = true,
+            userLocationProviderRef = providerRef
+        )
+
+        // Assert
+        verify(requireNotNull(providerRef.value), never()).startLocationUpdates()
+        assertFalse(viewModel.uiState.value.isTrackingLocation)
+    }
+
+    @Test
+    fun `enabling nearby visits starts tracking the location`() {
+        // Arrange
+        val providerRef = MockReferenceHolder<UserLocationProvider>()
+        val viewModel = createViewModel(
+            hasLocationPermission = true,
+            userLocationProviderRef = providerRef
+        )
+
+        // Act
+        viewModel.onEvent(VisitListViewModel.UiEvent.ShowNearbyVisitsToggled(show = true))
+
+        // Assert
+        verify(requireNotNull(providerRef.value)).startLocationUpdates()
+        assertTrue(viewModel.uiState.value.isTrackingLocation)
+    }
+
+    @Test
+    fun `disabling nearby visits stops tracking the location`() {
+        // Arrange
+        val providerRef = MockReferenceHolder<UserLocationProvider>()
+        val viewModel = createViewModel(
+            hasLocationPermission = true,
+            userLocationProviderRef = providerRef
+        )
+        viewModel.onEvent(VisitListViewModel.UiEvent.ShowNearbyVisitsToggled(show = true))
+
+        // Act
+        viewModel.onEvent(VisitListViewModel.UiEvent.ShowNearbyVisitsToggled(show = false))
+
+        // Assert
+        verify(requireNotNull(providerRef.value)).stopLocationUpdates()
+        assertFalse(viewModel.uiState.value.isTrackingLocation)
+    }
+
+    @Test
+    fun `opening the visits map starts tracking the location`() {
+        // Arrange
+        val providerRef = MockReferenceHolder<UserLocationProvider>()
+        val viewModel = createViewModel(
+            hasLocationPermission = true,
+            userLocationProviderRef = providerRef
+        )
+
+        // Act
+        viewModel.onEvent(VisitListViewModel.UiEvent.VisitMapSheetClicked)
+
+        // Assert
+        verify(requireNotNull(providerRef.value)).startLocationUpdates()
+        assertTrue(viewModel.uiState.value.isTrackingLocation)
+    }
+
+    @Test
+    fun `dismissing the visits map stops tracking the location`() {
+        // Arrange
+        val providerRef = MockReferenceHolder<UserLocationProvider>()
+        val viewModel = createViewModel(
+            hasLocationPermission = true,
+            userLocationProviderRef = providerRef
+        )
+        viewModel.onEvent(VisitListViewModel.UiEvent.VisitMapSheetClicked)
+
+        // Act
+        viewModel.onEvent(VisitListViewModel.UiEvent.VisitMapSheetDismissed)
+
+        // Assert
+        verify(requireNotNull(providerRef.value)).stopLocationUpdates()
+        assertFalse(viewModel.uiState.value.isTrackingLocation)
+    }
+
+    @Test
+    fun `dismissing the visits map keeps tracking while nearby visits stays on`() {
+        // Arrange
+        val providerRef = MockReferenceHolder<UserLocationProvider>()
+        val viewModel = createViewModel(
+            hasLocationPermission = true,
+            userLocationProviderRef = providerRef
+        )
+        viewModel.onEvent(VisitListViewModel.UiEvent.ShowNearbyVisitsToggled(show = true))
+        viewModel.onEvent(VisitListViewModel.UiEvent.VisitMapSheetClicked)
+
+        // Act
+        viewModel.onEvent(VisitListViewModel.UiEvent.VisitMapSheetDismissed)
+
+        // Assert
+        verify(requireNotNull(providerRef.value), never()).stopLocationUpdates()
+        assertTrue(viewModel.uiState.value.isTrackingLocation)
+    }
+
+    @Test
+    fun `saved nearby visits preference starts tracking once the visits load`() {
+        // Arrange
+        val providerRef = MockReferenceHolder<UserLocationProvider>()
+        val viewModel = createViewModel(
+            hasLocationPermission = true,
+            userLocationProviderRef = providerRef,
+            visitListDistanceFilterOption = VisitListDistanceFilterOption.Nearby
+        )
+
+        // Act
+        viewModel.onEvent(VisitListViewModel.UiEvent.ViewCreated)
+
+        // Assert
+        verify(requireNotNull(providerRef.value)).startLocationUpdates()
+        assertTrue(viewModel.uiState.value.isTrackingLocation)
+    }
+
+    @Test
+    fun `nearby visits without location permission never starts tracking`() {
+        // Arrange
+        val providerRef = MockReferenceHolder<UserLocationProvider>()
+        val viewModel = createViewModel(
+            hasLocationPermission = false,
+            userLocationProviderRef = providerRef
+        )
+
+        // Act
+        viewModel.onEvent(VisitListViewModel.UiEvent.ShowNearbyVisitsToggled(show = true))
+
+        // Assert
+        verify(requireNotNull(providerRef.value), never()).startLocationUpdates()
+        assertFalse(viewModel.uiState.value.isTrackingLocation)
+    }
+
+    @Test
+    fun `granting the permission starts tracking for a screen already asking for it`() {
+        // Arrange
+        val providerRef = MockReferenceHolder<UserLocationProvider>()
+        val permissionState = AtomicBoolean(false)
+        val viewModel = createViewModel(
+            hasLocationPermission = false,
+            locationPermissionState = permissionState,
+            userLocationProviderRef = providerRef,
+            visitListDistanceFilterOption = VisitListDistanceFilterOption.Nearby
+        )
+        viewModel.onEvent(VisitListViewModel.UiEvent.ViewCreated)
+        assertTrue(viewModel.uiState.value.showNearbyVisits)
+        assertFalse(viewModel.uiState.value.isTrackingLocation)
+
+        // Act
+        permissionState.set(true)
+        viewModel.onEvent(VisitListViewModel.UiEvent.LocationPermissionGranted)
+
+        // Assert
+        verify(requireNotNull(providerRef.value)).startLocationUpdates()
+        assertTrue(viewModel.uiState.value.isTrackingLocation)
+    }
+
+    @Test
+    fun `granting the permission starts tracking for the map the user was waiting on`() {
+        // Arrange
+        val providerRef = MockReferenceHolder<UserLocationProvider>()
+        val permissionState = AtomicBoolean(false)
+        val viewModel = createViewModel(
+            hasLocationPermission = false,
+            locationPermissionState = permissionState,
+            userLocationProviderRef = providerRef,
+            visitListDistanceFilterOption = VisitListDistanceFilterOption.Nearby
+        )
+        viewModel.onEvent(VisitListViewModel.UiEvent.ViewCreated)
+        // Nearby is already on, so opening the map does not change what the screen needs
+        viewModel.onEvent(VisitListViewModel.UiEvent.VisitMapSheetClicked)
+        assertTrue(viewModel.uiState.value.showLocationRationale)
+
+        // Act
+        permissionState.set(true)
+        viewModel.onEvent(VisitListViewModel.UiEvent.LocationPermissionGranted)
+
+        // Assert
+        assertTrue(viewModel.uiState.value.showVisitMapSheet)
+        verify(requireNotNull(providerRef.value)).startLocationUpdates()
+        assertTrue(viewModel.uiState.value.isTrackingLocation)
+    }
+
     private fun createViewModel(
         visitHouseholderRepositoryRef: MockReferenceHolder<VisitHouseholderRepository>? = null,
         uriRef: MockReferenceHolder<Uri>? = null,
         hasLocationPermission: Boolean = false,
+        // Held rather than fixed so a test can grant the permission mid-flight, the way the user does.
+        locationPermissionState: AtomicBoolean = AtomicBoolean(hasLocationPermission),
         locationFlowRef: MockReferenceHolder<MutableStateFlow<UserLocationProvider.UserLocation>>? = null,
+        userLocationProviderRef: MockReferenceHolder<UserLocationProvider>? = null,
+        visitListDistanceFilterOption: VisitListDistanceFilterOption = VisitListDistanceFilterOption.All,
         distanceResults: Map<DistanceInput, AddressProvider.AddressDistance> = emptyMap(),
         visitListDateFilterOption: VisitListDateFilterOption = VisitListDateFilterOption.All,
         savedMapEngine: VisitMapEngineOption = VisitMapEngineOption.MapLibre,
@@ -466,11 +664,18 @@ class VisitListViewModelTest {
 
         val locationFlow = MutableStateFlow<UserLocationProvider.UserLocation>(UserLocationProvider.UserLocation.NotAvailable)
         locationFlowRef?.value = locationFlow
+        // The real provider flips isTracking from start/stop, and the indicator reads that flag,
+        // so the mock has to move with the calls rather than stay on a fixed value.
+        val isTrackingFlow = MutableStateFlow(false)
         val userLocationProvider = mock<UserLocationProvider> {
             on { location } doReturn locationFlow
+            on { isTracking } doReturn isTrackingFlow
+            on { startLocationUpdates() } doAnswer { isTrackingFlow.value = true }
+            on { stopLocationUpdates() } doAnswer { isTrackingFlow.value = false }
         }
+        userLocationProviderRef?.value = userLocationProvider
         val permissionChecker = mock<PermissionChecker> {
-            on { hasPermissions(any(), any()) } doReturn hasLocationPermission
+            on { hasPermissions(any(), any()) } doAnswer { locationPermissionState.get() }
         }
         val visitHouseholderRepository = mock<VisitHouseholderRepository> {
             on { getAll() } doReturn visits
@@ -481,7 +686,7 @@ class VisitListViewModelTest {
         val preferenceRepository = mock<PreferenceRepository> {
             on { get() } doReturn Preference(
                 visitListDateFilterOption = visitListDateFilterOption,
-                visitListDistanceFilterOption = VisitListDistanceFilterOption.All,
+                visitListDistanceFilterOption = visitListDistanceFilterOption,
                 visitMapEngineOption = savedMapEngine
             )
         }

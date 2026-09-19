@@ -104,9 +104,14 @@ constructor(
             .onEach(::updateVisitMapState)
             .flowOn(dispatchers.io)
             .launchIn(viewModelScope)
-        if (hasLocationPermission()) {
-            startTrackingLocation()
-        }
+        uiState
+            .map { state -> needsUserLocation(state) && hasLocationPermission() }
+            .distinctUntilChanged()
+            .onEach(::updateLocationTracking)
+            .launchIn(viewModelScope)
+        userLocationProvider.isTracking
+            .onEach { isTracking -> newState { copy(isTrackingLocation = isTracking) } }
+            .launchIn(viewModelScope)
     }
 
     fun onEvent(uiEvent: UiEvent) {
@@ -157,7 +162,9 @@ constructor(
             handleVisitMapSheetClicked()
         }
 
-        startTrackingLocation()
+        // A grant changes no UiState of its own, and the screen that asked for location may
+        // already be showing, so the flow above has nothing new to react to. Reconcile here too.
+        updateLocationTracking(needsUserLocation(_uiState.value) && hasLocationPermission())
     }
 
     private fun handleDistanceBottomSheetConfirmed() {
@@ -485,6 +492,24 @@ constructor(
             } else {
                 updated
             }
+        }
+    }
+
+    /**
+     * The two screens that read the user's position: the nearby filter on the list and the visits
+     * map. Location is only requested while one of them is on screen, so the indicator the user
+     * sees and the updates the app asks for describe the same thing.
+     */
+    private fun needsUserLocation(state: UiState): Boolean {
+        return state.showNearbyVisits || state.showVisitMapSheet
+    }
+
+    private fun updateLocationTracking(shouldTrack: Boolean) {
+        if (shouldTrack == userLocationProvider.isTracking.value) return
+        if (shouldTrack) {
+            startTrackingLocation()
+        } else {
+            stopTrackingLocation()
         }
     }
 
@@ -931,7 +956,8 @@ constructor(
         val visitMapState: VisitMapState,
         val previewBackupFileState: PreviewBackupFileState,
         val visitMapEngine: VisitMapEngineOption = VisitMapEngineOption.MapLibre,
-        val addressOptionsSheet: HouseholderAddressState.Data? = null
+        val addressOptionsSheet: HouseholderAddressState.Data? = null,
+        val isTrackingLocation: Boolean = false
     ) {
         /**
          * Whether the list is split by period of the day rather than by date. Only a single-day

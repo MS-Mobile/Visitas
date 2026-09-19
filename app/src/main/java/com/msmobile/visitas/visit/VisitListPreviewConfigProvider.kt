@@ -153,6 +153,14 @@ internal class VisitListPreviewConfigProvider : PreviewParameterProvider<VisitLi
                     previewVisitListUiState.visitList[2].copy(date = previewDate1.withHour(19)),
                 )
             )
+        ),
+        VisitListPreviewConfig(
+            configName = "Location in use",
+            mainActivityUiState = previewMainActivityUiState,
+            summaryUiState = previewSummaryUiState,
+            // The nearby section is what turned tracking on here, and the pill has to clear the
+            // floating bar without hiding the last card.
+            visitListUiState = previewVisitListUiState.copy(isTrackingLocation = true)
         )
     )
 
