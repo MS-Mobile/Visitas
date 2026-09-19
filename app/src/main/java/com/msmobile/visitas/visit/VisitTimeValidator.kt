@@ -33,6 +33,22 @@ object VisitTimeValidator {
         return isDayValid && isTimeValid
     }
 
+    /**
+     * The period of the day [time] falls into, for grouping visits by time of day. Never returns
+     * [VisitPreferredTime.ANY].
+     *
+     * Shares its boundaries with the preferred-time ranges, but unlike them it covers the whole
+     * day: the hours before [MORNING_RANGE] count as morning, the hours after [EVENING_RANGE] as
+     * evening, so every visit lands in a period.
+     */
+    fun periodOf(time: LocalTime): VisitPreferredTime {
+        return when {
+            time < AFTERNOON_RANGE.start -> VisitPreferredTime.MORNING
+            time < EVENING_RANGE.start -> VisitPreferredTime.AFTERNOON
+            else -> VisitPreferredTime.EVENING
+        }
+    }
+
     private fun isDayValid(dayOfWeek: DayOfWeek, preferredDay: VisitPreferredDay): Boolean {
         return when (preferredDay) {
             VisitPreferredDay.ANY -> true

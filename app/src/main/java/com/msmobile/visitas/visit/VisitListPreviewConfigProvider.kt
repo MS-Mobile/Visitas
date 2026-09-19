@@ -138,6 +138,19 @@ internal class VisitListPreviewConfigProvider : PreviewParameterProvider<VisitLi
                     previewVisitListUiState.visitList[2].copy(hasDrafts = true),
                 )
             )
+        ),
+        VisitListPreviewConfig(
+            configName = "Today by time of day",
+            mainActivityUiState = previewMainActivityUiState,
+            summaryUiState = previewSummaryUiState,
+            visitListUiState = previewVisitListUiState.copy(
+                selectedVisitFilterOption = VisitListDateFilterOption.ScheduledForToday,
+                visitList = listOf(
+                    previewVisitListUiState.visitList[0].copy(date = previewDate1.withHour(9)),
+                    previewVisitListUiState.visitList[1].copy(date = previewDate1.withHour(14)),
+                    previewVisitListUiState.visitList[2].copy(date = previewDate1.withHour(19)),
+                )
+            )
         )
     )
 

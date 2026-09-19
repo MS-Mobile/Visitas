@@ -932,12 +932,23 @@ constructor(
         val previewBackupFileState: PreviewBackupFileState,
         val visitMapEngine: VisitMapEngineOption = VisitMapEngineOption.MapLibre,
         val addressOptionsSheet: HouseholderAddressState.Data? = null
-    )
+    ) {
+        /**
+         * Whether the list is split by period of the day rather than by date. Only a single-day
+         * filter shows one day; a name search overrides the date filter and can match any day.
+         */
+        val groupsVisitsByPeriod: Boolean
+            get() = filter.search.isEmpty() && selectedVisitFilterOption in SINGLE_DAY_FILTER_OPTIONS
+    }
 
     companion object {
         private val INITIAL_ROUTE_CALC_INTERNAL = 0.seconds
         private val SUBSEQUENT_ROUTE_CALC_INTERVAL = 2.seconds
         private val ROUTE_CALC_IDLE_THRESHOLD = 30.seconds
         private val LOADING_STATE_UPDATE_DEBOUNCE = 300.milliseconds
+        private val SINGLE_DAY_FILTER_OPTIONS = setOf(
+            VisitListDateFilterOption.ScheduledForToday,
+            VisitListDateFilterOption.ScheduledForTomorrow
+        )
     }
 }
