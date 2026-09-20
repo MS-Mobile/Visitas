@@ -6,6 +6,7 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -205,35 +206,46 @@ internal fun LocationActiveIndicatorPill(
     }
 }
 
-/**
- * Breathes only while collapsed, and only when the system animation scale allows it: infinite
- * motion is a known vestibular-discomfort trigger, and the dot reads the same standing still.
- */
 @Composable
 private fun LiveDot(isBreathing: Boolean) {
-    val alpha = if (isBreathing && isMotionEnabled()) {
-        val transition = rememberInfiniteTransition(label = "locationIndicatorBreath")
-        val animatedAlpha by transition.animateFloat(
-            initialValue = BREATH_MIN_ALPHA,
-            targetValue = 1f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(BREATH_DURATION_MILLIS, easing = FastOutSlowInEasing),
-                repeatMode = RepeatMode.Reverse
-            ),
-            label = "locationIndicatorBreathAlpha"
-        )
-        animatedAlpha
-    } else {
-        1f
-    }
-
     Box(
         modifier = Modifier
             .size(INDICATOR_DOT_SIZE)
-            .alpha(alpha)
+            .alpha(breathAlpha(isBreathing))
             .clip(CircleShape)
             .background(liveDotColor())
     )
+}
+
+/**
+ * Breathes only while collapsed, and only when the system animation scale allows it: infinite
+ * motion is a known vestibular-discomfort trigger, and the dot reads the same standing still.
+ *
+ * The breath is applied at an animated depth rather than switched on and off. Swapping the source
+ * outright makes a dot caught mid-breath jump to full opacity in one frame, and on a tap that
+ * happens exactly where the user is looking; fading the depth lets it settle instead.
+ */
+@Composable
+private fun breathAlpha(isBreathing: Boolean): Float {
+    if (!isMotionEnabled()) return 1f
+
+    val transition = rememberInfiniteTransition(label = "locationIndicatorBreath")
+    val breath by transition.animateFloat(
+        initialValue = BREATH_MIN_ALPHA,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(BREATH_DURATION_MILLIS, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "locationIndicatorBreathAlpha"
+    )
+    val depth by animateFloatAsState(
+        targetValue = if (isBreathing) 1f else 0f,
+        animationSpec = tween(BREATH_SETTLE_MILLIS, easing = FastOutSlowInEasing),
+        label = "locationIndicatorBreathDepth"
+    )
+
+    return 1f - depth * (1f - breath)
 }
 
 /**
@@ -272,6 +284,7 @@ private const val COLLAPSE_DURATION_MILLIS = 180
 private const val LABEL_FADE_OUT_MILLIS = 120
 private const val BREATH_DURATION_MILLIS = 2000
 private const val BREATH_MIN_ALPHA = .45f
+private const val BREATH_SETTLE_MILLIS = 220
 private const val ENTER_SCALE = .92f
 private const val EXIT_SCALE = .96f
 private const val DEFAULT_ANIMATOR_DURATION_SCALE = 1f
