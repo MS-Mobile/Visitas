@@ -14,3 +14,14 @@ val DarkRed = Color(0xFFD15D67)
 val DarkGrey = Color(0xFF121212)
 val DarkGrey2 = Color(0xFF0D0D0D)
 val LightGrey = Color(0xFF292929)
+
+/**
+ * The live dot on the location indicator. Fixed rather than taken from the scheme: it reads as
+ * "on right now" because it is green, and a wallpaper-derived accent could land anywhere.
+ *
+ * [LocationLive] is the design's green. The design uses that one green in both schemes, but on
+ * this app's dark pill (surfaceContainerHigh is #292929) it lands at roughly 2.9:1 - under the
+ * 3:1 a non-text mark needs - so the dark scheme gets a lightened one.
+ */
+val LocationLive = Color(0xFF2E7D5B)
+val LocationLiveDark = Color(0xFF6FD39B)
