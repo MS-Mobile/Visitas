@@ -160,4 +160,5 @@
     <string name="location_active_indicator_label">Location on</string>
     <string name="location_active_indicator_nearby_content_description">Your location is being used to show nearby visits.</string>
     <string name="location_active_indicator_map_content_description">Your location is being used to show where you are on the map.</string>
+    <string name="location_active_indicator_expand_action">Show what your location is used for</string>
 </resources>

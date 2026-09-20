@@ -431,6 +431,7 @@ private fun VisitListScreenContent(
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
                 .imePadding()
+                .padding(bottom = verticalFieldPadding)
                 .padding(bottom = verticalFieldPadding + floatingBarBottomPadding)
         )
     }

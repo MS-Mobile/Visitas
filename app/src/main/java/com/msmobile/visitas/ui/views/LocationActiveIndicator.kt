@@ -14,7 +14,9 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -25,9 +27,11 @@ import androidx.compose.material.icons.rounded.MyLocation
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -35,6 +39,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalInspectionMode
@@ -47,6 +53,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import com.msmobile.visitas.R
+import com.msmobile.visitas.ui.theme.LocationLive
+import com.msmobile.visitas.ui.theme.LocationLiveDark
 import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
 import kotlinx.coroutines.delay
@@ -58,16 +66,15 @@ import kotlin.time.TimeSource
  * The gentle reminder that the app is reading the user's position right now.
  *
  * It says what is happening, holds the sentence long enough to be read, then collapses to the
- * breathing icon and stays there for as long as tracking lasts: noticed once, present afterwards.
+ * breathing dot and stays there for as long as tracking lasts: noticed once, present afterwards.
+ * Tapping the dot brings the sentence back for another dwell, which is what keeps the collapsed
+ * state honest — the explanation is always one tap away rather than gone.
+ *
  * Nothing about where it sits belongs here — the caller anchors it (above the floating bar on the
  * visit list, at the top of the visits map), so neither surface has to know about the other.
  *
  * The caller supplies the sentence TalkBack reads: the reason differs by surface, and only the
  * caller knows whether the nearby filter or the map turned tracking on.
- *
- * The icon never leaves. The collapsed state is the one the user looks at the longest, and a
- * coloured dot on its own would carry the whole meaning in colour — the shape keeps it legible in
- * greyscale and with colour vision deficiency.
  */
 @Composable
 fun LocationActiveIndicator(
@@ -76,25 +83,23 @@ fun LocationActiveIndicator(
     modifier: Modifier = Modifier
 ) {
     val startsCollapsed = LocalDensity.current.fontScale > COLLAPSE_FONT_SCALE
-    // Previews and screenshot tests never run the effect below, so the indicator would render as
+    // Previews and screenshot tests never run the effects below, so the indicator would render as
     // nothing at all and the list baselines would not show it. They open on the state the user
     // spends the first seconds looking at instead.
     val isInspecting = LocalInspectionMode.current
     var isShown by remember { mutableStateOf(isTracking && isInspecting) }
     var isExpanded by remember { mutableStateOf(isTracking && isInspecting) }
     var shownAt by remember { mutableStateOf<TimeMark?>(null) }
+    // Bumped by the entry and by every tap, so both open the label on the same dwell.
+    var expansions by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(isTracking, startsCollapsed) {
         if (isTracking) {
             // Swallows the short sessions: opening and closing the map straight away flashes nothing.
             delay(ENTRY_DELAY)
             shownAt = TimeSource.Monotonic.markNow()
-            isExpanded = !startsCollapsed
             isShown = true
-            if (isExpanded) {
-                delay(EXPANDED_DWELL)
-                isExpanded = false
-            }
+            if (!startsCollapsed) expansions++
         } else {
             val visibleFor = shownAt?.elapsedNow()
             if (visibleFor != null && visibleFor < MINIMUM_VISIBILITY) {
@@ -104,6 +109,13 @@ fun LocationActiveIndicator(
             isExpanded = false
             shownAt = null
         }
+    }
+
+    LaunchedEffect(expansions) {
+        if (expansions == 0) return@LaunchedEffect
+        isExpanded = true
+        delay(EXPANDED_DWELL)
+        isExpanded = false
     }
 
     AnimatedVisibility(
@@ -120,7 +132,8 @@ fun LocationActiveIndicator(
     ) {
         LocationActiveIndicatorPill(
             isExpanded = isExpanded,
-            contentDescription = contentDescription
+            contentDescription = contentDescription,
+            onClick = { expansions++ }
         )
     }
 }
@@ -132,7 +145,8 @@ fun LocationActiveIndicator(
 internal fun LocationActiveIndicatorPill(
     isExpanded: Boolean,
     contentDescription: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit = {}
 ) {
     Row(
         modifier = modifier
@@ -142,41 +156,59 @@ internal fun LocationActiveIndicatorPill(
                 this.contentDescription = contentDescription
                 liveRegion = LiveRegionMode.Polite
             }
+            // Collapsed, the pill is a 36.dp circle; this gives it the 48.dp target a tap needs
+            // without growing what is drawn.
+            .minimumInteractiveComponentSize()
             .heightIn(min = INDICATOR_HEIGHT)
             .clip(CircleShape)
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .clickable(
+                onClickLabel = stringResource(R.string.location_active_indicator_expand_action),
+                onClick = onClick
+            )
             .animateContentSize(animationSpec = tween(COLLAPSE_DURATION_MILLIS))
             .padding(horizontal = INDICATOR_HORIZONTAL_PADDING, vertical = INDICATOR_VERTICAL_PADDING),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(INDICATOR_CONTENT_SPACING)
     ) {
-        BreathingLocationIcon(isBreathing = !isExpanded)
+        LiveDot(isBreathing = !isExpanded)
         AnimatedVisibility(
             visible = isExpanded,
             enter = fadeIn(animationSpec = tween(ENTER_DURATION_MILLIS)),
             // The label leaves before the width closes, otherwise it gets squeezed on the way out.
             exit = fadeOut(animationSpec = tween(LABEL_FADE_OUT_MILLIS))
         ) {
-            Text(
-                // The label is short in every locale so the pill never wraps to a second line,
-                // which would turn a reminder into a block of text sitting over the content.
-                text = stringResource(R.string.location_active_indicator_label),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Start,
-                maxLines = 1,
-                softWrap = false
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(INDICATOR_CONTENT_SPACING)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.MyLocation,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(INDICATOR_ICON_SIZE)
+                )
+                Text(
+                    // The label is short in every locale so the pill never wraps to a second line,
+                    // which would turn a reminder into a block of text sitting over the content.
+                    text = stringResource(R.string.location_active_indicator_label),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Start,
+                    maxLines = 1,
+                    softWrap = false
+                )
+            }
         }
     }
 }
 
 /**
  * Breathes only while collapsed, and only when the system animation scale allows it: infinite
- * motion is a known vestibular-discomfort trigger, and the indicator reads the same standing still.
+ * motion is a known vestibular-discomfort trigger, and the dot reads the same standing still.
  */
 @Composable
-private fun BreathingLocationIcon(isBreathing: Boolean) {
+private fun LiveDot(isBreathing: Boolean) {
     val alpha = if (isBreathing && isMotionEnabled()) {
         val transition = rememberInfiniteTransition(label = "locationIndicatorBreath")
         val animatedAlpha by transition.animateFloat(
@@ -193,19 +225,28 @@ private fun BreathingLocationIcon(isBreathing: Boolean) {
         1f
     }
 
-    Icon(
-        imageVector = Icons.Rounded.MyLocation,
-        contentDescription = null,
-        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+    Box(
         modifier = Modifier
-            .size(INDICATOR_ICON_SIZE)
+            .size(INDICATOR_DOT_SIZE)
             .alpha(alpha)
+            .clip(CircleShape)
+            .background(liveDotColor())
     )
 }
 
 /**
+ * Green against whichever scheme is actually in use. Reading the system dark-mode setting instead
+ * would paint the dark green onto a light pill whenever the two disagree, previews included.
+ */
+@Composable
+private fun liveDotColor(): Color {
+    val isDarkSurface = MaterialTheme.colorScheme.surface.luminance() < DARK_SURFACE_LUMINANCE
+    return if (isDarkSurface) LocationLiveDark else LocationLive
+}
+
+/**
  * Whether the system is running animations at all. Previews have no real settings to read, and
- * a screenshot of a half-faded icon is not a stable baseline, so they render the still state.
+ * a screenshot of a half-faded dot is not a stable baseline, so they render the still state.
  */
 @Composable
 private fun isMotionEnabled(): Boolean {
@@ -232,15 +273,19 @@ private const val BREATH_MIN_ALPHA = .45f
 private const val ENTER_SCALE = .92f
 private const val EXIT_SCALE = .96f
 private const val DEFAULT_ANIMATOR_DURATION_SCALE = 1f
+private const val DARK_SURFACE_LUMINANCE = .5f
 
 /** Above this the expanded pill cannot fit its sentence without truncating, so it starts collapsed. */
 private const val COLLAPSE_FONT_SCALE = 1.3f
 
-private val INDICATOR_HEIGHT = 28.dp
-private val INDICATOR_ICON_SIZE = 16.dp
-private val INDICATOR_HORIZONTAL_PADDING = 10.dp
-private val INDICATOR_VERTICAL_PADDING = 4.dp
-private val INDICATOR_CONTENT_SPACING = 6.dp
+private val INDICATOR_HEIGHT = 36.dp
+private val INDICATOR_ICON_SIZE = 18.dp
+private val INDICATOR_DOT_SIZE = 8.dp
+
+/** Half the height less half the dot, so the collapsed pill closes into a circle. */
+private val INDICATOR_HORIZONTAL_PADDING = 14.dp
+private val INDICATOR_VERTICAL_PADDING = 6.dp
+private val INDICATOR_CONTENT_SPACING = 8.dp
 
 @PreviewPhone
 @Composable
