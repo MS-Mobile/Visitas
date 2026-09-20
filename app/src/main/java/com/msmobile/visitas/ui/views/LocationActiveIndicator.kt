@@ -185,7 +185,9 @@ internal fun LocationActiveIndicatorPill(
                 Icon(
                     imageVector = Icons.Rounded.MyLocation,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    // Blue against the grey label, as the design has it: the icon is the mark that
+                    // carries the meaning, the label is supporting text.
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(INDICATOR_ICON_SIZE)
                 )
                 Text(
