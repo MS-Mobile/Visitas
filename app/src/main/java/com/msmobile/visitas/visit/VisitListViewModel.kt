@@ -395,9 +395,13 @@ constructor(
     private fun rescheduleVisitNextWeekSelected(visit: VisitHouseholderState) {
         // Keeps the visit's own weekday rather than today's: that weekday in the current week, a
         // week on. Never lands in the past, since this week's weekday is at most six days back.
-        val date = dateTimeProvider.nowLocalDate()
+        val nextWeek = dateTimeProvider.nowLocalDate()
             .with(visit.date.dayOfWeek)
             .plusDays(7)
+        // Floor, so a visit already scheduled beyond next week moves later instead of being pulled
+        // back. Both candidates fall on the visit's weekday, a whole number of weeks apart.
+        val aWeekPastTheVisit = visit.date.toLocalDate().plusDays(7)
+        val date = maxOf(nextWeek, aWeekPastTheVisit)
             .atStartOfDay()
             .withHour(visit.date.hour)
             .withMinute(visit.date.minute)
