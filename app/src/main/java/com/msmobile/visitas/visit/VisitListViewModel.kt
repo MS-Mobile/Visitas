@@ -123,6 +123,7 @@ constructor(
             is UiEvent.PendingVisitMenuClicked -> pendingVisitMenuClicked(uiEvent.visit)
             is UiEvent.RescheduleVisitToday -> rescheduleVisitTodaySelected(uiEvent.visit)
             is UiEvent.RescheduleVisitTomorrow -> rescheduleVisitTomorrowSelected(uiEvent.visit)
+            is UiEvent.RescheduleVisitNextWeek -> rescheduleVisitNextWeekSelected(uiEvent.visit)
             is UiEvent.RescheduleVisitSelected -> rescheduleVisitSelected(
                 uiEvent.visit,
                 uiEvent.dayOfWeek
@@ -385,6 +386,15 @@ constructor(
     private fun rescheduleVisitTomorrowSelected(visit: VisitHouseholderState) {
         val date = dateTimeProvider.nowLocalDate()
             .plusDays(1)
+            .atStartOfDay()
+            .withHour(visit.date.hour)
+            .withMinute(visit.date.minute)
+        rescheduleVisit(visit, date)
+    }
+
+    private fun rescheduleVisitNextWeekSelected(visit: VisitHouseholderState) {
+        val date = dateTimeProvider.nowLocalDate()
+            .plusDays(7)
             .atStartOfDay()
             .withHour(visit.date.hour)
             .withMinute(visit.date.minute)
@@ -878,6 +888,7 @@ constructor(
         data object AddressOptionsDismissed : UiEvent()
         data class RescheduleVisitToday(val visit: VisitHouseholderState) : UiEvent()
         data class RescheduleVisitTomorrow(val visit: VisitHouseholderState) : UiEvent()
+        data class RescheduleVisitNextWeek(val visit: VisitHouseholderState) : UiEvent()
         data class RescheduleVisitSelected(
             val visit: VisitHouseholderState, val dayOfWeek: DayOfWeek
         ) : UiEvent()

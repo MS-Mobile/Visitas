@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Rule
 import org.junit.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -642,6 +643,48 @@ class VisitListViewModelTest {
         assertTrue(viewModel.uiState.value.isTrackingLocation)
     }
 
+    @Test
+    fun `onEvent with RescheduleVisitNextWeek saves the visit seven days out keeping its time`() {
+        // Arrange
+        val visitRepositoryRef = MockReferenceHolder<VisitRepository>()
+        val viewModel = createViewModel(
+            now = LocalDate.of(2026, 9, 23),
+            visitRepositoryRef = visitRepositoryRef,
+            visits = listOf(createVisitHouseholder(date = LocalDateTime.of(2026, 9, 23, 19, 30)))
+        )
+        viewModel.onEvent(VisitListViewModel.UiEvent.ViewCreated)
+        val visit = viewModel.uiState.value.visitList.first()
+
+        // Act
+        viewModel.onEvent(VisitListViewModel.UiEvent.RescheduleVisitNextWeek(visit))
+
+        // Assert
+        val visitRepository = requireNotNull(visitRepositoryRef.value)
+        val savedVisit = argumentCaptor<Visit>()
+        verifyBlocking(visitRepository) { save(savedVisit.capture()) }
+        assertEquals(LocalDateTime.of(2026, 9, 30, 19, 30), savedVisit.firstValue.date)
+    }
+
+    @Test
+    fun `onEvent with RescheduleVisitNextWeek collapses the pending visit menu`() {
+        // Arrange
+        val viewModel = createViewModel(
+            now = LocalDate.of(2026, 9, 23),
+            visits = listOf(createVisitHouseholder(date = LocalDateTime.of(2026, 9, 23, 19, 30)))
+        )
+        viewModel.onEvent(VisitListViewModel.UiEvent.ViewCreated)
+        val visit = viewModel.uiState.value.visitList.first()
+        viewModel.onEvent(VisitListViewModel.UiEvent.PendingVisitMenuClicked(visit))
+        val expandedVisit = viewModel.uiState.value.visitList.first()
+        assertTrue(expandedVisit.isPendingVisitMenuExpanded)
+
+        // Act
+        viewModel.onEvent(VisitListViewModel.UiEvent.RescheduleVisitNextWeek(expandedVisit))
+
+        // Assert
+        assertFalse(viewModel.uiState.value.visitList.first().isPendingVisitMenuExpanded)
+    }
+
     private fun createViewModel(
         visitHouseholderRepositoryRef: MockReferenceHolder<VisitHouseholderRepository>? = null,
         uriRef: MockReferenceHolder<Uri>? = null,
@@ -654,6 +697,8 @@ class VisitListViewModelTest {
         distanceResults: Map<DistanceInput, AddressProvider.AddressDistance> = emptyMap(),
         visitListDateFilterOption: VisitListDateFilterOption = VisitListDateFilterOption.All,
         savedMapEngine: VisitMapEngineOption = VisitMapEngineOption.MapLibre,
+        now: LocalDate = LocalDate.now(),
+        visitRepositoryRef: MockReferenceHolder<VisitRepository>? = null,
         visits: List<VisitHouseholder> = createVisitHouseholderList()
     ): VisitListViewModel {
         val dispatchers = DispatcherProvider(
@@ -682,7 +727,23 @@ class VisitListViewModelTest {
         }
         visitHouseholderRepositoryRef?.value = visitHouseholderRepository
 
-        val visitRepository = mock<VisitRepository>()
+        val visitRepository = mock<VisitRepository> {
+            // rescheduleVisit reads the stored visit back before saving it, so every id has to resolve.
+            on { getById(any()) } doAnswer { invocation ->
+                Visit(
+                    id = invocation.arguments[0] as UUID,
+                    subject = "Subject 1",
+                    date = LocalDateTime.now(),
+                    isDone = false,
+                    householderId = FIRST_HOUSEHOLDER_ID,
+                    orderIndex = 0,
+                    visitType = VisitType.FIRST_VISIT,
+                    nextConversationId = null
+                )
+            }
+        }
+        visitRepositoryRef?.value = visitRepository
+
         val preferenceRepository = mock<PreferenceRepository> {
             on { get() } doReturn Preference(
                 visitListDateFilterOption = visitListDateFilterOption,
@@ -706,7 +767,7 @@ class VisitListViewModelTest {
         val syncVisitCalendarEvent = mock<SyncVisitCalendarEventUseCase>()
         val dateTimeProvider = mock<DateTimeProvider> {
             on { nowLocalDateTime() } doReturn LocalDateTime.now()
-            on { nowLocalDate() } doReturn LocalDate.now()
+            on { nowLocalDate() } doReturn now
         }
         val visitMapAdapter = mock<VisitMapAdapter>()
 
@@ -722,6 +783,21 @@ class VisitListViewModelTest {
             osrmRoutingProvider = osrmRoutingProvider,
             syncVisitCalendarEvent = syncVisitCalendarEvent,
             dateTimeProvider = dateTimeProvider
+        )
+    }
+
+    private fun createVisitHouseholder(date: LocalDateTime): VisitHouseholder {
+        return VisitHouseholder(
+            visitId = FIRST_VISIT_ID,
+            subject = "Subject 1",
+            date = date,
+            isDone = false,
+            householderId = FIRST_HOUSEHOLDER_ID,
+            householderName = "Householder 1",
+            householderAddress = "Address 1",
+            type = VisitType.FIRST_VISIT,
+            householderLatitude = null,
+            householderLongitude = null
         )
     }
 

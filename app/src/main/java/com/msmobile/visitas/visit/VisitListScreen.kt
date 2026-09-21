@@ -59,7 +59,6 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -74,7 +73,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.semantics.heading
@@ -1082,7 +1080,7 @@ private fun HouseholderNameRow(
                                 id = R.string.more_options
                             )
                         )
-                        PendingVisitMenu(visit, onEvent)
+                        PendingVisitDropdown(visit, onEvent)
                     }
                 }
             }
@@ -1157,7 +1155,7 @@ private fun VisitSubjectRow(
 }
 
 @Composable
-private fun PendingVisitMenu(
+private fun PendingVisitDropdown(
     visit: VisitListViewModel.VisitHouseholderState,
     onEvent: (VisitListViewModel.UiEvent) -> Unit
 ) {
@@ -1180,6 +1178,11 @@ private fun PendingVisitMenu(
             Text(text = stringResource(id = R.string.reschedule_visit_tomorrow))
         }, onClick = {
             onEvent(VisitListViewModel.UiEvent.RescheduleVisitTomorrow(visit))
+        })
+        DropdownMenuItem(text = {
+            Text(text = stringResource(id = R.string.reschedule_visit_next_week))
+        }, onClick = {
+            onEvent(VisitListViewModel.UiEvent.RescheduleVisitNextWeek(visit))
         })
         HorizontalDivider()
         DropdownMenuItem(text = {

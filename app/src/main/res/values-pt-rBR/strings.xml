@@ -56,6 +56,7 @@
     <string name="visit_reschedule">Reagendar visita</string>
     <string name="reschedule_visit_tomorrow">Amanhã</string>
     <string name="reschedule_visit_today">Hoje</string>
+    <string name="reschedule_visit_next_week">Semana que vem</string>
     <string name="field_service_hours">Horas</string>
     <string name="return_visits">Revisitas</string>
     <string name="bible_study">Estudo Bíblia</string>
