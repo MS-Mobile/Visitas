@@ -139,6 +139,7 @@ import java.time.DayOfWeek
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import java.time.format.TextStyle
 import java.util.UUID
 
 private const val LOADING_VISITS_COUNT = 5
@@ -1162,6 +1163,7 @@ private fun PendingVisitDropdown(
     visit: VisitListViewModel.VisitHouseholderState,
     onEvent: (VisitListViewModel.UiEvent) -> Unit
 ) {
+    val locale = LocalConfiguration.current.locales[0]
     PreviewCompatDropdownMenu(
         expanded = visit.isPendingVisitMenuExpanded,
         onDismissRequest = {
@@ -1183,9 +1185,14 @@ private fun PendingVisitDropdown(
             onEvent(VisitListViewModel.UiEvent.RescheduleVisitTomorrow(visit))
         })
         DropdownMenuItem(text = {
-            Text(text = stringResource(id = R.string.reschedule_visit_next_week))
+            Text(
+                text = stringResource(
+                    id = R.string.reschedule_visit_next_day_of_week,
+                    visit.date.dayOfWeek.getDisplayName(TextStyle.SHORT, locale)
+                )
+            )
         }, onClick = {
-            onEvent(VisitListViewModel.UiEvent.RescheduleVisitNextWeek(visit))
+            onEvent(VisitListViewModel.UiEvent.RescheduleVisitNextDayOfWeek(visit))
         })
         HorizontalDivider()
         DropdownMenuItem(text = {

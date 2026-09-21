@@ -644,8 +644,9 @@ class VisitListViewModelTest {
     }
 
     @Test
-    fun `onEvent with RescheduleVisitNextWeek moves a visit due today to the same weekday next week`() {
+    fun `onEvent with RescheduleVisitNextDayOfWeek moves a visit due today a week on`() {
         // Arrange
+        // The next Wednesday from a Wednesday is the one after, never the same day.
         val visitRepositoryRef = MockReferenceHolder<VisitRepository>()
         val viewModel = createViewModel(
             now = LocalDate.of(2026, 9, 23),
@@ -655,36 +656,16 @@ class VisitListViewModelTest {
         viewModel.onEvent(VisitListViewModel.UiEvent.ViewCreated)
 
         // Act
-        viewModel.rescheduleFirstVisitNextWeek()
+        viewModel.rescheduleFirstVisitToItsWeekday()
 
         // Assert
         assertEquals(LocalDateTime.of(2026, 9, 30, 19, 30), savedVisitDate(visitRepositoryRef))
     }
 
     @Test
-    fun `onEvent with RescheduleVisitNextWeek moves a visit due later this week to next week`() {
+    fun `onEvent with RescheduleVisitNextDayOfWeek moves an overdue visit to the next of its weekday`() {
         // Arrange
-        // Tuesday's visit with today a Monday: this week's Tuesday is the 22nd, so it lands a week
-        // past that rather than a week past today.
-        val visitRepositoryRef = MockReferenceHolder<VisitRepository>()
-        val viewModel = createViewModel(
-            now = LocalDate.of(2026, 9, 21),
-            visitRepositoryRef = visitRepositoryRef,
-            visits = listOf(createVisitHouseholder(date = LocalDateTime.of(2026, 9, 22, 9, 0)))
-        )
-        viewModel.onEvent(VisitListViewModel.UiEvent.ViewCreated)
-
-        // Act
-        viewModel.rescheduleFirstVisitNextWeek()
-
-        // Assert
-        assertEquals(LocalDateTime.of(2026, 9, 29, 9, 0), savedVisitDate(visitRepositoryRef))
-    }
-
-    @Test
-    fun `onEvent with RescheduleVisitNextWeek keeps the weekday of an overdue visit`() {
-        // Arrange
-        // A Thursday visit two weeks stale still reschedules to a Thursday, never to today's weekday.
+        // A Thursday visit two weeks stale lands on this week's remaining Thursday, not a Monday.
         val visitRepositoryRef = MockReferenceHolder<VisitRepository>()
         val viewModel = createViewModel(
             now = LocalDate.of(2026, 9, 21),
@@ -694,37 +675,35 @@ class VisitListViewModelTest {
         viewModel.onEvent(VisitListViewModel.UiEvent.ViewCreated)
 
         // Act
-        viewModel.rescheduleFirstVisitNextWeek()
+        viewModel.rescheduleFirstVisitToItsWeekday()
 
         // Assert
-        assertEquals(LocalDateTime.of(2026, 10, 1, 10, 0), savedVisitDate(visitRepositoryRef))
+        assertEquals(LocalDateTime.of(2026, 9, 24, 10, 0), savedVisitDate(visitRepositoryRef))
     }
 
     @Test
-    fun `onEvent with RescheduleVisitNextWeek never leaves an overdue visit in the past`() {
+    fun `onEvent with RescheduleVisitNextDayOfWeek can land on tomorrow when that is the visit's weekday`() {
         // Arrange
-        // Last Monday's visit with today a Monday: this week's Monday is today, so a week on is the
-        // 28th — the closest this rule ever comes to the present.
+        // Tuesday's visit picked up on a Monday: the next Tuesday is tomorrow, near as that is.
         val visitRepositoryRef = MockReferenceHolder<VisitRepository>()
         val viewModel = createViewModel(
             now = LocalDate.of(2026, 9, 21),
             visitRepositoryRef = visitRepositoryRef,
-            visits = listOf(createVisitHouseholder(date = LocalDateTime.of(2026, 9, 7, 8, 0)))
+            visits = listOf(createVisitHouseholder(date = LocalDateTime.of(2026, 9, 15, 9, 0)))
         )
         viewModel.onEvent(VisitListViewModel.UiEvent.ViewCreated)
 
         // Act
-        viewModel.rescheduleFirstVisitNextWeek()
+        viewModel.rescheduleFirstVisitToItsWeekday()
 
         // Assert
-        assertEquals(LocalDateTime.of(2026, 9, 28, 8, 0), savedVisitDate(visitRepositoryRef))
+        assertEquals(LocalDateTime.of(2026, 9, 22, 9, 0), savedVisitDate(visitRepositoryRef))
     }
 
     @Test
-    fun `onEvent with RescheduleVisitNextWeek pushes a visit scheduled weeks out one week past its own date`() {
+    fun `onEvent with RescheduleVisitNextDayOfWeek pulls a visit scheduled weeks out back to the next of its weekday`() {
         // Arrange
-        // Next week's Wednesday is behind this visit, so the floor applies and it moves a week on
-        // from its own date instead of being pulled back.
+        // Distance to the visit plays no part: only the weekday carries over.
         val visitRepositoryRef = MockReferenceHolder<VisitRepository>()
         val viewModel = createViewModel(
             now = LocalDate.of(2026, 9, 21),
@@ -734,34 +713,14 @@ class VisitListViewModelTest {
         viewModel.onEvent(VisitListViewModel.UiEvent.ViewCreated)
 
         // Act
-        viewModel.rescheduleFirstVisitNextWeek()
+        viewModel.rescheduleFirstVisitToItsWeekday()
 
         // Assert
-        assertEquals(LocalDateTime.of(2026, 10, 21, 8, 15), savedVisitDate(visitRepositoryRef))
+        assertEquals(LocalDateTime.of(2026, 9, 23, 8, 15), savedVisitDate(visitRepositoryRef))
     }
 
     @Test
-    fun `onEvent with RescheduleVisitNextWeek moves a visit already due next week a further week on`() {
-        // Arrange
-        // The visit sits exactly on next week's Tuesday, where the rule would otherwise leave it
-        // untouched; the floor carries it to the Tuesday after.
-        val visitRepositoryRef = MockReferenceHolder<VisitRepository>()
-        val viewModel = createViewModel(
-            now = LocalDate.of(2026, 9, 21),
-            visitRepositoryRef = visitRepositoryRef,
-            visits = listOf(createVisitHouseholder(date = LocalDateTime.of(2026, 9, 29, 9, 0)))
-        )
-        viewModel.onEvent(VisitListViewModel.UiEvent.ViewCreated)
-
-        // Act
-        viewModel.rescheduleFirstVisitNextWeek()
-
-        // Assert
-        assertEquals(LocalDateTime.of(2026, 10, 6, 9, 0), savedVisitDate(visitRepositoryRef))
-    }
-
-    @Test
-    fun `onEvent with RescheduleVisitNextWeek collapses the pending visit menu`() {
+    fun `onEvent with RescheduleVisitNextDayOfWeek collapses the pending visit menu`() {
         // Arrange
         val viewModel = createViewModel(
             now = LocalDate.of(2026, 9, 23),
@@ -774,14 +733,14 @@ class VisitListViewModelTest {
         assertTrue(expandedVisit.isPendingVisitMenuExpanded)
 
         // Act
-        viewModel.onEvent(VisitListViewModel.UiEvent.RescheduleVisitNextWeek(expandedVisit))
+        viewModel.onEvent(VisitListViewModel.UiEvent.RescheduleVisitNextDayOfWeek(expandedVisit))
 
         // Assert
         assertFalse(viewModel.uiState.value.visitList.first().isPendingVisitMenuExpanded)
     }
 
-    private fun VisitListViewModel.rescheduleFirstVisitNextWeek() {
-        onEvent(VisitListViewModel.UiEvent.RescheduleVisitNextWeek(uiState.value.visitList.first()))
+    private fun VisitListViewModel.rescheduleFirstVisitToItsWeekday() {
+        onEvent(VisitListViewModel.UiEvent.RescheduleVisitNextDayOfWeek(uiState.value.visitList.first()))
     }
 
     private fun savedVisitDate(

@@ -58,7 +58,7 @@
     <string name="visit_reschedule">Reschedule visit</string>
     <string name="reschedule_visit_tomorrow">Tomorrow</string>
     <string name="reschedule_visit_today">Today</string>
-    <string name="reschedule_visit_next_week">Next week</string>
+    <string name="reschedule_visit_next_day_of_week">Next %s</string>
     <string name="field_service_hours">Hours</string>
     <string name="return_visits">Return visits</string>
     <string name="bible_study">Bible study</string>

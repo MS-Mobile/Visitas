@@ -123,7 +123,7 @@ constructor(
             is UiEvent.PendingVisitMenuClicked -> pendingVisitMenuClicked(uiEvent.visit)
             is UiEvent.RescheduleVisitToday -> rescheduleVisitTodaySelected(uiEvent.visit)
             is UiEvent.RescheduleVisitTomorrow -> rescheduleVisitTomorrowSelected(uiEvent.visit)
-            is UiEvent.RescheduleVisitNextWeek -> rescheduleVisitNextWeekSelected(uiEvent.visit)
+            is UiEvent.RescheduleVisitNextDayOfWeek -> rescheduleVisitNextDayOfWeekSelected(uiEvent.visit)
             is UiEvent.RescheduleVisitSelected -> rescheduleVisitSelected(
                 uiEvent.visit,
                 uiEvent.dayOfWeek
@@ -392,20 +392,10 @@ constructor(
         rescheduleVisit(visit, date)
     }
 
-    private fun rescheduleVisitNextWeekSelected(visit: VisitHouseholderState) {
-        // Keeps the visit's own weekday rather than today's: that weekday in the current week, a
-        // week on. Never lands in the past, since this week's weekday is at most six days back.
-        val nextWeek = dateTimeProvider.nowLocalDate()
-            .with(visit.date.dayOfWeek)
-            .plusDays(7)
-        // Floor, so a visit already scheduled beyond next week moves later instead of being pulled
-        // back. Both candidates fall on the visit's weekday, a whole number of weeks apart.
-        val aWeekPastTheVisit = visit.date.toLocalDate().plusDays(7)
-        val date = maxOf(nextWeek, aWeekPastTheVisit)
-            .atStartOfDay()
-            .withHour(visit.date.hour)
-            .withMinute(visit.date.minute)
-        rescheduleVisit(visit, date)
+    // Shortcut for the weekday the visit already falls on, so the reader need not spot it in the
+    // list below: the same next-weekday rule, sparing them the lookup.
+    private fun rescheduleVisitNextDayOfWeekSelected(visit: VisitHouseholderState) {
+        rescheduleVisitSelected(visit, visit.date.dayOfWeek)
     }
 
     private fun rescheduleVisitSelected(visit: VisitHouseholderState, dayOfWeek: DayOfWeek) {
@@ -895,7 +885,7 @@ constructor(
         data object AddressOptionsDismissed : UiEvent()
         data class RescheduleVisitToday(val visit: VisitHouseholderState) : UiEvent()
         data class RescheduleVisitTomorrow(val visit: VisitHouseholderState) : UiEvent()
-        data class RescheduleVisitNextWeek(val visit: VisitHouseholderState) : UiEvent()
+        data class RescheduleVisitNextDayOfWeek(val visit: VisitHouseholderState) : UiEvent()
         data class RescheduleVisitSelected(
             val visit: VisitHouseholderState, val dayOfWeek: DayOfWeek
         ) : UiEvent()
