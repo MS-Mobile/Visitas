@@ -1080,7 +1080,10 @@ private fun HouseholderNameRow(
                                 id = R.string.more_options
                             )
                         )
-                        PendingVisitDropdown(visit, onEvent)
+                        PendingVisitDropdown(
+                            visit = visit,
+                            onEvent = onEvent
+                        )
                     }
                 }
             }
