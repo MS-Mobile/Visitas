@@ -1185,11 +1185,13 @@ private fun PendingVisitDropdown(
             onEvent(VisitListViewModel.UiEvent.RescheduleVisitTomorrow(visit))
         })
         DropdownMenuItem(text = {
+            // Capitalised as a whole rather than per word: pt-BR leads with the weekday, which
+            // java.time renders lowercase, where en and es-419 lead with their own word.
             Text(
                 text = stringResource(
                     id = R.string.reschedule_visit_next_day_of_week,
-                    visit.date.dayOfWeek.getDisplayName(TextStyle.SHORT, locale)
-                )
+                    visit.date.dayOfWeek.getDisplayName(TextStyle.FULL, locale)
+                ).replaceFirstChar { it.titlecase(locale) }
             )
         }, onClick = {
             onEvent(VisitListViewModel.UiEvent.RescheduleVisitNextDayOfWeek(visit))
