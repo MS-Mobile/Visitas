@@ -161,6 +161,19 @@ internal class VisitListPreviewConfigProvider : PreviewParameterProvider<VisitLi
             // The nearby section is what turned tracking on here, and the pill has to clear the
             // floating bar without hiding the last card.
             visitListUiState = previewVisitListUiState.copy(isTrackingLocation = true)
+        ),
+        VisitListPreviewConfig(
+            configName = "Pending visit menu expanded",
+            mainActivityUiState = previewMainActivityUiState,
+            summaryUiState = previewSummaryUiState,
+            // Covers the reschedule menu itself — the only variant that renders its options.
+            visitListUiState = previewVisitListUiState.copy(
+                visitList = listOf(
+                    previewVisitListUiState.visitList[0].copy(isPendingVisitMenuExpanded = true),
+                    previewVisitListUiState.visitList[1],
+                    previewVisitListUiState.visitList[2],
+                )
+            )
         )
     )
 

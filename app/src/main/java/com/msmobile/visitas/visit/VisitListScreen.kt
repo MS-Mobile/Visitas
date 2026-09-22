@@ -1,5 +1,6 @@
 package com.msmobile.visitas.visit
 
+import androidx.annotation.StringRes
 import androidx.annotation.VisibleForTesting
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
@@ -59,7 +60,6 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -74,7 +74,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.semantics.heading
@@ -141,6 +140,7 @@ import java.time.DayOfWeek
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import java.time.format.TextStyle
 import java.util.UUID
 
 private const val LOADING_VISITS_COUNT = 5
@@ -1082,7 +1082,10 @@ private fun HouseholderNameRow(
                                 id = R.string.more_options
                             )
                         )
-                        PendingVisitMenu(visit, onEvent)
+                        PendingVisitDropdown(
+                            visit = visit,
+                            onEvent = onEvent
+                        )
                     }
                 }
             }
@@ -1156,11 +1159,26 @@ private fun VisitSubjectRow(
     }
 }
 
+/**
+ * The label wording for a visit falling on [dayOfWeek]. Weekday names carry grammatical gender in
+ * some languages — in pt-BR *segunda-feira* is feminine where *sábado* is masculine — so the two
+ * strings let the translation agree with the day it names; a language whose weekdays are all one
+ * gender, as in es-419, translates both the same way. The split itself follows Portuguese, the only
+ * supported language that needs one, so a language that divides its weekdays differently would want
+ * this revisited.
+ */
+@StringRes
+private fun nextDayOfWeekLabel(dayOfWeek: DayOfWeek): Int = when (dayOfWeek) {
+    DayOfWeek.SATURDAY, DayOfWeek.SUNDAY -> R.string.reschedule_visit_next_day_of_week_masculine
+    else -> R.string.reschedule_visit_next_day_of_week_feminine
+}
+
 @Composable
-private fun PendingVisitMenu(
+private fun PendingVisitDropdown(
     visit: VisitListViewModel.VisitHouseholderState,
     onEvent: (VisitListViewModel.UiEvent) -> Unit
 ) {
+    val locale = LocalConfiguration.current.locales[0]
     PreviewCompatDropdownMenu(
         expanded = visit.isPendingVisitMenuExpanded,
         onDismissRequest = {
@@ -1180,6 +1198,18 @@ private fun PendingVisitMenu(
             Text(text = stringResource(id = R.string.reschedule_visit_tomorrow))
         }, onClick = {
             onEvent(VisitListViewModel.UiEvent.RescheduleVisitTomorrow(visit))
+        })
+        DropdownMenuItem(text = {
+            // Capitalised as a whole, so a translation that leads with the weekday still reads as a
+            // label — java.time renders weekday names lowercase in several locales.
+            Text(
+                text = stringResource(
+                    id = nextDayOfWeekLabel(visit.date.dayOfWeek),
+                    visit.date.dayOfWeek.getDisplayName(TextStyle.FULL, locale)
+                ).replaceFirstChar { it.titlecase(locale) }
+            )
+        }, onClick = {
+            onEvent(VisitListViewModel.UiEvent.RescheduleVisitNextDayOfWeek(visit))
         })
         HorizontalDivider()
         DropdownMenuItem(text = {

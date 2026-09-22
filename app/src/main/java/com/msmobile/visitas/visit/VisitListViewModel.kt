@@ -123,6 +123,7 @@ constructor(
             is UiEvent.PendingVisitMenuClicked -> pendingVisitMenuClicked(uiEvent.visit)
             is UiEvent.RescheduleVisitToday -> rescheduleVisitTodaySelected(uiEvent.visit)
             is UiEvent.RescheduleVisitTomorrow -> rescheduleVisitTomorrowSelected(uiEvent.visit)
+            is UiEvent.RescheduleVisitNextDayOfWeek -> rescheduleVisitNextDayOfWeekSelected(uiEvent.visit)
             is UiEvent.RescheduleVisitSelected -> rescheduleVisitSelected(
                 uiEvent.visit,
                 uiEvent.dayOfWeek
@@ -389,6 +390,12 @@ constructor(
             .withHour(visit.date.hour)
             .withMinute(visit.date.minute)
         rescheduleVisit(visit, date)
+    }
+
+    // Shortcut for the weekday the visit already falls on, so the reader need not spot it in the
+    // list below: the same next-weekday rule, sparing them the lookup.
+    private fun rescheduleVisitNextDayOfWeekSelected(visit: VisitHouseholderState) {
+        rescheduleVisitSelected(visit, visit.date.dayOfWeek)
     }
 
     private fun rescheduleVisitSelected(visit: VisitHouseholderState, dayOfWeek: DayOfWeek) {
@@ -878,6 +885,7 @@ constructor(
         data object AddressOptionsDismissed : UiEvent()
         data class RescheduleVisitToday(val visit: VisitHouseholderState) : UiEvent()
         data class RescheduleVisitTomorrow(val visit: VisitHouseholderState) : UiEvent()
+        data class RescheduleVisitNextDayOfWeek(val visit: VisitHouseholderState) : UiEvent()
         data class RescheduleVisitSelected(
             val visit: VisitHouseholderState, val dayOfWeek: DayOfWeek
         ) : UiEvent()

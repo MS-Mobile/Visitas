@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Rule
 import org.junit.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -642,6 +643,115 @@ class VisitListViewModelTest {
         assertTrue(viewModel.uiState.value.isTrackingLocation)
     }
 
+    @Test
+    fun `onEvent with RescheduleVisitNextDayOfWeek moves a visit due today a week on`() {
+        // Arrange
+        // The next Wednesday from a Wednesday is the one after, never the same day.
+        val visitRepositoryRef = MockReferenceHolder<VisitRepository>()
+        val viewModel = createViewModel(
+            now = LocalDate.of(2026, 9, 23),
+            visitRepositoryRef = visitRepositoryRef,
+            visits = listOf(createVisitHouseholder(date = LocalDateTime.of(2026, 9, 23, 19, 30)))
+        )
+        viewModel.onEvent(VisitListViewModel.UiEvent.ViewCreated)
+
+        // Act
+        viewModel.rescheduleFirstVisitToItsWeekday()
+
+        // Assert
+        assertEquals(LocalDateTime.of(2026, 9, 30, 19, 30), savedVisitDate(visitRepositoryRef))
+    }
+
+    @Test
+    fun `onEvent with RescheduleVisitNextDayOfWeek moves an overdue visit to the next of its weekday`() {
+        // Arrange
+        // A Thursday visit two weeks stale lands on this week's remaining Thursday, not a Monday.
+        val visitRepositoryRef = MockReferenceHolder<VisitRepository>()
+        val viewModel = createViewModel(
+            now = LocalDate.of(2026, 9, 21),
+            visitRepositoryRef = visitRepositoryRef,
+            visits = listOf(createVisitHouseholder(date = LocalDateTime.of(2026, 9, 10, 10, 0)))
+        )
+        viewModel.onEvent(VisitListViewModel.UiEvent.ViewCreated)
+
+        // Act
+        viewModel.rescheduleFirstVisitToItsWeekday()
+
+        // Assert
+        assertEquals(LocalDateTime.of(2026, 9, 24, 10, 0), savedVisitDate(visitRepositoryRef))
+    }
+
+    @Test
+    fun `onEvent with RescheduleVisitNextDayOfWeek can land on tomorrow when that is the visit's weekday`() {
+        // Arrange
+        // Tuesday's visit picked up on a Monday: the next Tuesday is tomorrow, near as that is.
+        val visitRepositoryRef = MockReferenceHolder<VisitRepository>()
+        val viewModel = createViewModel(
+            now = LocalDate.of(2026, 9, 21),
+            visitRepositoryRef = visitRepositoryRef,
+            visits = listOf(createVisitHouseholder(date = LocalDateTime.of(2026, 9, 15, 9, 0)))
+        )
+        viewModel.onEvent(VisitListViewModel.UiEvent.ViewCreated)
+
+        // Act
+        viewModel.rescheduleFirstVisitToItsWeekday()
+
+        // Assert
+        assertEquals(LocalDateTime.of(2026, 9, 22, 9, 0), savedVisitDate(visitRepositoryRef))
+    }
+
+    @Test
+    fun `onEvent with RescheduleVisitNextDayOfWeek pulls a visit scheduled weeks out back to the next of its weekday`() {
+        // Arrange
+        // Distance to the visit plays no part: only the weekday carries over.
+        val visitRepositoryRef = MockReferenceHolder<VisitRepository>()
+        val viewModel = createViewModel(
+            now = LocalDate.of(2026, 9, 21),
+            visitRepositoryRef = visitRepositoryRef,
+            visits = listOf(createVisitHouseholder(date = LocalDateTime.of(2026, 10, 14, 8, 15)))
+        )
+        viewModel.onEvent(VisitListViewModel.UiEvent.ViewCreated)
+
+        // Act
+        viewModel.rescheduleFirstVisitToItsWeekday()
+
+        // Assert
+        assertEquals(LocalDateTime.of(2026, 9, 23, 8, 15), savedVisitDate(visitRepositoryRef))
+    }
+
+    @Test
+    fun `onEvent with RescheduleVisitNextDayOfWeek collapses the pending visit menu`() {
+        // Arrange
+        val viewModel = createViewModel(
+            now = LocalDate.of(2026, 9, 23),
+            visits = listOf(createVisitHouseholder(date = LocalDateTime.of(2026, 9, 23, 19, 30)))
+        )
+        viewModel.onEvent(VisitListViewModel.UiEvent.ViewCreated)
+        val visit = viewModel.uiState.value.visitList.first()
+        viewModel.onEvent(VisitListViewModel.UiEvent.PendingVisitMenuClicked(visit))
+        val expandedVisit = viewModel.uiState.value.visitList.first()
+        assertTrue(expandedVisit.isPendingVisitMenuExpanded)
+
+        // Act
+        viewModel.onEvent(VisitListViewModel.UiEvent.RescheduleVisitNextDayOfWeek(expandedVisit))
+
+        // Assert
+        assertFalse(viewModel.uiState.value.visitList.first().isPendingVisitMenuExpanded)
+    }
+
+    private fun VisitListViewModel.rescheduleFirstVisitToItsWeekday() {
+        onEvent(VisitListViewModel.UiEvent.RescheduleVisitNextDayOfWeek(uiState.value.visitList.first()))
+    }
+
+    private fun savedVisitDate(
+        visitRepositoryRef: MockReferenceHolder<VisitRepository>
+    ): LocalDateTime {
+        val visitRepository = requireNotNull(visitRepositoryRef.value)
+        val savedVisit = argumentCaptor<Visit>()
+        verifyBlocking(visitRepository) { save(savedVisit.capture()) }
+        return savedVisit.firstValue.date
+    }
+
     private fun createViewModel(
         visitHouseholderRepositoryRef: MockReferenceHolder<VisitHouseholderRepository>? = null,
         uriRef: MockReferenceHolder<Uri>? = null,
@@ -654,6 +764,8 @@ class VisitListViewModelTest {
         distanceResults: Map<DistanceInput, AddressProvider.AddressDistance> = emptyMap(),
         visitListDateFilterOption: VisitListDateFilterOption = VisitListDateFilterOption.All,
         savedMapEngine: VisitMapEngineOption = VisitMapEngineOption.MapLibre,
+        now: LocalDate = LocalDate.now(),
+        visitRepositoryRef: MockReferenceHolder<VisitRepository>? = null,
         visits: List<VisitHouseholder> = createVisitHouseholderList()
     ): VisitListViewModel {
         val dispatchers = DispatcherProvider(
@@ -682,7 +794,23 @@ class VisitListViewModelTest {
         }
         visitHouseholderRepositoryRef?.value = visitHouseholderRepository
 
-        val visitRepository = mock<VisitRepository>()
+        val visitRepository = mock<VisitRepository> {
+            // rescheduleVisit reads the stored visit back before saving it, so every id has to resolve.
+            on { getById(any()) } doAnswer { invocation ->
+                Visit(
+                    id = invocation.arguments[0] as UUID,
+                    subject = "Subject 1",
+                    date = LocalDateTime.now(),
+                    isDone = false,
+                    householderId = FIRST_HOUSEHOLDER_ID,
+                    orderIndex = 0,
+                    visitType = VisitType.FIRST_VISIT,
+                    nextConversationId = null
+                )
+            }
+        }
+        visitRepositoryRef?.value = visitRepository
+
         val preferenceRepository = mock<PreferenceRepository> {
             on { get() } doReturn Preference(
                 visitListDateFilterOption = visitListDateFilterOption,
@@ -706,7 +834,7 @@ class VisitListViewModelTest {
         val syncVisitCalendarEvent = mock<SyncVisitCalendarEventUseCase>()
         val dateTimeProvider = mock<DateTimeProvider> {
             on { nowLocalDateTime() } doReturn LocalDateTime.now()
-            on { nowLocalDate() } doReturn LocalDate.now()
+            on { nowLocalDate() } doReturn now
         }
         val visitMapAdapter = mock<VisitMapAdapter>()
 
@@ -722,6 +850,21 @@ class VisitListViewModelTest {
             osrmRoutingProvider = osrmRoutingProvider,
             syncVisitCalendarEvent = syncVisitCalendarEvent,
             dateTimeProvider = dateTimeProvider
+        )
+    }
+
+    private fun createVisitHouseholder(date: LocalDateTime): VisitHouseholder {
+        return VisitHouseholder(
+            visitId = FIRST_VISIT_ID,
+            subject = "Subject 1",
+            date = date,
+            isDone = false,
+            householderId = FIRST_HOUSEHOLDER_ID,
+            householderName = "Householder 1",
+            householderAddress = "Address 1",
+            type = VisitType.FIRST_VISIT,
+            householderLatitude = null,
+            householderLongitude = null
         )
     }
 
