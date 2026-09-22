@@ -1,5 +1,6 @@
 package com.msmobile.visitas.visit
 
+import androidx.annotation.StringRes
 import androidx.annotation.VisibleForTesting
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
@@ -1158,6 +1159,20 @@ private fun VisitSubjectRow(
     }
 }
 
+/**
+ * The label wording for a visit falling on [dayOfWeek]. Weekday names carry grammatical gender in
+ * some languages — in pt-BR *segunda-feira* is feminine where *sábado* is masculine — so the two
+ * strings let the translation agree with the day it names; a language whose weekdays are all one
+ * gender, as in es-419, translates both the same way. The split itself follows Portuguese, the only
+ * supported language that needs one, so a language that divides its weekdays differently would want
+ * this revisited.
+ */
+@StringRes
+private fun nextDayOfWeekLabel(dayOfWeek: DayOfWeek): Int = when (dayOfWeek) {
+    DayOfWeek.SATURDAY, DayOfWeek.SUNDAY -> R.string.reschedule_visit_next_day_of_week_masculine
+    else -> R.string.reschedule_visit_next_day_of_week_feminine
+}
+
 @Composable
 private fun PendingVisitDropdown(
     visit: VisitListViewModel.VisitHouseholderState,
@@ -1185,11 +1200,11 @@ private fun PendingVisitDropdown(
             onEvent(VisitListViewModel.UiEvent.RescheduleVisitTomorrow(visit))
         })
         DropdownMenuItem(text = {
-            // Capitalised as a whole rather than per word: pt-BR leads with the weekday, which
-            // java.time renders lowercase, where en and es-419 lead with their own word.
+            // Capitalised as a whole, so a translation that leads with the weekday still reads as a
+            // label — java.time renders weekday names lowercase in several locales.
             Text(
                 text = stringResource(
-                    id = R.string.reschedule_visit_next_day_of_week,
+                    id = nextDayOfWeekLabel(visit.date.dayOfWeek),
                     visit.date.dayOfWeek.getDisplayName(TextStyle.FULL, locale)
                 ).replaceFirstChar { it.titlecase(locale) }
             )
