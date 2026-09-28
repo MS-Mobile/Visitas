@@ -87,8 +87,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.AppScaffold
+import com.msmobile.visitas.navigation.AppDestination
 import com.msmobile.visitas.util.scaffold.AppScaffoldState
 import com.msmobile.visitas.OnIntentStateHandled
 import com.msmobile.visitas.R
@@ -122,19 +124,11 @@ import com.msmobile.visitas.ui.views.RestoreBackupDialog
 import com.msmobile.visitas.ui.views.SimpleSearchBar
 import com.msmobile.visitas.util.AddressProvider
 import com.msmobile.visitas.util.IntentState
-import com.msmobile.visitas.util.ListScreenStyle
 import com.msmobile.visitas.util.borderPadding
 import com.msmobile.visitas.util.cardInnerPadding
 import com.msmobile.visitas.util.floatingBarBottomPadding
 import com.msmobile.visitas.util.horizontalFieldPadding
 import com.msmobile.visitas.util.verticalFieldPadding
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.generated.destinations.SettingsScreenDestination
-import com.ramcosta.composedestinations.generated.destinations.VisitDetailScreenDestination
-import com.ramcosta.composedestinations.generated.destinations.VisitListScreenDestination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
-import com.ramcosta.composedestinations.spec.Direction
 import kotlinx.coroutines.delay
 import java.time.DayOfWeek
 import java.time.LocalDateTime
@@ -163,16 +157,15 @@ private val MAP_OVERLAY_PADDING = 16.dp
  */
 private val SECTION_HEADER_MIN_HEIGHT = 48.dp
 
-@Destination<RootGraph>(style = ListScreenStyle::class, start = true)
 @Composable
 fun VisitListScreen(
-    navigator: DestinationsNavigator,
-    summaryViewModel: SummaryViewModel,
-    visitListViewModel: VisitListViewModel,
-    backupViewModel: BackupViewModel,
+    onNavigate: (AppDestination) -> Unit,
     appScaffoldState: AppScaffoldState,
     intentState: IntentState,
     onIntentStateHandled: OnIntentStateHandled,
+    summaryViewModel: SummaryViewModel = hiltViewModel(),
+    visitListViewModel: VisitListViewModel = hiltViewModel(),
+    backupViewModel: BackupViewModel = hiltViewModel()
 ) {
     val summaryUiState by summaryViewModel.uiState.collectAsStateWithLifecycle()
     val visitListUiState by visitListViewModel.uiState.collectAsStateWithLifecycle()
@@ -181,9 +174,6 @@ fun VisitListScreen(
     val onVisitListEvent = visitListViewModel::onEvent
     val onBackupSheetEvent = backupViewModel::onEvent
     val onMonthPickerEvent = summaryViewModel::onMonthPickerEvent
-    val onNavigate = { direction: Direction ->
-        navigator.navigate(direction)
-    }
     val isKeyboardOpen by isKeyboardOpen()
     val onMapError = { error: String ->
         visitListViewModel.onEvent(
@@ -209,7 +199,7 @@ fun VisitListScreen(
     )
     val topNavigationActions = visitListTopNavigationActions()
     val topMenuActions = settingsTopMenuActions(
-        onNavigateToSettings = { onNavigate(SettingsScreenDestination) }
+        onNavigateToSettings = { onNavigate(AppDestination.Settings) }
     )
     val chromeOwner = remember { Any() }
 
@@ -289,7 +279,7 @@ private fun VisitListScreenContent(
     onVisitListEvent: (VisitListViewModel.UiEvent) -> Unit,
     onBackupSheetEvent: (BackupViewModel.UiEvent) -> Unit,
     onMonthPickerEvent: (MonthNavigatorEvent) -> Unit,
-    onNavigate: (Direction) -> Unit,
+    onNavigate: (AppDestination) -> Unit,
     onIntentStateHandled: OnIntentStateHandled,
     onMapError: (String) -> Unit
 ) {
@@ -648,7 +638,7 @@ private fun VisitsList(
     modifier: Modifier,
     visitListUiState: VisitListViewModel.UiState,
     onVisitListEvent: (VisitListViewModel.UiEvent) -> Unit,
-    onNavigate: (Direction) -> Unit,
+    onNavigate: (AppDestination) -> Unit,
 ) {
     val visitList = visitListUiState.visitList.filter { !it.hide }
     val isLoadingVisits = visitListUiState.isLoadingVisits
@@ -967,7 +957,7 @@ private fun VisitCard(
     isLoading: Boolean,
     showNearbyVisits: Boolean,
     onEvent: (VisitListViewModel.UiEvent) -> Unit,
-    onNavigate: (Direction) -> Unit,
+    onNavigate: (AppDestination) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val isHouseholderAddressNearby =
@@ -979,7 +969,7 @@ private fun VisitCard(
         colors = CardDefaults.cardColors()
             .copy(containerColor = MaterialTheme.colorScheme.surfaceContainer),
         onClick = {
-            onNavigate(VisitDetailScreenDestination(visit.householderId))
+            onNavigate(AppDestination.VisitDetail(visit.householderId))
         }
     ) {
         Column(
@@ -1434,7 +1424,7 @@ internal fun VisitListScreenPreview(
         PreviewOverlayHost {
             AppScaffold(
                 uiState = config.mainActivityUiState,
-                currentDestination = VisitListScreenDestination,
+                currentDestination = AppDestination.VisitList,
                 onEvent = {},
                 onNavigateToTab = {},
                 onNavigate = {},

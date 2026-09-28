@@ -26,3 +26,7 @@
 #-renamesourcefileattribute SourceFile
 -dontwarn org.slf4j.*
 # Retain generic signatures of TypeToken and its subclasses with R8 version 3.0 and higher.
+# Navigation 3 saves the back stack by key class and looks the serializer up reflectively when it
+# restores it, so keep the keys and their generated serializers.
+-keep class com.msmobile.visitas.navigation.AppDestination { *; }
+-keep class com.msmobile.visitas.navigation.AppDestination$* { *; }

@@ -23,22 +23,19 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import com.msmobile.visitas.MainActivityViewModel
 import com.msmobile.visitas.R
+import com.msmobile.visitas.navigation.AppDestination
 import com.msmobile.visitas.ui.theme.PreviewFoldable
 import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.util.borderPadding
-import com.ramcosta.composedestinations.generated.destinations.ConversationListScreenDestination
-import com.ramcosta.composedestinations.generated.destinations.VisitListScreenDestination
-import com.ramcosta.composedestinations.spec.DestinationSpec
-import com.ramcosta.composedestinations.spec.DirectionDestinationSpec
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun BottomNavigation(
     showFAB: Boolean,
     onFabClickedEvent: () -> Unit,
-    currentDestination: DestinationSpec,
-    onNavigateToTab: (DirectionDestinationSpec) -> Unit
+    currentDestination: AppDestination,
+    onNavigateToTab: (AppDestination) -> Unit
 ) {
     var activeTab by remember { mutableStateOf(currentDestination) }
 
@@ -83,20 +80,20 @@ private fun BottomNavigationPreview() {
         BottomNavigation(
             showFAB = true,
             onFabClickedEvent = {},
-            currentDestination = VisitListScreenDestination,
+            currentDestination = AppDestination.VisitList,
             onNavigateToTab = {}
         )
     }
 }
 
 private enum class BottomNavigationTab(
-    val destination: DirectionDestinationSpec,
+    val destination: AppDestination,
     val icon: ImageVector,
     @param:StringRes val textId: Int
 ) {
-    Visits(VisitListScreenDestination, Icons.Rounded.Home, R.string.visits),
+    Visits(AppDestination.VisitList, Icons.Rounded.Home, R.string.visits),
     Conversation(
-        ConversationListScreenDestination,
+        AppDestination.ConversationList,
         Icons.AutoMirrored.Default.MenuBook,
         R.string.conversations
     ),

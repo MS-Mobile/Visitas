@@ -1,43 +1,57 @@
 package com.msmobile.visitas
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.navigation.compose.rememberNavController
-import com.msmobile.visitas.di.navigationDependencies
-import com.msmobile.visitas.extension.currentDestinationWithLifecycle
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberNavBackStack
+import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
+import androidx.navigation3.ui.NavDisplay
+import com.msmobile.visitas.conversation.ConversationDetailScreen
+import com.msmobile.visitas.conversation.ConversationListScreen
+import com.msmobile.visitas.navigation.AppDestination
+import com.msmobile.visitas.settings.SettingsScreen
 import com.msmobile.visitas.ui.theme.VisitasTheme
+import com.msmobile.visitas.util.DetailScreenStyle
+import com.msmobile.visitas.util.ListScreenStyle
 import com.msmobile.visitas.util.scaffold.AppScaffoldState
-import com.ramcosta.composedestinations.DestinationsNavHost
-import com.ramcosta.composedestinations.generated.NavGraphs
-import com.ramcosta.composedestinations.spec.Direction
-import com.ramcosta.composedestinations.spec.DirectionDestinationSpec
-import com.ramcosta.composedestinations.utils.rememberDestinationsNavigator
+import com.msmobile.visitas.visit.VisitDetailScreen
+import com.msmobile.visitas.visit.VisitListScreen
 
 @Composable
 fun Main(
     uiState: MainActivityViewModel.UiState,
     onEvent: (MainActivityViewModel.UiEvent) -> Unit
 ) {
-    val navController = rememberNavController()
-    val destinationsNavigator = navController.rememberDestinationsNavigator()
-    val currentDestination by navController.currentDestinationWithLifecycle()
+    val backStack = rememberNavBackStack(AppDestination.VisitList)
+    val currentDestination by remember {
+        derivedStateOf { backStack.last() as AppDestination }
+    }
     val appScaffoldState = remember { AppScaffoldState() }
     val intentState = uiState.intentState
     val intentStateHandled = {
         onEvent(MainActivityViewModel.UiEvent.IntentStateHandled)
     }
-    val onNavigateToTab = { destination: DirectionDestinationSpec ->
-        destinationsNavigator.navigate(destination) {
-            launchSingleTop = true
-            restoreState = true
-            popUpTo(NavGraphs.root.startRoute) {
-                saveState = true
-            }
+    // Tabs sit directly on top of the start destination, so switching tabs drops whatever the
+    // current tab stacked above the root before pushing the new one.
+    val onNavigateToTab = { destination: AppDestination ->
+        while (backStack.size > 1) {
+            backStack.removeAt(backStack.lastIndex)
+        }
+        if (destination != AppDestination.VisitList) {
+            backStack.add(destination)
         }
     }
-    val onNavigate = { direction: Direction ->
-        destinationsNavigator.navigate(direction)
+    val onNavigate = { destination: AppDestination ->
+        backStack.add(destination)
+        Unit
+    }
+    val onNavigateUp = {
+        if (backStack.size > 1) {
+            backStack.removeAt(backStack.lastIndex)
+        }
     }
     VisitasTheme {
         AppScaffold(
@@ -53,14 +67,50 @@ fun Main(
             floatingActionButtonActions = appScaffoldState.uiState.floatingActionButtonActions,
             subtitle = appScaffoldState.uiState.subtitle,
             content = {
-                DestinationsNavHost(
-                    navGraph = NavGraphs.root,
-                    navController = navController,
-                    dependenciesContainerBuilder = navigationDependencies(
-                        intentState = intentState,
-                        intentStateHandled = intentStateHandled,
-                        appScaffoldState = appScaffoldState
-                    )
+                NavDisplay(
+                    backStack = backStack,
+                    onBack = { onNavigateUp() },
+                    entryDecorators = listOf(
+                        rememberSaveableStateHolderNavEntryDecorator(),
+                        rememberViewModelStoreNavEntryDecorator()
+                    ),
+                    entryProvider = entryProvider {
+                        entry<AppDestination.VisitList>(metadata = ListScreenStyle.metadata) {
+                            VisitListScreen(
+                                onNavigate = onNavigate,
+                                appScaffoldState = appScaffoldState,
+                                intentState = intentState,
+                                onIntentStateHandled = intentStateHandled
+                            )
+                        }
+                        entry<AppDestination.ConversationList>(metadata = ListScreenStyle.metadata) {
+                            ConversationListScreen(
+                                onNavigate = onNavigate,
+                                appScaffoldState = appScaffoldState
+                            )
+                        }
+                        entry<AppDestination.VisitDetail>(metadata = DetailScreenStyle.metadata) { key ->
+                            VisitDetailScreen(
+                                householderId = key.householderId,
+                                onNavigate = onNavigate,
+                                onNavigateUp = onNavigateUp,
+                                appScaffoldState = appScaffoldState
+                            )
+                        }
+                        entry<AppDestination.ConversationDetail>(metadata = DetailScreenStyle.metadata) { key ->
+                            ConversationDetailScreen(
+                                firstConversationId = key.firstConversationId,
+                                onNavigateUp = onNavigateUp,
+                                appScaffoldState = appScaffoldState
+                            )
+                        }
+                        entry<AppDestination.Settings>(metadata = DetailScreenStyle.metadata) {
+                            SettingsScreen(
+                                onNavigateUp = onNavigateUp,
+                                appScaffoldState = appScaffoldState
+                            )
+                        }
+                    }
                 )
             }
         )

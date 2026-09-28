@@ -35,6 +35,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
+import com.msmobile.visitas.navigation.AppDestination
 import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.ui.views.BottomNavigation
@@ -46,14 +47,6 @@ import com.msmobile.visitas.util.scaffold.FloatingActionButtonAction
 import com.msmobile.visitas.util.scaffold.TopBarAction
 import com.msmobile.visitas.util.scaffold.TopMenuAction
 import com.msmobile.visitas.util.scaffold.TopNavigationAction
-import com.ramcosta.composedestinations.generated.destinations.ConversationDetailScreenDestination
-import com.ramcosta.composedestinations.generated.destinations.ConversationListScreenDestination
-import com.ramcosta.composedestinations.generated.destinations.SettingsScreenDestination
-import com.ramcosta.composedestinations.generated.destinations.VisitDetailScreenDestination
-import com.ramcosta.composedestinations.generated.destinations.VisitListScreenDestination
-import com.ramcosta.composedestinations.spec.DestinationSpec
-import com.ramcosta.composedestinations.spec.Direction
-import com.ramcosta.composedestinations.spec.DirectionDestinationSpec
 
 /**
  * The one and only Scaffold in the app, hosted by `Main`.
@@ -72,10 +65,10 @@ import com.ramcosta.composedestinations.spec.DirectionDestinationSpec
 @Composable
 fun AppScaffold(
     uiState: MainActivityViewModel.UiState,
-    currentDestination: DestinationSpec,
+    currentDestination: AppDestination,
     onEvent: (MainActivityViewModel.UiEvent) -> Unit,
-    onNavigateToTab: (DirectionDestinationSpec) -> Unit,
-    onNavigate: (Direction) -> Unit,
+    onNavigateToTab: (AppDestination) -> Unit,
+    onNavigate: (AppDestination) -> Unit,
     topNavigationActions: List<TopNavigationAction> = emptyList(),
     topBarActions: List<TopBarAction> = emptyList(),
     topMenuActions: List<TopMenuAction> = emptyList(),
@@ -84,48 +77,33 @@ fun AppScaffold(
     subtitle: String? = null,
     content: @Composable () -> Unit
 ) {
-    val showFAB = currentDestination in listOf(
-        VisitListScreenDestination,
-        ConversationListScreenDestination
-    )
-    val showTopBar = currentDestination in listOf(
-        VisitListScreenDestination,
-        ConversationListScreenDestination,
-        VisitDetailScreenDestination,
-        ConversationDetailScreenDestination,
-        SettingsScreenDestination
-    )
-    val showBottomNavigation = currentDestination in listOf(
-        VisitListScreenDestination,
-        ConversationListScreenDestination
-    )
+    val isTabDestination = currentDestination is AppDestination.VisitList ||
+        currentDestination is AppDestination.ConversationList
+    val showFAB = isTabDestination
+    val showBottomNavigation = isTabDestination
     val title = when (currentDestination) {
-        VisitListScreenDestination,
-        VisitDetailScreenDestination -> stringResource(id = R.string.visits)
+        is AppDestination.VisitList,
+        is AppDestination.VisitDetail -> stringResource(id = R.string.visits)
 
-        ConversationListScreenDestination,
-        ConversationDetailScreenDestination -> stringResource(id = R.string.conversations)
+        is AppDestination.ConversationList,
+        is AppDestination.ConversationDetail -> stringResource(id = R.string.conversations)
 
-        SettingsScreenDestination -> stringResource(id = R.string.settings)
-
-        else -> stringResource(id = R.string.app_name)
+        is AppDestination.Settings -> stringResource(id = R.string.settings)
     }
     Scaffold(
         topBar = {
-            if (showTopBar) {
-                TopAppBar(
-                    title = {
-                        ScaffoldTitle(title = title, subtitle = subtitle)
-                    },
-                    navigationIcon = {
-                        ScaffoldTopNavigation(topNavigationActions = topNavigationActions)
-                    },
-                    actions = {
-                        ScaffoldTopBar(topBarActions = topBarActions)
-                        ScaffoldTopMenu(topMenuActions = topMenuActions)
-                    }
-                )
-            }
+            TopAppBar(
+                title = {
+                    ScaffoldTitle(title = title, subtitle = subtitle)
+                },
+                navigationIcon = {
+                    ScaffoldTopNavigation(topNavigationActions = topNavigationActions)
+                },
+                actions = {
+                    ScaffoldTopBar(topBarActions = topBarActions)
+                    ScaffoldTopMenu(topMenuActions = topMenuActions)
+                }
+            )
         },
         content = { paddingValues ->
             Surface(
@@ -292,9 +270,9 @@ private fun ScaffoldDetailFooter(
 @Composable
 private fun ScaffoldBottomNavigation(
     showFAB: Boolean,
-    currentDestination: DestinationSpec,
+    currentDestination: AppDestination,
     onEvent: (MainActivityViewModel.UiEvent) -> Unit,
-    onNavigateToTab: (DirectionDestinationSpec) -> Unit
+    onNavigateToTab: (AppDestination) -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -322,12 +300,12 @@ private fun ScaffoldBottomNavigation(
 private fun StateHandler(
     uiState: MainActivityViewModel.UiState,
     onEvent: (MainActivityViewModel.UiEvent) -> Unit,
-    onNavigate: (Direction) -> Unit
+    onNavigate: (AppDestination) -> Unit
 ) {
     when (val eventState = uiState.eventState) {
         is MainActivityViewModel.UiEventState.Idle -> {}
         is MainActivityViewModel.UiEventState.HandleFabClick -> {
-            onNavigate(Direction(eventState.fabDestination.route))
+            onNavigate(eventState.fabDestination)
             onEvent(MainActivityViewModel.UiEvent.FabClickHandled)
         }
     }

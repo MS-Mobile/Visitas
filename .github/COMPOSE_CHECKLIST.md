@@ -23,7 +23,7 @@ Use this checklist when reviewing or authoring Compose screens in this project.
 
 ## 🟢 Style / Minor
 
-- [ ] **`@Destination` only on the public entry-point composable** — Private `*Content` composables handle the actual UI; the public composable wires the ViewModel and navigator.
+- [ ] **Only the public entry-point composable is referenced from the `NavDisplay` entry provider** — Private `*Content` composables handle the actual UI; the public composable wires the ViewModel and navigation callbacks.
 - [ ] **`collectAsStateWithLifecycle()` used** — Never use `collectAsState()` without lifecycle awareness.
 - [ ] **All strings via `stringResource`** — No hardcoded string literals in composables.
 - [ ] **`key` provided in `LazyColumn` / `LazyRow` items** — Always supply a stable, unique key to prevent incorrect recomposition on list changes.

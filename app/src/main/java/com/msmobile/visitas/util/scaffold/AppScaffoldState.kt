@@ -13,7 +13,7 @@ import androidx.compose.runtime.setValue
  * footer, a FAB or a subtitle publishes them here instead of nesting a Scaffold of its own.
  *
  * Deliberately a plain holder (`remember { AppScaffoldState() }` in `Main`, threaded to screens by
- * `di/NavigationDependencies.kt`) rather than a ViewModel: it carries no logic, has no injected
+ * the `NavDisplay` entry provider in `Main`) rather than a ViewModel: it carries no logic, has no injected
  * dependencies, and need not survive configuration change, since every screen re-publishes when it
  * re-enters composition. Do not reintroduce a `UiEvent`/`onEvent` reducer over it.
  *

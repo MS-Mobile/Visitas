@@ -2,10 +2,8 @@ package com.msmobile.visitas
 
 import androidx.annotation.VisibleForTesting
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import com.msmobile.visitas.navigation.AppDestination
 import com.msmobile.visitas.util.IntentState
-import com.ramcosta.composedestinations.generated.destinations.VisitDetailScreenDestination
-import com.ramcosta.composedestinations.generated.destinations.VisitListScreenDestination
-import com.ramcosta.composedestinations.spec.DestinationSpec
 
 @VisibleForTesting
 internal class AppScaffoldPreviewConfigProvider : PreviewParameterProvider<AppScaffoldPreviewConfig> {
@@ -17,7 +15,7 @@ internal class AppScaffoldPreviewConfigProvider : PreviewParameterProvider<AppSc
                 eventState = MainActivityViewModel.UiEventState.Idle,
                 intentState = IntentState.None
             ),
-            currentDestination = VisitListScreenDestination
+            currentDestination = AppDestination.VisitList
         ),
         AppScaffoldPreviewConfig(
             configName = "Without Bottom Bar and FAB",
@@ -25,7 +23,7 @@ internal class AppScaffoldPreviewConfigProvider : PreviewParameterProvider<AppSc
                 eventState = MainActivityViewModel.UiEventState.Idle,
                 intentState = IntentState.None
             ),
-            currentDestination = VisitListScreenDestination
+            currentDestination = AppDestination.VisitList
         ),
         AppScaffoldPreviewConfig(
             configName = "With Subtitle",
@@ -33,7 +31,7 @@ internal class AppScaffoldPreviewConfigProvider : PreviewParameterProvider<AppSc
                 eventState = MainActivityViewModel.UiEventState.Idle,
                 intentState = IntentState.None
             ),
-            currentDestination = VisitDetailScreenDestination,
+            currentDestination = AppDestination.VisitDetail(),
             subtitle = "Draft"
         )
     )
@@ -47,7 +45,7 @@ internal class AppScaffoldPreviewConfigProvider : PreviewParameterProvider<AppSc
 internal data class AppScaffoldPreviewConfig(
     val configName: String,
     val uiState: MainActivityViewModel.UiState,
-    val currentDestination: DestinationSpec,
+    val currentDestination: AppDestination,
     val subtitle: String? = null
 )
 
