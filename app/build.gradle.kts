@@ -16,7 +16,14 @@ plugins {
 
 android {
     namespace = "com.msmobile.visitas"
-    compileSdk = libs.versions.android.compile.sdk.get().toInt()
+    compileSdk {
+        // "37" or "37.1": minor SDK releases (e.g. 37.1) need the release DSL, not a plain Int.
+        val (major, minor) = libs.versions.android.compile.sdk.get().split('.')
+            .let { it[0].toInt() to it.getOrNull(1)?.toInt() }
+        version = release(major) {
+            minor?.let { minorApiLevel = it }
+        }
+    }
 
     defaultConfig {
         applicationId = "com.msmobile.visitas"
