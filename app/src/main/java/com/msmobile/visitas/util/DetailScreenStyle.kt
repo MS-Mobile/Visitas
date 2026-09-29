@@ -11,10 +11,6 @@ import androidx.navigation3.ui.NavDisplay
  * Detail screens slide in horizontally: entering, the screen moves in from the end edge (right to
  * left in LTR) and pushes the screen below out towards the start; leaving (back, including the
  * predictive back gesture), both move the opposite way. Start/End keep the motion mirrored in RTL.
- *
- * Both screens move side by side, never on top of each other, because detail screens have no
- * opaque background of their own: a screen sliding over another would show the one below through
- * it.
  */
 object DetailScreenStyle {
     private const val ANIMATION_DURATION = 500
