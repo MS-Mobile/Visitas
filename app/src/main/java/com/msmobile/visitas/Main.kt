@@ -1,5 +1,9 @@
 package com.msmobile.visitas
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -7,9 +11,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavEntry
+import androidx.navigation3.runtime.NavEntryDecorator
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberDecoratedNavEntries
@@ -116,10 +122,27 @@ private fun rememberTabEntries(
         backStack = backStack,
         entryDecorators = listOf(
             rememberSaveableStateHolderNavEntryDecorator(),
-            rememberViewModelStoreNavEntryDecorator()
+            rememberViewModelStoreNavEntryDecorator(),
+            remember { opaqueBackgroundNavEntryDecorator() }
         ),
         entryProvider = entryProvider
     )
+}
+
+/**
+ * Screens draw no background of their own, so without this a screen animating over another (e.g.
+ * during a transition or the predictive back gesture) would show the one below through it.
+ */
+private fun opaqueBackgroundNavEntryDecorator(): NavEntryDecorator<NavKey> {
+    return NavEntryDecorator { entry ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        ) {
+            entry.Content()
+        }
+    }
 }
 
 private fun appEntryProvider(
