@@ -75,7 +75,10 @@ selected tab's entries to `NavDisplay` — so a tab's screens keep their ViewMod
 is shown. Each tab's root is the bottom of its own stack. The shared `appEntryProvider` maps each key to its screen,
 attaching `ListScreenStyle.metadata(motionScheme)` or `DetailScreenStyle.metadata(motionScheme)` for transitions.
 Transition timing comes from `MaterialTheme.motionScheme`, never hard-coded durations. Screens register no back
-callbacks of their own, so the predictive back gesture reaches `NavDisplay` and animates. Entries are remembered by
+callbacks of their own, so the predictive back gesture reaches `NavDisplay` and animates. Chrome (back arrow, actions,
+FAB, subtitle) is published per destination through `AppScaffoldStateHolder.stateFor(key)`, and the scaffold shows the
+top-of-stack destination's — never a single shared state, since the screen underneath composes during the gesture.
+Entries are remembered by
 back-stack contents, so entry content must read changing values through `State` (see `intentState`), not capture
 them. ViewModels are scoped to their back-stack entry by `rememberViewModelStoreNavEntryDecorator`, so screens
 obtain them with `hiltViewModel()` — a screen may take several (e.g. `VisitListScreen` takes
