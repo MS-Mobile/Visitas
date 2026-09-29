@@ -18,11 +18,12 @@ plugins {
 android {
     namespace = "com.msmobile.visitas"
     compileSdk {
-        // "37" or "37.1": minor SDK releases (e.g. 37.1) need the release DSL, not a plain Int.
-        val (major, minor) = libs.versions.android.compile.sdk.get().split('.')
-            .let { it[0].toInt() to it.getOrNull(1)?.toInt() }
-        version = release(major) {
-            minor?.let { minorApiLevel = it }
+        // Accepts a major level ("37") or a minor SDK release ("37.1").
+        val compileSdkLevel = libs.versions.android.compile.sdk.get()
+        val majorLevel = compileSdkLevel.substringBefore('.').toInt()
+        val minorLevel = compileSdkLevel.substringAfter('.', missingDelimiterValue = "").toIntOrNull()
+        version = release(majorLevel) {
+            if (minorLevel != null) minorApiLevel = minorLevel
         }
     }
 
