@@ -48,7 +48,7 @@ constructor(
                 )
             }
             newState {
-                copy(conversations = conversationStates)
+                copy(conversations = conversationStates.filterBy(filter))
             }
         }
     }

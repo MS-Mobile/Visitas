@@ -144,6 +144,24 @@ class ConversationListViewModelTest {
         assertTrue(visibleConversations.isEmpty())
     }
 
+    @Test
+    fun `onEvent with ViewCreated keeps the active search applied to reloaded conversations`() {
+        // Arrange
+        val viewModel = createViewModel()
+        viewModel.onEvent(ConversationListViewModel.UiEvent.ViewCreated)
+        viewModel.onEvent(ConversationListViewModel.UiEvent.SearchChanged("Question 1"))
+
+        // Act
+        viewModel.onEvent(ConversationListViewModel.UiEvent.ViewCreated)
+
+        // Assert
+        val state = viewModel.uiState.value
+        assertEquals("Question 1", state.filter.search)
+        val visibleConversations = state.conversations.filter { !it.hide }
+        assertEquals(1, visibleConversations.size)
+        assertEquals(FIRST_CONVERSATION_ID, visibleConversations[0].conversationId)
+    }
+
     private fun createViewModel(
         conversationRepositoryRef: MockReferenceHolder<ConversationRepository>? = null
     ): ConversationListViewModel {

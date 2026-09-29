@@ -69,13 +69,16 @@ fun FeatureScreen(
 ### Navigation (Navigation 3)
 Navigation uses the official **Jetpack Navigation 3** library. Every screen has a `@Serializable` key in
 `navigation/AppDestination.kt` (a sealed `NavKey`); screen arguments are key properties (`UUID`s use
-`serialization/UUIDSerializer`). `Main.kt` owns the back stack (`rememberNavBackStack`) and maps each key to
-its screen in the `NavDisplay` `entryProvider`, attaching `ListScreenStyle.metadata` or
-`DetailScreenStyle.metadata` for transitions. ViewModels are scoped to their back-stack entry by
-`rememberViewModelStoreNavEntryDecorator`, so screens obtain them with `hiltViewModel()` — a screen may take
-several (e.g. `VisitListScreen` takes `VisitListViewModel`, `SummaryViewModel` and `BackupViewModel`). To add a
-screen: add a key to `AppDestination`, add an `entry<…>` in `Main.kt`, and handle the key in `AppScaffold`'s
-title `when`.
+`serialization/UUIDSerializer`). `Main.kt` keeps **one back stack per bottom-navigation tab**
+(`rememberNavBackStack` each), decorates each separately with `rememberDecoratedNavEntries`, and hands only the
+selected tab's entries to `NavDisplay` — so a tab's screens keep their ViewModels and UI state while another tab
+is shown. Each tab's root is the bottom of its own stack. The shared `appEntryProvider` maps each key to its screen,
+attaching `ListScreenStyle.metadata` or `DetailScreenStyle.metadata` for transitions. Entries are remembered by
+back-stack contents, so entry content must read changing values through `State` (see `intentState`), not capture
+them. ViewModels are scoped to their back-stack entry by `rememberViewModelStoreNavEntryDecorator`, so screens
+obtain them with `hiltViewModel()` — a screen may take several (e.g. `VisitListScreen` takes
+`VisitListViewModel`, `SummaryViewModel` and `BackupViewModel`). To add a screen: add a key to `AppDestination`,
+add an `entry<…>` in `appEntryProvider`, and handle the key in `AppScaffold`'s title `when`.
 
 ### VisitHouseholder is a Database View
 `VisitHouseholder` is annotated `@DatabaseView`, not `@Entity`. It joins `visit` and `householder` and is registered in `VisitasDatabase` under `views = [VisitHouseholder::class]`. Do not add it to `entities`.
