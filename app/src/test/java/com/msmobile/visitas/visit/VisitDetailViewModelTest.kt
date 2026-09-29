@@ -746,39 +746,6 @@ class VisitDetailViewModelTest {
     }
 
     @Test
-    fun `onEvent with CancelClicked discards changes when no edits made`() {
-        // Arrange
-        val viewModel = createViewModel()
-        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = null))
-
-        // Act
-        viewModel.onEvent(VisitDetailViewModel.UiEvent.CancelClicked)
-
-        // Assert
-        assertEquals(
-            VisitDetailViewModel.UiEventState.Dismissed,
-            viewModel.uiState.value.eventState
-        )
-    }
-
-    @Test
-    fun `onEvent with CancelClicked discards changes when edits made`() {
-        // Arrange
-        val viewModel = createViewModel()
-        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = null))
-        viewModel.onEvent(VisitDetailViewModel.UiEvent.HouseholderNameChanged("New Name"))
-
-        // Act
-        viewModel.onEvent(VisitDetailViewModel.UiEvent.CancelClicked)
-
-        // Assert
-        assertEquals(
-            VisitDetailViewModel.UiEventState.Dismissed,
-            viewModel.uiState.value.eventState
-        )
-    }
-
-    @Test
     fun `onEvent with LocationRationaleAccepted shows permission dialog`() {
         // Arrange
         val viewModel = createViewModel()

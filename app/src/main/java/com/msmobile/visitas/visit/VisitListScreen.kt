@@ -99,7 +99,6 @@ import com.msmobile.visitas.util.scaffold.TopNavigationAction
 import com.msmobile.visitas.util.scaffold.settingsTopMenuActions
 import com.msmobile.visitas.backup.BackupSheet
 import com.msmobile.visitas.backup.BackupViewModel
-import com.msmobile.visitas.extension.OnBackPressed
 import com.msmobile.visitas.extension.RequestLocationPermission
 import com.msmobile.visitas.extension.bottomSheetListItemColors
 import com.msmobile.visitas.extension.isKeyboardOpen
@@ -215,7 +214,6 @@ fun VisitListScreen(
         onDispose { appScaffoldState.clearUiState(chromeOwner) }
     }
 
-    OnBackPressed { }
     VisitListScreenContent(
         summaryUiState = summaryUiState,
         visitListUiState = visitListUiState,
