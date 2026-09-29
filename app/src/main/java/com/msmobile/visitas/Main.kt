@@ -50,8 +50,9 @@ fun Main(
     }
     val currentDestination = currentBackStack.last() as AppDestination
     val appScaffoldState = remember { AppScaffoldState() }
-    // Entries are remembered by back-stack contents, so their content must read changing values
-    // through State rather than capture them when the entry is first created.
+    // appEntryProvider builds entry content outside composition, and entries are remembered by
+    // back-stack contents, so content that captured a value would keep the first one it saw.
+    // Changing values are therefore read through State.
     val intentState by rememberUpdatedState(uiState.intentState)
     val intentStateHandled = {
         onEvent(MainActivityViewModel.UiEvent.IntentStateHandled)

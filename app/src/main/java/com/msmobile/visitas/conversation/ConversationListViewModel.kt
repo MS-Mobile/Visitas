@@ -1,5 +1,6 @@
 package com.msmobile.visitas.conversation
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.msmobile.visitas.extension.containsAllWords
@@ -17,12 +18,13 @@ class ConversationListViewModel
 @Inject
 constructor(
     private val dispatchers: DispatcherProvider,
-    private val conversationRepository: ConversationRepository
+    private val conversationRepository: ConversationRepository,
+    private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(
         UiState(
             conversations = emptyList(),
-            filter = ConversationFilter(search = "")
+            filter = ConversationFilter(search = savedStateHandle[SEARCH_KEY] ?: "")
         )
     )
     val uiState: StateFlow<UiState> = _uiState
@@ -54,6 +56,8 @@ constructor(
     }
 
     private fun searchChanged(value: String) {
+        // Kept in the SavedStateHandle so the search survives process death, not just tab switches.
+        savedStateHandle[SEARCH_KEY] = value
         newState {
             val filter = filter.copy(search = value)
             val filteredConversationList = conversations.filterBy(filter)
@@ -105,4 +109,8 @@ constructor(
         val conversations: List<ConversationState>,
         val filter: ConversationFilter,
     )
+
+    private companion object {
+        const val SEARCH_KEY = "search"
+    }
 }
