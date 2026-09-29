@@ -12,8 +12,9 @@ import androidx.compose.runtime.setValue
  * content slot. A screen that needs a back arrow, app-bar actions, an overflow item, a detail
  * footer, a FAB or a subtitle publishes them here instead of nesting a Scaffold of its own.
  *
- * Deliberately a plain holder (`remember { AppScaffoldState() }` in `Main`, threaded to screens by
- * the `NavDisplay` entry provider in `Main`) rather than a ViewModel: it carries no logic, has no injected
+ * There is one per destination, kept by [AppScaffoldStateHolder] (remembered in `Main` and threaded
+ * to each screen by the `NavDisplay` entry provider); the scaffold shows the current destination's.
+ * Deliberately a plain holder rather than a ViewModel: it carries no logic, has no injected
  * dependencies, and need not survive configuration change, since every screen re-publishes when it
  * re-enters composition. Do not reintroduce a `UiEvent`/`onEvent` reducer over it.
  *

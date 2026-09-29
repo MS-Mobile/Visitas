@@ -32,10 +32,10 @@ object DetailScreenStyle {
     ): ContentTransform {
         return slideIntoContainer(
             towards = direction,
-            animationSpec = motionScheme.defaultSpatialSpec()
+            animationSpec = motionScheme.slowSpatialSpec()
         ) togetherWith slideOutOfContainer(
             towards = direction,
-            animationSpec = motionScheme.defaultSpatialSpec()
+            animationSpec = motionScheme.slowSpatialSpec()
         )
     }
 }

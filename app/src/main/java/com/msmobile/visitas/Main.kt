@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MotionScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,7 +32,7 @@ import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.util.DetailScreenStyle
 import com.msmobile.visitas.util.IntentState
 import com.msmobile.visitas.util.ListScreenStyle
-import com.msmobile.visitas.util.scaffold.AppScaffoldState
+import com.msmobile.visitas.util.scaffold.AppScaffoldStateHolder
 import com.msmobile.visitas.visit.VisitDetailScreen
 import com.msmobile.visitas.visit.VisitListScreen
 
@@ -68,7 +69,7 @@ private fun MainContent(
         Tab.Conversations -> conversationsBackStack
     }
     val currentDestination = currentBackStack.last() as AppDestination
-    val appScaffoldState = remember { AppScaffoldState() }
+    val appScaffoldStateHolder = remember { AppScaffoldStateHolder() }
     // appEntryProvider builds entry content outside composition, and entries are remembered by
     // back-stack contents, so content that captured a value would keep the first one it saw.
     // Changing values are therefore read through State.
@@ -81,7 +82,7 @@ private fun MainContent(
     val entryProviderFor = { backStack: NavBackStack<NavKey> ->
         appEntryProvider(
             backStack = backStack,
-            appScaffoldState = appScaffoldState,
+            appScaffoldStateHolder = appScaffoldStateHolder,
             motionScheme = motionScheme,
             intentState = { intentState },
             onIntentStateHandled = intentStateHandled
@@ -93,18 +94,24 @@ private fun MainContent(
     val onNavigateToTab = { destination: AppDestination ->
         currentTab = Tab.entries.first { tab -> tab.root == destination }
     }
+    // The top of the back stack owns the chrome, not whichever screen composed last: during the
+    // predictive back gesture the screen below is composed too, but is not current until the pop.
+    val chrome = appScaffoldStateHolder.stateFor(currentDestination).uiState
+    SideEffect {
+        appScaffoldStateHolder.retainOnly(visitsBackStack + conversationsBackStack)
+    }
     AppScaffold(
         uiState = uiState,
         currentDestination = currentDestination,
         onEvent = onEvent,
         onNavigateToTab = onNavigateToTab,
         onNavigate = { destination -> currentBackStack.navigate(destination) },
-        topNavigationActions = appScaffoldState.uiState.topNavigationActions,
-        topBarActions = appScaffoldState.uiState.topBarActions,
-        topMenuActions = appScaffoldState.uiState.topMenuActions,
-        detailFooterActions = appScaffoldState.uiState.detailFooterActions,
-        floatingActionButtonActions = appScaffoldState.uiState.floatingActionButtonActions,
-        subtitle = appScaffoldState.uiState.subtitle,
+        topNavigationActions = chrome.topNavigationActions,
+        topBarActions = chrome.topBarActions,
+        topMenuActions = chrome.topMenuActions,
+        detailFooterActions = chrome.detailFooterActions,
+        floatingActionButtonActions = chrome.floatingActionButtonActions,
+        subtitle = chrome.subtitle,
         content = {
             NavDisplay(
                 entries = when (currentTab) {
@@ -161,7 +168,7 @@ private fun opaqueBackgroundNavEntryDecorator(): NavEntryDecorator<NavKey> {
 
 private fun appEntryProvider(
     backStack: NavBackStack<NavKey>,
-    appScaffoldState: AppScaffoldState,
+    appScaffoldStateHolder: AppScaffoldStateHolder,
     motionScheme: MotionScheme,
     intentState: () -> IntentState,
     onIntentStateHandled: OnIntentStateHandled
@@ -171,18 +178,18 @@ private fun appEntryProvider(
     val listMetadata = ListScreenStyle.metadata(motionScheme)
     val detailMetadata = DetailScreenStyle.metadata(motionScheme)
     return entryProvider {
-        entry<AppDestination.VisitList>(metadata = listMetadata) {
+        entry<AppDestination.VisitList>(metadata = listMetadata) { key ->
             VisitListScreen(
                 onNavigate = onNavigate,
-                appScaffoldState = appScaffoldState,
+                appScaffoldState = appScaffoldStateHolder.stateFor(key),
                 intentState = intentState(),
                 onIntentStateHandled = onIntentStateHandled
             )
         }
-        entry<AppDestination.ConversationList>(metadata = listMetadata) {
+        entry<AppDestination.ConversationList>(metadata = listMetadata) { key ->
             ConversationListScreen(
                 onNavigate = onNavigate,
-                appScaffoldState = appScaffoldState
+                appScaffoldState = appScaffoldStateHolder.stateFor(key)
             )
         }
         entry<AppDestination.VisitDetail>(metadata = detailMetadata) { key ->
@@ -190,20 +197,20 @@ private fun appEntryProvider(
                 householderId = key.householderId,
                 onNavigate = onNavigate,
                 onNavigateUp = onNavigateUp,
-                appScaffoldState = appScaffoldState
+                appScaffoldState = appScaffoldStateHolder.stateFor(key)
             )
         }
         entry<AppDestination.ConversationDetail>(metadata = detailMetadata) { key ->
             ConversationDetailScreen(
                 firstConversationId = key.firstConversationId,
                 onNavigateUp = onNavigateUp,
-                appScaffoldState = appScaffoldState
+                appScaffoldState = appScaffoldStateHolder.stateFor(key)
             )
         }
-        entry<AppDestination.Settings>(metadata = detailMetadata) {
+        entry<AppDestination.Settings>(metadata = detailMetadata) { key ->
             SettingsScreen(
                 onNavigateUp = onNavigateUp,
-                appScaffoldState = appScaffoldState
+                appScaffoldState = appScaffoldStateHolder.stateFor(key)
             )
         }
     }
