@@ -34,14 +34,14 @@ fun Main(
     val intentStateHandled = {
         onEvent(MainActivityViewModel.UiEvent.IntentStateHandled)
     }
-    // Tabs sit directly on top of the start destination, so switching tabs drops whatever the
-    // current tab stacked above the root before pushing the new one.
+    // Each tab is the root of the back stack, so NavDisplay has nothing to pop on a tab and the
+    // tab screen's own back handling always applies. Stacking a tab above VisitList instead let
+    // NavDisplay's back handler and the screen's compete, with the winner depending on history.
+    // The new root is added before the old entries are dropped so the stack is never empty.
     val onNavigateToTab = { destination: AppDestination ->
+        backStack.add(destination)
         while (backStack.size > 1) {
-            backStack.removeAt(backStack.lastIndex)
-        }
-        if (destination != AppDestination.VisitList) {
-            backStack.add(destination)
+            backStack.removeAt(0)
         }
     }
     // A double tap during the exit animation must not push the same key twice: Navigation 3 keys
