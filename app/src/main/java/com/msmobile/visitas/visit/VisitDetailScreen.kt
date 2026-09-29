@@ -90,6 +90,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.AppScaffold
 import com.msmobile.visitas.R
@@ -108,6 +109,7 @@ import com.msmobile.visitas.extension.sharp
 import com.msmobile.visitas.extension.stringResource
 import com.msmobile.visitas.extension.textField
 import com.msmobile.visitas.extension.toString
+import com.msmobile.visitas.navigation.AppDestination
 import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.ui.views.DateTimePicker
@@ -118,7 +120,6 @@ import com.msmobile.visitas.ui.views.PreviewCompatModalSheet
 import com.msmobile.visitas.ui.views.PreviewOverlayHost
 import com.msmobile.visitas.ui.views.TextFieldClearButton
 import com.msmobile.visitas.ui.views.TextFieldExpandButton
-import com.msmobile.visitas.util.DetailScreenStyle
 import com.msmobile.visitas.util.borderPadding
 import com.msmobile.visitas.util.floatingBarBottomPadding
 import com.msmobile.visitas.util.horizontalFieldPadding
@@ -130,30 +131,20 @@ import com.msmobile.visitas.util.scaffold.TopNavigationAction
 import com.msmobile.visitas.util.scaffold.topNavigationActions
 import com.msmobile.visitas.util.snackbarPadding
 import com.msmobile.visitas.util.verticalFieldPadding
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.generated.destinations.SettingsScreenDestination
-import com.ramcosta.composedestinations.generated.destinations.VisitDetailScreenDestination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import java.util.UUID
 
-@Destination<RootGraph>(style = DetailScreenStyle::class)
 @Composable
 fun VisitDetailScreen(
-    navigator: DestinationsNavigator,
-    viewModel: VisitDetailViewModel,
+    householderId: UUID?,
+    onNavigate: (AppDestination) -> Unit,
+    onNavigateUp: () -> Unit,
     appScaffoldState: AppScaffoldState,
-    householderId: UUID? = null
+    viewModel: VisitDetailViewModel = hiltViewModel()
 ) {
     val uiState: VisitDetailViewModel.UiState by viewModel.uiState.collectAsStateWithLifecycle()
     val onEvent = viewModel::onEvent
-    val onNavigateUp = {
-        navigator.navigateUp()
-        Unit
-    }
     val onNavigateToSettings = {
-        navigator.navigate(SettingsScreenDestination)
-        Unit
+        onNavigate(AppDestination.Settings)
     }
     VisitDetailScreenContent(
         householderId = householderId,
@@ -1384,7 +1375,7 @@ internal fun VisitDetailScreenPreview(
         PreviewOverlayHost {
             AppScaffold(
                 uiState = config.mainActivityUiState,
-                currentDestination = VisitDetailScreenDestination,
+                currentDestination = AppDestination.VisitDetail(),
                 onEvent = {},
                 onNavigateToTab = {},
                 onNavigate = {},
