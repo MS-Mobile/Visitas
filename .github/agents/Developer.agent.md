@@ -54,11 +54,10 @@ class XViewModel @Inject constructor(
 
 #### Screen Structure:
 ```kotlin
-@Destination
 @Composable
 fun XScreen(
-    viewModel: XViewModel = hiltViewModel(),
-    navigator: DestinationsNavigator
+    onNavigate: (AppDestination) -> Unit,
+    viewModel: XViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     XScreen(uiState = uiState, onEvent = viewModel::onEvent)

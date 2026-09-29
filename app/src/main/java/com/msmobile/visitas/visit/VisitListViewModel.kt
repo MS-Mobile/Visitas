@@ -3,6 +3,7 @@ package com.msmobile.visitas.visit
 import android.Manifest
 import android.annotation.SuppressLint
 import android.net.Uri
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.msmobile.visitas.extension.containsAllWords
@@ -54,13 +55,14 @@ constructor(
     private val permissionChecker: PermissionChecker,
     private val osrmRoutingProvider: com.msmobile.visitas.routing.OsrmRoutingProvider,
     private val syncVisitCalendarEvent: SyncVisitCalendarEventUseCase,
-    private val dateTimeProvider: DateTimeProvider
+    private val dateTimeProvider: DateTimeProvider,
+    private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(
         UiState(
             visitList = listOf(),
             filter = VisitFilter(
-                search = "",
+                search = savedStateHandle[SEARCH_KEY] ?: "",
                 dateFilter = VisitDateFilter.All,
                 distanceFilter = VisitDistanceFilter.All
             ),
@@ -365,6 +367,8 @@ constructor(
     }
 
     private fun searchChanged(value: String) {
+        // Kept in the SavedStateHandle so the search survives process death, not just tab switches.
+        savedStateHandle[SEARCH_KEY] = value
         newState {
             val filter = filter.copy(search = value)
             val visitList = visitList.filterBy(filter)
@@ -976,6 +980,7 @@ constructor(
     }
 
     companion object {
+        private const val SEARCH_KEY = "search"
         private val INITIAL_ROUTE_CALC_INTERNAL = 0.seconds
         private val SUBSEQUENT_ROUTE_CALC_INTERVAL = 2.seconds
         private val ROUTE_CALC_IDLE_THRESHOLD = 30.seconds

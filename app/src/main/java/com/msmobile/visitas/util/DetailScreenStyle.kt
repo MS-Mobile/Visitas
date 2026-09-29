@@ -1,44 +1,37 @@
 package com.msmobile.visitas.util
 
 import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
-import androidx.navigation.NavBackStackEntry
-import com.ramcosta.composedestinations.spec.DestinationStyle
+import androidx.compose.animation.togetherWith
+import androidx.navigation3.ui.NavDisplay
 
-object DetailScreenStyle : DestinationStyle.Animated() {
+/**
+ * Detail screens slide up over the screen below them and slide back down when popped.
+ */
+object DetailScreenStyle {
     private const val ANIMATION_DURATION = 500
 
-    override val enterTransition: (AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition?)?
-        get() = {
+    val metadata: Map<String, Any> =
+        NavDisplay.transitionSpec {
             slideIntoContainer(
                 towards = AnimatedContentTransitionScope.SlideDirection.Up,
                 animationSpec = tween(ANIMATION_DURATION)
-            )
+            ) togetherWith ExitTransition.KeepUntilTransitionsFinished
+        } + NavDisplay.popTransitionSpec {
+            slideDown()
+        } + NavDisplay.predictivePopTransitionSpec {
+            slideDown()
         }
 
-    override val exitTransition: (AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition?)?
-        get() = {
-            slideOutOfContainer(
+    private fun AnimatedContentTransitionScope<*>.slideDown(): ContentTransform {
+        return (
+            EnterTransition.None togetherWith slideOutOfContainer(
                 towards = AnimatedContentTransitionScope.SlideDirection.Down,
                 animationSpec = tween(ANIMATION_DURATION)
             )
-        }
-
-    override val popEnterTransition: (AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition?)?
-        get() = {
-            slideIntoContainer(
-                towards = AnimatedContentTransitionScope.SlideDirection.Up,
-                animationSpec = tween(ANIMATION_DURATION)
-            )
-        }
-
-    override val popExitTransition: (AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition?)?
-        get() = {
-            slideOutOfContainer(
-                towards = AnimatedContentTransitionScope.SlideDirection.Down,
-                animationSpec = tween(ANIMATION_DURATION)
-            )
-        }
+        ).apply { targetContentZIndex = -1f }
+    }
 }

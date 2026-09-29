@@ -25,7 +25,8 @@ com.msmobile.visitas/
 ├── migration/      # Room migration objects (MIGRATION_1_2 … MIGRATION_5_6)
 ├── serialization/  # Moshi adapters (LocalDateTime, UUID, SerializationFactory)
 ├── preference/     # Single-row user preferences (Room entity)
-├── di/             # ApplicationModule.kt + NavigationDependencies.kt
+├── navigation/     # AppDestination — Navigation 3 keys for every screen
+├── di/             # ApplicationModule.kt
 ├── util/           # Helpers (StringResource, DispatcherProvider, BackupHandler, etc.)
 ├── extension/      # Kotlin extension functions
 └── ui/             # theme/ + views/ (reusable composables)
@@ -52,19 +53,32 @@ class FeatureViewModel @Inject constructor(...) : ViewModel() {
 ```
 
 ### Screen Composable Pattern
-Screens receive `uiState` and `onEvent` in a private `*Content` composable. `@Destination` is on the public composable only.
+Screens receive `uiState` and `onEvent` in a private `*Content` composable. The public composable takes navigation callbacks and its ViewModels (defaulted to `hiltViewModel()`).
 
 ```kotlin
-@Destination
 @Composable
-fun FeatureScreen(viewModel: FeatureViewModel = hiltViewModel()) {
+fun FeatureScreen(
+    onNavigateUp: () -> Unit,
+    viewModel: FeatureViewModel = hiltViewModel()
+) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     FeatureScreenContent(uiState = uiState, onEvent = viewModel::onEvent)
 }
 ```
 
-### Navigation + Multi-ViewModel Screens
-ViewModels are wired to screens via **`di/NavigationDependencies.kt`** using `dependency(hiltViewModel<T>())`. Some screens receive multiple ViewModels this way (e.g., `VisitListScreenDestination` gets `VisitListViewModel`, `SummaryViewModel`, and `BackupViewModel`). When adding a new screen that needs Hilt ViewModels, register them there.
+### Navigation (Navigation 3)
+Navigation uses the official **Jetpack Navigation 3** library. Every screen has a `@Serializable` key in
+`navigation/AppDestination.kt` (a sealed `NavKey`); screen arguments are key properties (`UUID`s use
+`serialization/UUIDSerializer`). `Main.kt` keeps **one back stack per bottom-navigation tab**
+(`rememberNavBackStack` each), decorates each separately with `rememberDecoratedNavEntries`, and hands only the
+selected tab's entries to `NavDisplay` — so a tab's screens keep their ViewModels and UI state while another tab
+is shown. Each tab's root is the bottom of its own stack. The shared `appEntryProvider` maps each key to its screen,
+attaching `ListScreenStyle.metadata` or `DetailScreenStyle.metadata` for transitions. Entries are remembered by
+back-stack contents, so entry content must read changing values through `State` (see `intentState`), not capture
+them. ViewModels are scoped to their back-stack entry by `rememberViewModelStoreNavEntryDecorator`, so screens
+obtain them with `hiltViewModel()` — a screen may take several (e.g. `VisitListScreen` takes
+`VisitListViewModel`, `SummaryViewModel` and `BackupViewModel`). To add a screen: add a key to `AppDestination`,
+add an `entry<…>` in `appEntryProvider`, and handle the key in `AppScaffold`'s title `when`.
 
 ### VisitHouseholder is a Database View
 `VisitHouseholder` is annotated `@DatabaseView`, not `@Entity`. It joins `visit` and `householder` and is registered in `VisitasDatabase` under `views = [VisitHouseholder::class]`. Do not add it to `entities`.

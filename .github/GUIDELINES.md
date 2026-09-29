@@ -91,7 +91,6 @@ class FeatureViewModel @Inject constructor(
 ### Compose Screen Pattern
 
 ```kotlin
-@Destination
 @Composable
 fun FeatureScreen(
     viewModel: FeatureViewModel = hiltViewModel()
@@ -239,16 +238,20 @@ class FeatureTest {
 
 ## Navigation
 
-Uses [Compose Destinations](https://github.com/raamcosta/compose-destinations) library with type-safe navigation.
+Uses [Jetpack Navigation 3](https://developer.android.com/guide/navigation/navigation-3). Destinations are
+`@Serializable` keys in `navigation/AppDestination.kt`; `Main.kt` owns the back stack and maps each key to its
+screen in the `NavDisplay` entry provider. Screens receive navigation callbacks, not a navigator.
 
 ```kotlin
-@Destination
-@Composable
-fun FeatureScreen(
-    navigator: DestinationsNavigator,
-    featureId: UUID
-) {
-    // ...
+// navigation/AppDestination.kt
+@Serializable
+data class FeatureDetail(
+    @Serializable(with = UUIDSerializer::class) val featureId: UUID
+) : AppDestination
+
+// Main.kt
+entry<AppDestination.FeatureDetail>(metadata = DetailScreenStyle.metadata) { key ->
+    FeatureDetailScreen(featureId = key.featureId, onNavigateUp = onNavigateUp, appScaffoldState = appScaffoldState)
 }
 ```
 
