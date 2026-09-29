@@ -13,7 +13,8 @@ import androidx.navigation3.ui.NavDisplay
  * predictive back gesture), both move the opposite way. Start/End keep the motion mirrored in RTL.
  *
  * The motion follows the theme's [MotionScheme] rather than a fixed duration. During the predictive
- * back gesture the transition tracks the finger; the scheme only drives the settle after release.
+ * back gesture the transition tracks the finger instead; the scheme drives regular navigation and
+ * the settle once the gesture is released or cancelled.
  */
 object DetailScreenStyle {
     fun metadata(motionScheme: MotionScheme): Map<String, Any> =
