@@ -13,7 +13,7 @@ import androidx.navigation3.ui.NavDisplay
  * predictive back gesture), both move the opposite way. Start/End keep the motion mirrored in RTL.
  */
 object DetailScreenStyle {
-    private const val ANIMATION_DURATION = 500
+    private const val ANIMATION_DURATION = 250
 
     val metadata: Map<String, Any> =
         NavDisplay.transitionSpec {
