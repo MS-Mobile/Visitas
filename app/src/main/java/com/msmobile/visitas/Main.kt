@@ -44,9 +44,12 @@ fun Main(
             backStack.add(destination)
         }
     }
+    // A double tap during the exit animation must not push the same key twice: Navigation 3 keys
+    // entry state by key, so a duplicate would share (or clash with) the entry below it.
     val onNavigate = { destination: AppDestination ->
-        backStack.add(destination)
-        Unit
+        if (backStack.lastOrNull() != destination) {
+            backStack.add(destination)
+        }
     }
     val onNavigateUp = {
         if (backStack.size > 1) {
