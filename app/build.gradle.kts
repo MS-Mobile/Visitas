@@ -23,7 +23,7 @@ android {
         val majorLevel = compileSdkLevel.substringBefore('.').toInt()
         val minorLevel = compileSdkLevel.substringAfter('.', missingDelimiterValue = "").toIntOrNull()
         version = release(majorLevel) {
-            if (minorLevel != null) minorApiLevel = minorLevel
+            minorApiLevel = minorLevel
         }
     }
 
