@@ -1,37 +1,42 @@
 package com.msmobile.visitas.util
 
 import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.AnimatedContentTransitionScope.SlideDirection
 import androidx.compose.animation.ContentTransform
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.togetherWith
 import androidx.navigation3.ui.NavDisplay
 
 /**
- * Detail screens slide up over the screen below them and slide back down when popped.
+ * Detail screens slide in horizontally: entering, the screen moves in from the end edge (right to
+ * left in LTR) and pushes the screen below out towards the start; leaving (back, including the
+ * predictive back gesture), both move the opposite way. Start/End keep the motion mirrored in RTL.
+ *
+ * Both screens move side by side, never on top of each other, because detail screens have no
+ * opaque background of their own: a screen sliding over another would show the one below through
+ * it.
  */
 object DetailScreenStyle {
     private const val ANIMATION_DURATION = 500
 
     val metadata: Map<String, Any> =
         NavDisplay.transitionSpec {
-            slideIntoContainer(
-                towards = AnimatedContentTransitionScope.SlideDirection.Up,
-                animationSpec = tween(ANIMATION_DURATION)
-            ) togetherWith ExitTransition.KeepUntilTransitionsFinished
+            slideTowards(SlideDirection.Start)
         } + NavDisplay.popTransitionSpec {
-            slideDown()
+            slideTowards(SlideDirection.End)
         } + NavDisplay.predictivePopTransitionSpec {
-            slideDown()
+            slideTowards(SlideDirection.End)
         }
 
-    private fun AnimatedContentTransitionScope<*>.slideDown(): ContentTransform {
-        return (
-            EnterTransition.None togetherWith slideOutOfContainer(
-                towards = AnimatedContentTransitionScope.SlideDirection.Down,
-                animationSpec = tween(ANIMATION_DURATION)
-            )
-        ).apply { targetContentZIndex = -1f }
+    private fun AnimatedContentTransitionScope<*>.slideTowards(
+        direction: SlideDirection
+    ): ContentTransform {
+        return slideIntoContainer(
+            towards = direction,
+            animationSpec = tween(ANIMATION_DURATION)
+        ) togetherWith slideOutOfContainer(
+            towards = direction,
+            animationSpec = tween(ANIMATION_DURATION)
+        )
     }
 }
