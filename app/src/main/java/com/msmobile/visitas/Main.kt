@@ -40,7 +40,9 @@ import com.msmobile.visitas.visit.VisitListScreen
  * position) while another tab is shown. Only the selected tab's entries are handed to NavDisplay.
  *
  * Each tab's root is the bottom of its own stack, so NavDisplay has nothing to pop on a tab root and
- * the tab screen's own back handling always applies.
+ * back falls through to the system, which plays the predictive back-to-home animation. Screens
+ * register no back callbacks of their own: one would take priority over NavDisplay's handler and
+ * suppress its predictive pop animation.
  */
 @Composable
 fun Main(

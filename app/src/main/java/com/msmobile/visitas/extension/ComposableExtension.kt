@@ -3,8 +3,6 @@ package com.msmobile.visitas.extension
 import android.Manifest
 import android.graphics.Rect
 import android.view.ViewTreeObserver
-import androidx.activity.OnBackPressedCallback
-import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.LinearEasing
@@ -37,7 +35,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.DrawModifier
@@ -84,26 +81,6 @@ fun isKeyboardOpen(): State<Boolean> {
     }
 
     return keyboardState
-}
-
-@Composable
-fun OnBackPressed(block: () -> Unit) {
-    val backDispatcherOwner = LocalOnBackPressedDispatcherOwner.current ?: return
-    val currentBlock = rememberUpdatedState(block)
-    val callback = remember {
-        object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                currentBlock.value()
-            }
-        }
-    }
-    DisposableEffect(backDispatcherOwner) {
-        // Explicitly bind the callback to the lifecycle owner
-        backDispatcherOwner.onBackPressedDispatcher.addCallback(backDispatcherOwner, callback)
-        onDispose {
-            callback.remove()
-        }
-    }
 }
 
 @Composable

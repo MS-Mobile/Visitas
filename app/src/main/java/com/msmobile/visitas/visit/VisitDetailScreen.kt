@@ -95,7 +95,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.AppScaffold
 import com.msmobile.visitas.R
 import com.msmobile.visitas.extension.EditableTextFieldColors
-import com.msmobile.visitas.extension.OnBackPressed
 import com.msmobile.visitas.extension.launchDialer
 import com.msmobile.visitas.extension.launchSms
 import com.msmobile.visitas.extension.launchUrl
@@ -168,10 +167,6 @@ private fun VisitDetailScreenContent(
 ) {
     LaunchedEffect(key1 = null) {
         onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId))
-    }
-
-    OnBackPressed {
-        onEvent(VisitDetailViewModel.UiEvent.CancelClicked)
     }
 
     val hasDrafts = uiState.hasDrafts

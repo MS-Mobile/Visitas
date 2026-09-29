@@ -55,7 +55,6 @@ import com.msmobile.visitas.util.scaffold.TopNavigationAction
 import com.msmobile.visitas.util.scaffold.topNavigationActions
 import com.msmobile.visitas.conversation.ConversationDetailViewModel.ConversationState
 import com.msmobile.visitas.extension.EditableTextFieldColors
-import com.msmobile.visitas.extension.OnBackPressed
 import com.msmobile.visitas.extension.ReadOnlyTextFieldColors
 import com.msmobile.visitas.extension.removeBottomCorner
 import com.msmobile.visitas.extension.removeTopCorner
@@ -100,9 +99,6 @@ private fun ConversationDetailScreenContent(
     val conversationsTitle = stringResource(R.string.conversations)
     LaunchedEffect(key1 = null) {
         onEvent(ConversationDetailViewModel.UiEvent.ViewCreated(firstConversationId))
-    }
-    OnBackPressed {
-        onEvent(ConversationDetailViewModel.UiEvent.CancelClicked)
     }
     val chromeOwner = remember { Any() }
     val topNavigationActions = conversationDetailTopNavigationActions(onNavigateUp = onNavigateUp)

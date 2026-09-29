@@ -32,7 +32,6 @@ import com.msmobile.visitas.navigation.AppDestination
 import com.msmobile.visitas.util.scaffold.AppScaffoldState
 import com.msmobile.visitas.util.scaffold.TopNavigationAction
 import com.msmobile.visitas.util.scaffold.settingsTopMenuActions
-import com.msmobile.visitas.extension.OnBackPressed
 import com.msmobile.visitas.ui.theme.PreviewFoldable
 import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
@@ -73,7 +72,6 @@ fun ConversationListScreen(
     LaunchedEffect(key1 = null) {
         onEvent(ConversationListViewModel.UiEvent.ViewCreated)
     }
-    OnBackPressed { }
     ConversationListScreenContent(
         uiState = uiState,
         onConversationListEvent = onEvent,
