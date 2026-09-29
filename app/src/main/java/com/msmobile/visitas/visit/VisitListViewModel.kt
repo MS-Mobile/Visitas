@@ -21,6 +21,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.launchIn
@@ -100,8 +101,13 @@ constructor(
             .onCompletion { stopTrackingLocation() }
             .onEach(::onLocationChanged)
             .launchIn(viewModelScope)
-        uiState
-            .map(::mapVisibleItems)
+        combine(uiState, userLocationProvider.location) { state, location ->
+            VisitMapInput(
+                showVisitMapSheet = state.showVisitMapSheet,
+                hasUserLocation = location is UserLocationProvider.UserLocation.Available,
+                visitList = mapVisibleItems(state)
+            )
+        }
             .distinctUntilChanged()
             .onEach(::updateVisitMapState)
             .flowOn(dispatchers.io)
@@ -544,7 +550,15 @@ constructor(
         return state.visitList.filter { visit -> !visit.hide }
     }
 
-    private fun updateVisitMapState(visitList: List<VisitHouseholderState>) {
+    private fun updateVisitMapState(input: VisitMapInput) {
+        val (showVisitMapSheet, hasUserLocation, visitList) = input
+
+        // The route comes from OSRM, so it is only worth calculating while the map is on screen
+        if (!showVisitMapSheet) {
+            nextRouteCalcJob?.cancel()
+            return
+        }
+
         val visitMapState = uiState.value.visitMapState
 
         if (visitList.isEmpty()) {
@@ -554,13 +568,23 @@ constructor(
             return
         }
 
-        if (visitMapState is VisitMapState.Loading) {
+        // Tracking only starts when the map opens, so the first fix can arrive after it. Routing
+        // before then would start the route, and place the current-location marker, at 0,0.
+        if (!hasUserLocation) {
+            newState {
+                if (this.visitMapState is VisitMapState.Visits) this else copy(visitMapState = VisitMapState.Loading)
+            }
+            return
+        }
+
+        // A Loading state left behind by a calculation cancelled on dismiss must not block the next one
+        if (visitMapState is VisitMapState.Loading && nextRouteCalcJob?.isActive == true) {
             return
         }
 
         newState {
             // Don't disturb users showing loading state during preview
-            if (showVisitMapSheet && this.visitMapState is VisitMapState.Visits) {
+            if (this.visitMapState is VisitMapState.Visits) {
                 return@newState this
             }
             copy(visitMapState = VisitMapState.Loading)
@@ -651,7 +675,13 @@ constructor(
 
     private suspend fun fetchOptimizedRoute(visitMapData: List<VisitMapData>): List<VisitMapData> {
         return try {
-            val currentCoordinates = _uiState.value.currentCoordinates
+            // Read from the provider, not uiState: the fix that unblocked this calculation may not
+            // have been copied into currentCoordinates yet
+            val userLocation = userLocationProvider.location.value
+            if (userLocation !is UserLocationProvider.UserLocation.Available) {
+                return visitMapData
+            }
+            val currentCoordinates = userLocation.latitude to userLocation.longitude
             val visitLocations = visitMapData.map { mapData ->
                 mapData.householderLatitude to mapData.householderLongitude
             }
@@ -978,6 +1008,12 @@ constructor(
         val groupsVisitsByPeriod: Boolean
             get() = filter.search.isEmpty() && selectedVisitFilterOption in SINGLE_DAY_FILTER_OPTIONS
     }
+
+    private data class VisitMapInput(
+        val showVisitMapSheet: Boolean,
+        val hasUserLocation: Boolean,
+        val visitList: List<VisitHouseholderState>
+    )
 
     companion object {
         private const val SEARCH_KEY = "search"

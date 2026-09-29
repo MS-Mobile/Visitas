@@ -5,6 +5,7 @@ import androidx.lifecycle.SavedStateHandle
 import com.msmobile.visitas.preference.Preference
 import com.msmobile.visitas.preference.PreferenceRepository
 import com.msmobile.visitas.routing.OsrmRoutingProvider
+import com.msmobile.visitas.routing.RouteOptimizationResult
 import com.msmobile.visitas.util.AddressProvider
 import com.msmobile.visitas.util.SyncVisitCalendarEventUseCase
 import com.msmobile.visitas.util.DateTimeProvider
@@ -19,6 +20,7 @@ import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertNotNull
 import junit.framework.TestCase.assertNull
 import junit.framework.TestCase.assertTrue
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Rule
 import org.junit.Test
@@ -26,8 +28,11 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doSuspendableAnswer
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyBlocking
 import java.time.LocalDate
@@ -676,6 +681,121 @@ class VisitListViewModelTest {
     }
 
     @Test
+    fun `route is not calculated while the visits map is hidden`() {
+        // Arrange
+        val osrmRef = MockReferenceHolder<OsrmRoutingProvider>()
+        val viewModel = createViewModel(
+            hasLocationPermission = true,
+            userLocation = USER_LOCATION,
+            distanceResults = USER_LOCATION_DISTANCES,
+            osrmRoutingProviderRef = osrmRef
+        )
+
+        // Act
+        viewModel.onEvent(VisitListViewModel.UiEvent.ViewCreated)
+
+        // Assert
+        verifyBlocking(requireNotNull(osrmRef.value), never()) { optimizeVisitRoute(any(), any()) }
+    }
+
+    @Test
+    fun `opening the visits map calculates the route`() {
+        // Arrange
+        val osrmRef = MockReferenceHolder<OsrmRoutingProvider>()
+        val viewModel = createViewModel(
+            hasLocationPermission = true,
+            userLocation = USER_LOCATION,
+            distanceResults = USER_LOCATION_DISTANCES,
+            osrmRoutingProviderRef = osrmRef
+        )
+        viewModel.onEvent(VisitListViewModel.UiEvent.ViewCreated)
+
+        // Act
+        viewModel.onEvent(VisitListViewModel.UiEvent.VisitMapSheetClicked)
+
+        // Assert
+        verifyBlocking(requireNotNull(osrmRef.value)) { optimizeVisitRoute(any(), any()) }
+        assertTrue(viewModel.uiState.value.visitMapState is VisitMapState.Visits)
+    }
+
+    @Test
+    fun `dismissing the visits map cancels the route calculation in flight`() {
+        // Arrange
+        val calculationCancelled = AtomicBoolean(false)
+        val viewModel = createViewModel(
+            hasLocationPermission = true,
+            userLocation = USER_LOCATION,
+            distanceResults = USER_LOCATION_DISTANCES,
+            routeOptimization = {
+                try {
+                    awaitCancellation()
+                } finally {
+                    calculationCancelled.set(true)
+                }
+            }
+        )
+        viewModel.onEvent(VisitListViewModel.UiEvent.ViewCreated)
+        viewModel.onEvent(VisitListViewModel.UiEvent.VisitMapSheetClicked)
+        assertFalse(calculationCancelled.get())
+
+        // Act
+        viewModel.onEvent(VisitListViewModel.UiEvent.VisitMapSheetDismissed)
+
+        // Assert
+        assertTrue(calculationCancelled.get())
+    }
+
+    @Test
+    fun `reopening the visits map after a cancelled calculation calculates the route again`() {
+        // Arrange
+        val osrmRef = MockReferenceHolder<OsrmRoutingProvider>()
+        val viewModel = createViewModel(
+            hasLocationPermission = true,
+            userLocation = USER_LOCATION,
+            distanceResults = USER_LOCATION_DISTANCES,
+            osrmRoutingProviderRef = osrmRef,
+            routeOptimization = { awaitCancellation() }
+        )
+        viewModel.onEvent(VisitListViewModel.UiEvent.ViewCreated)
+        viewModel.onEvent(VisitListViewModel.UiEvent.VisitMapSheetClicked)
+        viewModel.onEvent(VisitListViewModel.UiEvent.VisitMapSheetDismissed)
+
+        // Act
+        viewModel.onEvent(VisitListViewModel.UiEvent.VisitMapSheetClicked)
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert
+        verifyBlocking(requireNotNull(osrmRef.value), times(2)) { optimizeVisitRoute(any(), any()) }
+    }
+
+    @Test
+    fun `opening the visits map waits for the user's location before calculating the route`() {
+        // Arrange
+        val osrmRef = MockReferenceHolder<OsrmRoutingProvider>()
+        val locationFlowRef = MockReferenceHolder<MutableStateFlow<UserLocationProvider.UserLocation>>()
+        val viewModel = createViewModel(
+            hasLocationPermission = true,
+            distanceResults = USER_LOCATION_DISTANCES,
+            locationFlowRef = locationFlowRef,
+            osrmRoutingProviderRef = osrmRef
+        )
+        viewModel.onEvent(VisitListViewModel.UiEvent.ViewCreated)
+        viewModel.onEvent(VisitListViewModel.UiEvent.VisitMapSheetClicked)
+        val osrmRoutingProvider = requireNotNull(osrmRef.value)
+        verifyBlocking(osrmRoutingProvider, never()) { optimizeVisitRoute(any(), any()) }
+        assertTrue(viewModel.uiState.value.visitMapState is VisitMapState.Loading)
+
+        // Act
+        requireNotNull(locationFlowRef.value).value = USER_LOCATION
+
+        // Assert
+        verifyBlocking(osrmRoutingProvider) {
+            optimizeVisitRoute(eq(USER_LOCATION.latitude to USER_LOCATION.longitude), any())
+        }
+        assertTrue(viewModel.uiState.value.visitMapState is VisitMapState.Visits)
+    }
+
+    @Test
     fun `onEvent with RescheduleVisitNextDayOfWeek moves a visit due today a week on`() {
         // Arrange
         // The next Wednesday from a Wednesday is the one after, never the same day.
@@ -799,7 +919,12 @@ class VisitListViewModelTest {
         now: LocalDate = LocalDate.now(),
         visitRepositoryRef: MockReferenceHolder<VisitRepository>? = null,
         visits: List<VisitHouseholder> = createVisitHouseholderList(),
-        savedStateHandle: SavedStateHandle = SavedStateHandle()
+        savedStateHandle: SavedStateHandle = SavedStateHandle(),
+        userLocation: UserLocationProvider.UserLocation = UserLocationProvider.UserLocation.NotAvailable,
+        osrmRoutingProviderRef: MockReferenceHolder<OsrmRoutingProvider>? = null,
+        routeOptimization: suspend () -> RouteOptimizationResult = {
+            RouteOptimizationResult(orderedVisits = emptyList(), routeGeometry = null)
+        }
     ): VisitListViewModel {
         val dispatchers = DispatcherProvider(
             io = mainDispatcherRule.dispatcher
@@ -807,7 +932,7 @@ class VisitListViewModelTest {
         val mockUri = mock<Uri>()
         uriRef?.value = mockUri
 
-        val locationFlow = MutableStateFlow<UserLocationProvider.UserLocation>(UserLocationProvider.UserLocation.NotAvailable)
+        val locationFlow = MutableStateFlow(userLocation)
         locationFlowRef?.value = locationFlow
         // The real provider flips isTracking from start/stop, and the indicator reads that flag,
         // so the mock has to move with the calls rather than stay on a fixed value.
@@ -863,13 +988,18 @@ class VisitListViewModelTest {
                 } doReturn result
             }
         }
-        val osrmRoutingProvider = mock<OsrmRoutingProvider>()
+        val osrmRoutingProvider = mock<OsrmRoutingProvider> {
+            onBlocking { optimizeVisitRoute(any(), any()) } doSuspendableAnswer { routeOptimization() }
+        }
+        osrmRoutingProviderRef?.value = osrmRoutingProvider
         val syncVisitCalendarEvent = mock<SyncVisitCalendarEventUseCase>()
         val dateTimeProvider = mock<DateTimeProvider> {
             on { nowLocalDateTime() } doReturn LocalDateTime.now()
             on { nowLocalDate() } doReturn now
         }
-        val visitMapAdapter = mock<VisitMapAdapter>()
+        val visitMapAdapter = mock<VisitMapAdapter> {
+            on { toJson(any()) } doReturn "[]"
+        }
 
         return VisitListViewModel(
             visitMapAdapter = visitMapAdapter,
@@ -936,6 +1066,16 @@ class VisitListViewModelTest {
         private val SECOND_VISIT_ID = UUID.fromString("c1a9f7b4-2e3d-4f5a-8b6c-0d1e2f3a4b5c")
         private val FIRST_HOUSEHOLDER_ID = UUID.fromString("7a4e1c9b-6d2f-4a3e-8b5c-0f9d1e2a3c4b")
         private val SECOND_HOUSEHOLDER_ID = UUID.fromString("5c4b3a2f-1e9d-7c6b-4a3e-8b5c0f9d1e2a")
+        private val USER_LOCATION = UserLocationProvider.UserLocation.Available(
+            latitude = -28.675,
+            longitude = -49.37
+        )
+
+        // Only the second default visit has coordinates, so it is the one the route is measured to
+        private val USER_LOCATION_DISTANCES = mapOf(
+            DistanceInput(USER_LOCATION.latitude, USER_LOCATION.longitude, 40.7128, -74.0060) to
+                AddressProvider.AddressDistance.FarAway(8_000_000f)
+        )
     }
 
     private data class DistanceInput(
