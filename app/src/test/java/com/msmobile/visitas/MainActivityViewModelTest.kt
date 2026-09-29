@@ -1,12 +1,9 @@
 package com.msmobile.visitas
 
+import com.msmobile.visitas.navigation.AppDestination
 import com.msmobile.visitas.util.IntentState
 import com.msmobile.visitas.util.MainDispatcherRule
 import com.msmobile.visitas.util.MockReferenceHolder
-import com.ramcosta.composedestinations.generated.destinations.ConversationDetailScreenDestination
-import com.ramcosta.composedestinations.generated.destinations.ConversationListScreenDestination
-import com.ramcosta.composedestinations.generated.destinations.VisitDetailScreenDestination
-import com.ramcosta.composedestinations.generated.destinations.VisitListScreenDestination
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertTrue
 import org.junit.Rule
@@ -34,13 +31,13 @@ class MainActivityViewModelTest {
         val viewModel = createViewModel()
 
         // Act
-        viewModel.onEvent(MainActivityViewModel.UiEvent.FabClicked(VisitListScreenDestination))
+        viewModel.onEvent(MainActivityViewModel.UiEvent.FabClicked(AppDestination.VisitList))
 
         // Assert
         val state = viewModel.uiState.value
         assertTrue(state.eventState is MainActivityViewModel.UiEventState.HandleFabClick)
         val handleFabClick = state.eventState as MainActivityViewModel.UiEventState.HandleFabClick
-        assertEquals(VisitDetailScreenDestination, handleFabClick.fabDestination)
+        assertEquals(AppDestination.VisitDetail(), handleFabClick.fabDestination)
     }
 
     @Test
@@ -49,20 +46,20 @@ class MainActivityViewModelTest {
         val viewModel = createViewModel()
 
         // Act
-        viewModel.onEvent(MainActivityViewModel.UiEvent.FabClicked(ConversationListScreenDestination))
+        viewModel.onEvent(MainActivityViewModel.UiEvent.FabClicked(AppDestination.ConversationList))
 
         // Assert
         val state = viewModel.uiState.value
         assertTrue(state.eventState is MainActivityViewModel.UiEventState.HandleFabClick)
         val handleFabClick = state.eventState as MainActivityViewModel.UiEventState.HandleFabClick
-        assertEquals(ConversationDetailScreenDestination, handleFabClick.fabDestination)
+        assertEquals(AppDestination.ConversationDetail(), handleFabClick.fabDestination)
     }
 
     @Test
     fun `onEvent with FabClickHandled resets eventState to Idle`() {
         // Arrange
         val viewModel = createViewModel()
-        viewModel.onEvent(MainActivityViewModel.UiEvent.FabClicked(VisitListScreenDestination))
+        viewModel.onEvent(MainActivityViewModel.UiEvent.FabClicked(AppDestination.VisitList))
 
         // Act
         viewModel.onEvent(MainActivityViewModel.UiEvent.FabClickHandled)
@@ -106,7 +103,7 @@ class MainActivityViewModelTest {
     fun `onEvent with NetworkStatusChangeAcknowledged resets eventState to Idle`() {
         // Arrange
         val viewModel = createViewModel()
-        viewModel.onEvent(MainActivityViewModel.UiEvent.FabClicked(VisitListScreenDestination))
+        viewModel.onEvent(MainActivityViewModel.UiEvent.FabClicked(AppDestination.VisitList))
 
         // Act
         viewModel.onEvent(MainActivityViewModel.UiEvent.NetworkStatusChangeAcknowledged)

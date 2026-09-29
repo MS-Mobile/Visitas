@@ -29,7 +29,7 @@ An Android application for managing visits and householder records.
 - **Architecture:** MVVM with Unidirectional Data Flow (UDF)
 - **Dependency Injection:** Hilt
 - **Database:** Room
-- **Navigation:** Compose Destinations
+- **Navigation:** Jetpack Navigation 3
 - **Async:** Kotlin Coroutines & Flow
 - **Serialization:** Moshi
 

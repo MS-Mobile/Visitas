@@ -42,8 +42,10 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.AppScaffold
+import com.msmobile.visitas.navigation.AppDestination
 import com.msmobile.visitas.util.scaffold.AppScaffoldState
 import com.msmobile.visitas.util.scaffold.DetailFooterAction
 import com.msmobile.visitas.util.scaffold.FloatingActionButtonAction
@@ -63,30 +65,20 @@ import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.ui.views.LazyColumnWithScrollbar
 import com.msmobile.visitas.ui.views.PreviewOverlayHost
 import com.msmobile.visitas.ui.views.TextFieldClearButton
-import com.msmobile.visitas.util.DetailScreenStyle
 import com.msmobile.visitas.util.borderPadding
 import com.msmobile.visitas.util.floatingBarBottomPadding
 import com.msmobile.visitas.util.verticalFieldPadding
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.generated.destinations.ConversationDetailScreenDestination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import java.util.UUID
 
-@Destination<RootGraph>(style = DetailScreenStyle::class)
 @Composable
 fun ConversationDetailScreen(
-    navigator: DestinationsNavigator,
-    viewModel: ConversationDetailViewModel,
+    firstConversationId: UUID?,
+    onNavigateUp: () -> Unit,
     appScaffoldState: AppScaffoldState,
-    firstConversationId: UUID? = null
+    viewModel: ConversationDetailViewModel = hiltViewModel()
 ) {
     val uiState: ConversationDetailViewModel.UiState by viewModel.uiState.collectAsStateWithLifecycle()
     val onEvent = viewModel::onEvent
-    val onNavigateUp = {
-        navigator.navigateUp()
-        Unit
-    }
     ConversationDetailScreenContent(
         firstConversationId = firstConversationId,
         uiState = uiState,
@@ -407,7 +399,7 @@ internal fun ConversationDetailScreenPreview(
         PreviewOverlayHost {
             AppScaffold(
                 uiState = config.mainActivityUiState,
-                currentDestination = ConversationDetailScreenDestination,
+                currentDestination = AppDestination.ConversationDetail(),
                 onEvent = {},
                 onNavigateToTab = {},
                 onNavigate = {},

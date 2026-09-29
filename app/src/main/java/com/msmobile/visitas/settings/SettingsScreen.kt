@@ -44,8 +44,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.AppScaffold
+import com.msmobile.visitas.navigation.AppDestination
 import com.msmobile.visitas.util.scaffold.AppScaffoldState
 import com.msmobile.visitas.R
 import com.msmobile.visitas.util.scaffold.TopNavigationAction
@@ -57,29 +59,23 @@ import com.msmobile.visitas.ui.views.PermissionRationaleSheet
 import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.util.CalendarInfo
-import com.msmobile.visitas.util.DetailScreenStyle
 import com.msmobile.visitas.util.borderPadding
 import com.msmobile.visitas.util.cardInnerPadding
 import com.msmobile.visitas.util.snackbarPadding
 import com.msmobile.visitas.visit.VisitMapEngineOption
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.generated.destinations.SettingsScreenDestination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
 private const val BACKUP_MIME_TYPE = "application/octet-stream"
 
-@Destination<RootGraph>(style = DetailScreenStyle::class)
 @Composable
 fun SettingsScreen(
-    navigator: DestinationsNavigator,
-    viewModel: SettingsDetailViewModel,
-    appScaffoldState: AppScaffoldState
+    onNavigateUp: () -> Unit,
+    appScaffoldState: AppScaffoldState,
+    viewModel: SettingsDetailViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val onEvent = viewModel::onEvent
 
-    val topNavigationActions = settingsTopNavigationActions(onNavigateUp = { navigator.navigateUp() })
+    val topNavigationActions = settingsTopNavigationActions(onNavigateUp = onNavigateUp)
     val chromeOwner = remember { Any() }
     DisposableEffect(Unit) {
         appScaffoldState.setUiState(
@@ -450,7 +446,7 @@ internal fun SettingsScreenPreview(
     VisitasTheme {
         AppScaffold(
             uiState = config.mainActivityUiState,
-            currentDestination = SettingsScreenDestination,
+            currentDestination = AppDestination.Settings,
             onEvent = {},
             onNavigateToTab = {},
             onNavigate = {},

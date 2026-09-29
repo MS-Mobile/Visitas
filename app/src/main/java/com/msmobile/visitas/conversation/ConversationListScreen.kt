@@ -25,8 +25,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.AppScaffold
+import com.msmobile.visitas.navigation.AppDestination
 import com.msmobile.visitas.util.scaffold.AppScaffoldState
 import com.msmobile.visitas.util.scaffold.TopNavigationAction
 import com.msmobile.visitas.util.scaffold.settingsTopMenuActions
@@ -37,36 +39,24 @@ import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.ui.views.LazyColumnWithScrollbar
 import com.msmobile.visitas.ui.views.PreviewOverlayHost
 import com.msmobile.visitas.ui.views.SimpleSearchBar
-import com.msmobile.visitas.util.ListScreenStyle
 import com.msmobile.visitas.util.borderPadding
 import com.msmobile.visitas.util.cardInnerPadding
 import com.msmobile.visitas.util.floatingBarBottomPadding
 import com.msmobile.visitas.util.horizontalFieldPadding
 import com.msmobile.visitas.util.verticalFieldPadding
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.generated.destinations.ConversationDetailScreenDestination
-import com.ramcosta.composedestinations.generated.destinations.ConversationListScreenDestination
-import com.ramcosta.composedestinations.generated.destinations.SettingsScreenDestination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
-import com.ramcosta.composedestinations.spec.Direction
 
-@Destination<RootGraph>(style = ListScreenStyle::class)
 @Composable
 fun ConversationListScreen(
-    navigator: DestinationsNavigator,
-    viewModel: ConversationListViewModel,
-    appScaffoldState: AppScaffoldState
+    onNavigate: (AppDestination) -> Unit,
+    appScaffoldState: AppScaffoldState,
+    viewModel: ConversationListViewModel = hiltViewModel()
 ) {
     val uiState: ConversationListViewModel.UiState by viewModel.uiState.collectAsStateWithLifecycle()
     val onEvent = viewModel::onEvent
-    val onNavigate = { direction: Direction ->
-        navigator.navigate(direction)
-    }
 
     val topNavigationActions = conversationListTopNavigationActions()
     val topMenuActions = settingsTopMenuActions(
-        onNavigateToSettings = { onNavigate(SettingsScreenDestination) }
+        onNavigateToSettings = { onNavigate(AppDestination.Settings) }
     )
     val chromeOwner = remember { Any() }
     DisposableEffect(Unit) {
@@ -101,7 +91,7 @@ private fun conversationListTopNavigationActions(): List<TopNavigationAction> = 
 private fun ConversationListScreenContent(
     uiState: ConversationListViewModel.UiState,
     onConversationListEvent: (ConversationListViewModel.UiEvent) -> Unit,
-    onNavigate: (Direction) -> Unit
+    onNavigate: (AppDestination) -> Unit
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(verticalFieldPadding)
@@ -163,7 +153,7 @@ private fun SummaryCard(
 private fun ConversationList(
     modifier: Modifier = Modifier,
     uiState: ConversationListViewModel.UiState,
-    onNavigate: (Direction) -> Unit
+    onNavigate: (AppDestination) -> Unit
 ) {
     val conversationList = uiState.conversations.filter { !it.hide }
     Column(modifier = modifier) {
@@ -174,7 +164,7 @@ private fun ConversationList(
 @Composable
 private fun ConversationListItems(
     conversationList: List<ConversationListViewModel.ConversationState>,
-    onNavigate: (Direction) -> Unit
+    onNavigate: (AppDestination) -> Unit
 ) {
     val listState = rememberLazyListState()
     LazyColumnWithScrollbar(listState = listState) {
@@ -191,7 +181,7 @@ private fun ConversationListItems(
                 key = { conversation -> conversation.conversationId }) { conversation ->
                 ConversationCard(
                     conversation = conversation,
-                    onClick = { onNavigate(ConversationDetailScreenDestination(conversation.parentId)) }
+                    onClick = { onNavigate(AppDestination.ConversationDetail(conversation.parentId)) }
                 )
             }
         }
@@ -228,7 +218,7 @@ internal fun ConversationListScreenPreview(
         PreviewOverlayHost {
             AppScaffold(
                 uiState = config.mainActivityUiState,
-                currentDestination = ConversationListScreenDestination,
+                currentDestination = AppDestination.ConversationList,
                 onEvent = {},
                 onNavigateToTab = {},
                 onNavigate = {},

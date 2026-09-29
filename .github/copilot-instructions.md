@@ -19,7 +19,7 @@ This is **Visitas**, an Android application built with Kotlin, Jetpack Compose, 
 - **Architecture:** MVVM with UDF (Unidirectional Data Flow)
 - **DI:** Hilt
 - **Database:** Room
-- **Navigation:** Compose Destinations
+- **Navigation:** Jetpack Navigation 3
 - **Async:** Kotlin Coroutines & Flow
 - **Serialization:** Moshi
 

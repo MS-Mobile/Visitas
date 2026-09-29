@@ -1,12 +1,8 @@
 package com.msmobile.visitas
 
 import androidx.lifecycle.ViewModel
+import com.msmobile.visitas.navigation.AppDestination
 import com.msmobile.visitas.util.IntentState
-import com.ramcosta.composedestinations.generated.destinations.ConversationDetailScreenDestination
-import com.ramcosta.composedestinations.generated.destinations.ConversationListScreenDestination
-import com.ramcosta.composedestinations.generated.destinations.VisitDetailScreenDestination
-import com.ramcosta.composedestinations.generated.destinations.VisitListScreenDestination
-import com.ramcosta.composedestinations.spec.DestinationSpec
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -54,7 +50,7 @@ class MainActivityViewModel
         }
     }
 
-    private fun fabClicked(currentDestination: DestinationSpec) {
+    private fun fabClicked(currentDestination: AppDestination) {
         newState {
             val fabDestination = currentDestination.asFabDestination
             copy(eventState = UiEventState.HandleFabClick(fabDestination))
@@ -71,17 +67,17 @@ class MainActivityViewModel
         _uiState.update(value)
     }
 
-    private val DestinationSpec.asFabDestination: DestinationSpec
+    private val AppDestination.asFabDestination: AppDestination
         get() {
             return when (this) {
-                is VisitListScreenDestination -> VisitDetailScreenDestination
-                is ConversationListScreenDestination -> ConversationDetailScreenDestination
+                is AppDestination.VisitList -> AppDestination.VisitDetail()
+                is AppDestination.ConversationList -> AppDestination.ConversationDetail()
                 else -> this
             }
         }
 
     sealed class UiEvent {
-        data class FabClicked(val currentDestination: DestinationSpec) : UiEvent()
+        data class FabClicked(val currentDestination: AppDestination) : UiEvent()
         data object FabClickHandled : UiEvent()
         data object NetworkStatusChangeAcknowledged : UiEvent()
         data class IntentStateChanged(val intentState: IntentState) : UiEvent()
@@ -92,7 +88,7 @@ class MainActivityViewModel
         data object Idle : UiEventState()
 
         data class HandleFabClick(
-            val fabDestination: DestinationSpec
+            val fabDestination: AppDestination
         ) : UiEventState()
     }
 

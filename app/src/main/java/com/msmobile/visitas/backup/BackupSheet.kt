@@ -28,13 +28,13 @@ import androidx.compose.ui.unit.dp
 import com.msmobile.visitas.AppScaffold
 import com.msmobile.visitas.R
 import com.msmobile.visitas.extension.showShareIntent
+import com.msmobile.visitas.navigation.AppDestination
 import com.msmobile.visitas.ui.theme.PreviewFoldable
 import com.msmobile.visitas.ui.theme.PreviewPhone
 import com.msmobile.visitas.ui.theme.VisitasTheme
 import com.msmobile.visitas.ui.views.PreviewCompatModalSheet
 import com.msmobile.visitas.ui.views.PreviewOverlayHost
 import com.msmobile.visitas.util.borderPadding
-import com.ramcosta.composedestinations.generated.destinations.VisitListScreenDestination
 
 // TODO: Remove backup sheet code
 @OptIn(ExperimentalMaterial3Api::class)
@@ -167,7 +167,7 @@ internal fun BackupScreenPreview(
         PreviewOverlayHost {
             AppScaffold(
                 uiState = config.mainActivityUiState,
-                currentDestination = VisitListScreenDestination,
+                currentDestination = AppDestination.VisitList,
                 onEvent = {},
                 onNavigateToTab = {},
                 onNavigate = {}

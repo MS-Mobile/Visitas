@@ -1,5 +1,6 @@
 package com.msmobile.visitas.conversation
 
+import androidx.lifecycle.SavedStateHandle
 import com.msmobile.visitas.util.DispatcherProvider
 import com.msmobile.visitas.util.MainDispatcherRule
 import com.msmobile.visitas.util.MockReferenceHolder
@@ -144,8 +145,58 @@ class ConversationListViewModelTest {
         assertTrue(visibleConversations.isEmpty())
     }
 
+    @Test
+    fun `onEvent with ViewCreated keeps the active search applied to reloaded conversations`() {
+        // Arrange
+        val viewModel = createViewModel()
+        viewModel.onEvent(ConversationListViewModel.UiEvent.ViewCreated)
+        viewModel.onEvent(ConversationListViewModel.UiEvent.SearchChanged("Question 1"))
+
+        // Act
+        viewModel.onEvent(ConversationListViewModel.UiEvent.ViewCreated)
+
+        // Assert
+        val state = viewModel.uiState.value
+        assertEquals("Question 1", state.filter.search)
+        val visibleConversations = state.conversations.filter { !it.hide }
+        assertEquals(1, visibleConversations.size)
+        assertEquals(FIRST_CONVERSATION_ID, visibleConversations[0].conversationId)
+    }
+
+    @Test
+    fun `onEvent with SearchChanged saves the search so it survives process death`() {
+        // Arrange
+        val savedStateHandle = SavedStateHandle()
+        val viewModel = createViewModel(savedStateHandle = savedStateHandle)
+
+        // Act
+        viewModel.onEvent(ConversationListViewModel.UiEvent.SearchChanged("Question 1"))
+
+        // Assert
+        val restoredViewModel = createViewModel(savedStateHandle = savedStateHandle)
+        assertEquals("Question 1", restoredViewModel.uiState.value.filter.search)
+    }
+
+    @Test
+    fun `onEvent with ViewCreated applies a search restored after process death`() {
+        // Arrange
+        val savedStateHandle = SavedStateHandle()
+        createViewModel(savedStateHandle = savedStateHandle)
+            .onEvent(ConversationListViewModel.UiEvent.SearchChanged("Response 2"))
+        val restoredViewModel = createViewModel(savedStateHandle = savedStateHandle)
+
+        // Act
+        restoredViewModel.onEvent(ConversationListViewModel.UiEvent.ViewCreated)
+
+        // Assert
+        val visibleConversations = restoredViewModel.uiState.value.conversations.filter { !it.hide }
+        assertEquals(1, visibleConversations.size)
+        assertEquals(SECOND_CONVERSATION_ID, visibleConversations[0].conversationId)
+    }
+
     private fun createViewModel(
-        conversationRepositoryRef: MockReferenceHolder<ConversationRepository>? = null
+        conversationRepositoryRef: MockReferenceHolder<ConversationRepository>? = null,
+        savedStateHandle: SavedStateHandle = SavedStateHandle()
     ): ConversationListViewModel {
         val dispatchers = DispatcherProvider(
             io = mainDispatcherRule.dispatcher
@@ -157,7 +208,8 @@ class ConversationListViewModelTest {
 
         return ConversationListViewModel(
             dispatchers = dispatchers,
-            conversationRepository = conversationRepository
+            conversationRepository = conversationRepository,
+            savedStateHandle = savedStateHandle
         )
     }
 
