@@ -73,7 +73,7 @@ Navigation uses the official **Jetpack Navigation 3** library. Every screen has 
 (`rememberNavBackStack` each), decorates each separately with `rememberDecoratedNavEntries`, and hands only the
 selected tab's entries to `NavDisplay` — so a tab's screens keep their ViewModels and UI state while another tab
 is shown. Each tab's root is the bottom of its own stack. The shared `appEntryProvider` maps each key to its screen,
-attaching `ListScreenStyle.metadata` or `DetailScreenStyle.metadata` for transitions. Entries are remembered by
+attaching `ListScreenStyle.metadata(motionScheme)` or `DetailScreenStyle.metadata(motionScheme)` for transitions (timing comes from `MaterialTheme.motionScheme`, never hard-coded durations; screens register no back callbacks, so predictive back reaches `NavDisplay`). Entries are remembered by
 back-stack contents, so entry content must read changing values through `State` (see `intentState`), not capture
 them. ViewModels are scoped to their back-stack entry by `rememberViewModelStoreNavEntryDecorator`, so screens
 obtain them with `hiltViewModel()` — a screen may take several (e.g. `VisitListScreen` takes

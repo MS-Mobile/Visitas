@@ -133,7 +133,6 @@ class VisitDetailViewModel
 
             UiEvent.LoadAddressClicked -> loadAddressClicked()
             UiEvent.LookUpAddressFromLatLongClicked -> lookUpAddressFromLatLongClicked()
-            UiEvent.CancelClicked -> cancelClicked()
             UiEvent.UndoChangesClicked -> undoChangesClicked()
             UiEvent.UndoChangesConfirmed -> undoChangesConfirmed()
             UiEvent.UndoChangesConfirmationDismissed -> undoChangesConfirmationDismissed()
@@ -642,18 +641,6 @@ class VisitDetailViewModel
             copy(
                 visitList = updatedList,
                 eventState = UiEventState.Idle
-            )
-        }
-    }
-
-    private fun cancelClicked() {
-        dismiss()
-    }
-
-    private fun dismiss() {
-        newState {
-            copy(
-                eventState = UiEventState.Dismissed
             )
         }
     }
@@ -1648,7 +1635,6 @@ class VisitDetailViewModel
         data object DeleteClicked : UiEvent()
         data object DeleteAccepted : UiEvent()
         data object DeleteDismissed : UiEvent()
-        data object CancelClicked : UiEvent()
         data object UndoChangesClicked : UiEvent()
         data object UndoChangesConfirmed : UiEvent()
         data object UndoChangesConfirmationDismissed : UiEvent()
@@ -1674,7 +1660,6 @@ class VisitDetailViewModel
     sealed class UiEventState {
         data object Idle : UiEventState()
         data object NoAddressFound : UiEventState()
-        data object Dismissed : UiEventState()
         data object Saving : UiEventState()
         data object SaveSucceeded : UiEventState()
         data object ValidationError : UiEventState()

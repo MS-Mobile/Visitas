@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MotionScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,6 +50,16 @@ fun Main(
     uiState: MainActivityViewModel.UiState,
     onEvent: (MainActivityViewModel.UiEvent) -> Unit
 ) {
+    VisitasTheme {
+        MainContent(uiState = uiState, onEvent = onEvent)
+    }
+}
+
+@Composable
+private fun MainContent(
+    uiState: MainActivityViewModel.UiState,
+    onEvent: (MainActivityViewModel.UiEvent) -> Unit
+) {
     val visitsBackStack = rememberNavBackStack(Tab.Visits.root)
     val conversationsBackStack = rememberNavBackStack(Tab.Conversations.root)
     var currentTab by rememberSaveable { mutableStateOf(Tab.Visits) }
@@ -65,10 +76,13 @@ fun Main(
     val intentStateHandled = {
         onEvent(MainActivityViewModel.UiEvent.IntentStateHandled)
     }
+    // Read inside VisitasTheme, so transitions follow the theme's motion instead of fixed durations.
+    val motionScheme = MaterialTheme.motionScheme
     val entryProviderFor = { backStack: NavBackStack<NavKey> ->
         appEntryProvider(
             backStack = backStack,
             appScaffoldState = appScaffoldState,
+            motionScheme = motionScheme,
             intentState = { intentState },
             onIntentStateHandled = intentStateHandled
         )
@@ -79,30 +93,28 @@ fun Main(
     val onNavigateToTab = { destination: AppDestination ->
         currentTab = Tab.entries.first { tab -> tab.root == destination }
     }
-    VisitasTheme {
-        AppScaffold(
-            uiState = uiState,
-            currentDestination = currentDestination,
-            onEvent = onEvent,
-            onNavigateToTab = onNavigateToTab,
-            onNavigate = { destination -> currentBackStack.navigate(destination) },
-            topNavigationActions = appScaffoldState.uiState.topNavigationActions,
-            topBarActions = appScaffoldState.uiState.topBarActions,
-            topMenuActions = appScaffoldState.uiState.topMenuActions,
-            detailFooterActions = appScaffoldState.uiState.detailFooterActions,
-            floatingActionButtonActions = appScaffoldState.uiState.floatingActionButtonActions,
-            subtitle = appScaffoldState.uiState.subtitle,
-            content = {
-                NavDisplay(
-                    entries = when (currentTab) {
-                        Tab.Visits -> visitsEntries
-                        Tab.Conversations -> conversationsEntries
-                    },
-                    onBack = { currentBackStack.navigateUp() }
-                )
-            }
-        )
-    }
+    AppScaffold(
+        uiState = uiState,
+        currentDestination = currentDestination,
+        onEvent = onEvent,
+        onNavigateToTab = onNavigateToTab,
+        onNavigate = { destination -> currentBackStack.navigate(destination) },
+        topNavigationActions = appScaffoldState.uiState.topNavigationActions,
+        topBarActions = appScaffoldState.uiState.topBarActions,
+        topMenuActions = appScaffoldState.uiState.topMenuActions,
+        detailFooterActions = appScaffoldState.uiState.detailFooterActions,
+        floatingActionButtonActions = appScaffoldState.uiState.floatingActionButtonActions,
+        subtitle = appScaffoldState.uiState.subtitle,
+        content = {
+            NavDisplay(
+                entries = when (currentTab) {
+                    Tab.Visits -> visitsEntries
+                    Tab.Conversations -> conversationsEntries
+                },
+                onBack = { currentBackStack.navigateUp() }
+            )
+        }
+    )
 }
 
 private enum class Tab(val root: AppDestination) {
@@ -150,13 +162,16 @@ private fun opaqueBackgroundNavEntryDecorator(): NavEntryDecorator<NavKey> {
 private fun appEntryProvider(
     backStack: NavBackStack<NavKey>,
     appScaffoldState: AppScaffoldState,
+    motionScheme: MotionScheme,
     intentState: () -> IntentState,
     onIntentStateHandled: OnIntentStateHandled
 ): (NavKey) -> NavEntry<NavKey> {
     val onNavigate = { destination: AppDestination -> backStack.navigate(destination) }
     val onNavigateUp = { backStack.navigateUp() }
+    val listMetadata = ListScreenStyle.metadata(motionScheme)
+    val detailMetadata = DetailScreenStyle.metadata(motionScheme)
     return entryProvider {
-        entry<AppDestination.VisitList>(metadata = ListScreenStyle.metadata) {
+        entry<AppDestination.VisitList>(metadata = listMetadata) {
             VisitListScreen(
                 onNavigate = onNavigate,
                 appScaffoldState = appScaffoldState,
@@ -164,13 +179,13 @@ private fun appEntryProvider(
                 onIntentStateHandled = onIntentStateHandled
             )
         }
-        entry<AppDestination.ConversationList>(metadata = ListScreenStyle.metadata) {
+        entry<AppDestination.ConversationList>(metadata = listMetadata) {
             ConversationListScreen(
                 onNavigate = onNavigate,
                 appScaffoldState = appScaffoldState
             )
         }
-        entry<AppDestination.VisitDetail>(metadata = DetailScreenStyle.metadata) { key ->
+        entry<AppDestination.VisitDetail>(metadata = detailMetadata) { key ->
             VisitDetailScreen(
                 householderId = key.householderId,
                 onNavigate = onNavigate,
@@ -178,14 +193,14 @@ private fun appEntryProvider(
                 appScaffoldState = appScaffoldState
             )
         }
-        entry<AppDestination.ConversationDetail>(metadata = DetailScreenStyle.metadata) { key ->
+        entry<AppDestination.ConversationDetail>(metadata = detailMetadata) { key ->
             ConversationDetailScreen(
                 firstConversationId = key.firstConversationId,
                 onNavigateUp = onNavigateUp,
                 appScaffoldState = appScaffoldState
             )
         }
-        entry<AppDestination.Settings>(metadata = DetailScreenStyle.metadata) {
+        entry<AppDestination.Settings>(metadata = detailMetadata) {
             SettingsScreen(
                 onNavigateUp = onNavigateUp,
                 appScaffoldState = appScaffoldState
