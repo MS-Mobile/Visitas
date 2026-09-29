@@ -1,6 +1,7 @@
 package com.msmobile.visitas.visit
 
 import android.net.Uri
+import androidx.lifecycle.SavedStateHandle
 import com.msmobile.visitas.preference.Preference
 import com.msmobile.visitas.preference.PreferenceRepository
 import com.msmobile.visitas.routing.OsrmRoutingProvider
@@ -94,6 +95,37 @@ class VisitListViewModelTest {
 
         // Assert
         assertEquals("test search", viewModel.uiState.value.filter.search)
+    }
+
+    @Test
+    fun `onEvent with SearchChanged saves the search so it survives process death`() {
+        // Arrange
+        val savedStateHandle = SavedStateHandle()
+        val viewModel = createViewModel(savedStateHandle = savedStateHandle)
+
+        // Act
+        viewModel.onEvent(VisitListViewModel.UiEvent.SearchChanged("Householder 2"))
+
+        // Assert
+        val restoredViewModel = createViewModel(savedStateHandle = savedStateHandle)
+        assertEquals("Householder 2", restoredViewModel.uiState.value.filter.search)
+    }
+
+    @Test
+    fun `onEvent with ViewCreated applies a search restored after process death`() {
+        // Arrange
+        val savedStateHandle = SavedStateHandle()
+        createViewModel(savedStateHandle = savedStateHandle)
+            .onEvent(VisitListViewModel.UiEvent.SearchChanged("Householder 2"))
+        val restoredViewModel = createViewModel(savedStateHandle = savedStateHandle)
+
+        // Act
+        restoredViewModel.onEvent(VisitListViewModel.UiEvent.ViewCreated)
+
+        // Assert
+        val visibleVisits = restoredViewModel.uiState.value.visitList.filter { !it.hide }
+        assertEquals(1, visibleVisits.size)
+        assertEquals(SECOND_VISIT_ID, visibleVisits[0].visitId)
     }
 
     @Test
@@ -766,7 +798,8 @@ class VisitListViewModelTest {
         savedMapEngine: VisitMapEngineOption = VisitMapEngineOption.MapLibre,
         now: LocalDate = LocalDate.now(),
         visitRepositoryRef: MockReferenceHolder<VisitRepository>? = null,
-        visits: List<VisitHouseholder> = createVisitHouseholderList()
+        visits: List<VisitHouseholder> = createVisitHouseholderList(),
+        savedStateHandle: SavedStateHandle = SavedStateHandle()
     ): VisitListViewModel {
         val dispatchers = DispatcherProvider(
             io = mainDispatcherRule.dispatcher
@@ -849,7 +882,8 @@ class VisitListViewModelTest {
             permissionChecker = permissionChecker,
             osrmRoutingProvider = osrmRoutingProvider,
             syncVisitCalendarEvent = syncVisitCalendarEvent,
-            dateTimeProvider = dateTimeProvider
+            dateTimeProvider = dateTimeProvider,
+            savedStateHandle = savedStateHandle
         )
     }
 
