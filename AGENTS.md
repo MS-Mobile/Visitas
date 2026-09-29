@@ -157,6 +157,10 @@ Comes from `version.properties` (root). `versionCode` is the `VERSION_CODE` env 
 ### Dependencies
 All dependencies are declared in `gradle/libs.versions.toml`. Never add them directly to `build.gradle.kts`.
 
+`android-compile-sdk` accepts a minor SDK level (e.g. `"37.1"`). When an AndroidX bump fails
+`checkDebugAarMetadata` with "requires … compile against version 37.1 or later", raise only that
+value — `targetSdk` and `minSdk` stay put.
+
 ## Testing Conventions
 
 ### Unit Tests (app/src/test/)
