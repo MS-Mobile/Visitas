@@ -128,6 +128,19 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # app/build.gradle.kts silently disables the R8 mapping upload when any Sentry credential is
+      # missing, which ships a release whose crashes Sentry cannot deobfuscate. Fail loudly instead.
+      - name: Guard — fail if the Sentry auth token is missing
+        run: |
+          if [ -z "$SENTRY_AUTH_TOKEN" ]; then
+            echo "ERROR: SENTRY_AUTH_TOKEN secret is required to upload the R8 mapping to Sentry"
+            echo "Create an org auth token at https://msmobile.sentry.io/settings/auth-tokens/"
+            echo "and set it at: Settings → Secrets and variables → Actions → Secrets"
+            exit 1
+          fi
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+
       - name: Build Release Bundle and Run Tests
         run: ./gradlew bundleRelease assembleRelease test validateDebugScreenshotTest
         env:
@@ -137,6 +150,9 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           ENCRYPTION_PASSPHRASE: ${{ secrets.ENCRYPTION_PASSPHRASE }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          SENTRY_ORG: msmobile
+          SENTRY_PROJECT: visitas
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
       - name: Upload Test Results
         uses: actions/upload-artifact@v4
