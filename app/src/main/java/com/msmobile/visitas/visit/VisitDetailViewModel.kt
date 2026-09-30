@@ -363,8 +363,7 @@ class VisitDetailViewModel
             val hasNextConversationSuggestion = visit.nextConversationSuggestion != null
             val showNextVisitSuggestion = hasNextConversationSuggestion && !showClearSubject
             val updatedList = visitList.toMutableList().apply {
-                set(
-                    this@apply.indexOfById(visit),
+                replaceById(
                     visit.copy(
                         showClearSubject = showClearSubject,
                         showNextVisitSuggestion = showNextVisitSuggestion
@@ -462,8 +461,7 @@ class VisitDetailViewModel
         newState {
             val newVisitType = visitList.determineNextVisitType().asState
             val updatedList = visitList.toMutableList().apply {
-                set(
-                    this@apply.indexOfById(visit),
+                replaceById(
                     visit.copy(
                         editable = visit.editable.copy(isDone = true),
                         nextConversationSuggestion = null,
@@ -510,8 +508,7 @@ class VisitDetailViewModel
     private fun visitTypeClicked(visit: VisitState) {
         newState {
             val updatedList = visitList.toMutableList().apply {
-                set(
-                    this@apply.indexOfById(visit),
+                replaceById(
                     visit.copy(isVisitTypeListExpanded = !visit.isVisitTypeListExpanded)
                 )
             }
@@ -528,8 +525,7 @@ class VisitDetailViewModel
     ) {
         newState {
             val updatedList = visitList.toMutableList().apply {
-                set(
-                    this@apply.indexOfById(visit),
+                replaceById(
                     visit.copy(
                         editable = visit.editable.copy(visitType = visitType),
                         isVisitTypeListExpanded = false
@@ -594,8 +590,7 @@ class VisitDetailViewModel
             val hasNextConversationSuggestion = visit.nextConversationSuggestion != null
             val showNextVisitSuggestion = hasNextConversationSuggestion && !showClearSubject
             val updatedList = visitList.toMutableList().apply {
-                set(
-                    this@apply.indexOfById(visit),
+                replaceById(
                     visit.copy(
                         editable = visit.editable.copy(subject = value),
                         isConversationListExpanded = isConversionListExpanded,
@@ -616,8 +611,7 @@ class VisitDetailViewModel
     private fun visitDoneChanged(value: Boolean, visit: VisitState) {
         newState {
             val updatedList = visitList.toMutableList().apply {
-                set(
-                    this@apply.indexOfById(visit),
+                replaceById(
                     visit.copy(
                         editable = visit.editable.copy(isDone = value)
                     )
@@ -633,8 +627,7 @@ class VisitDetailViewModel
     private fun visitDateAccepted(visit: VisitState, dateTime: LocalDateTime) {
         newState {
             val updatedList = visitList.toMutableList().apply {
-                set(
-                    this@apply.indexOfById(visit),
+                replaceById(
                     visit.copy(editable = visit.editable.copy(date = dateTime))
                 )
             }.revalidatePendingVisits(householder)
@@ -664,9 +657,8 @@ class VisitDetailViewModel
     private fun removeVisitClicked(visit: VisitState) {
         newState {
             val updatedList = visitList.toMutableList().apply {
-                set(
-                    index = this@apply.indexOfById(visit),
-                    element = visit.copy(wasRemoved = true)
+                replaceById(
+                    visit.copy(wasRemoved = true)
                 )
             }
             copy(visitList = updatedList)
@@ -709,13 +701,14 @@ class VisitDetailViewModel
                 val lineIndex = subjectLines.getLineIndex(caretPosition)
                 subjectLines.subListInclusive(0, lineIndex).joinToString("").length + lineIndex
             }
-            val visitIndex = updatedList.indexOfById(visit)
-            updatedList[visitIndex] = visit.copy(
-                editable = visit.editable.copy(subject = visitSubject),
-                isConversationListExpanded = false,
-                nextConversationSuggestion = nextConversationSuggestion,
-                showNextVisitSuggestion = showNextVisitSuggestion,
-                caretPosition = updatedCaretPosition
+            updatedList.replaceById(
+                visit.copy(
+                    editable = visit.editable.copy(subject = visitSubject),
+                    isConversationListExpanded = false,
+                    nextConversationSuggestion = nextConversationSuggestion,
+                    showNextVisitSuggestion = showNextVisitSuggestion,
+                    caretPosition = updatedCaretPosition
+                )
             )
             copy(
                 visitList = updatedList,
@@ -727,7 +720,7 @@ class VisitDetailViewModel
     private fun conversationListDismissed(visit: VisitState) {
         newState {
             val updatedList = visitList.toMutableList().apply {
-                set(this@apply.indexOfById(visit), visit.copy(isConversationListExpanded = false))
+                replaceById(visit.copy(isConversationListExpanded = false))
             }
             copy(
                 visitList = updatedList,
@@ -739,7 +732,7 @@ class VisitDetailViewModel
     private fun visitTypeListDismissed(visit: VisitState) {
         newState {
             val updatedList = visitList.toMutableList().apply {
-                set(this@apply.indexOfById(visit), visit.copy(isVisitTypeListExpanded = false))
+                replaceById(visit.copy(isVisitTypeListExpanded = false))
             }
             copy(
                 visitList = updatedList,
@@ -1481,8 +1474,14 @@ class VisitDetailViewModel
         _uiState.update(block)
     }
 
-    private fun List<VisitState>.indexOfById(visit: VisitState): Int {
-        return indexOfFirst { visit.id == it.id }
+    /**
+     * Replaces the visit sharing [visit]'s id; a no-op when the list no longer holds it. UI
+     * callbacks can outlive their visit: undo swaps in a fresh visit, and the removed subject
+     * field then reports its focus loss for the discarded one (VISITAS-R).
+     */
+    private fun MutableList<VisitState>.replaceById(visit: VisitState) {
+        val index = indexOfFirst { visit.id == it.id }
+        if (index >= 0) set(index, visit)
     }
 
     data class VisitState(

@@ -1233,6 +1233,36 @@ class VisitDetailViewModelTest {
     }
 
     @Test
+    fun `visit subject focus lost after undo on a brand-new record is ignored`() {
+        // Arrange — the subject field is focused while undo swaps in a fresh visit with a new id
+        val viewModel = createViewModel(committedRowsExist = false, uniqueGeneratedIds = true)
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = null))
+        val discardedVisit = viewModel.uiState.value.visitList.first()
+        viewModel.onEvent(
+            VisitDetailViewModel.UiEvent.VisitSubjectChanged(
+                value = "a",
+                visit = discardedVisit,
+                caretPosition = 1
+            )
+        )
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.UndoChangesConfirmed)
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+        val resetVisitList = viewModel.uiState.value.visitList
+
+        // Act — the removed field reports its focus loss for the discarded visit
+        viewModel.onEvent(
+            VisitDetailViewModel.UiEvent.VisitSubjectFocusChanged(
+                hasFocus = false,
+                visit = discardedVisit
+            )
+        )
+
+        // Assert
+        assertEquals(resetVisitList, viewModel.uiState.value.visitList)
+    }
+
+    @Test
     fun `undo changes confirmed deletes session-added draft visits`() {
         // Arrange — DB has one committed visit plus one session-added draft visit (no snapshot).
         val addedVisitId = UUID.fromString("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
@@ -1413,7 +1443,8 @@ class VisitDetailViewModelTest {
         hasSeenAddVisitToCalendarMessage: Boolean = false,
         savedPreferredCalendar: CalendarIdentity? = null,
         preferenceRepositoryRef: MockReferenceHolder<PreferenceRepository>? = null,
-        syncVisitCalendarEventRef: MockReferenceHolder<SyncVisitCalendarEventUseCase>? = null
+        syncVisitCalendarEventRef: MockReferenceHolder<SyncVisitCalendarEventUseCase>? = null,
+        uniqueGeneratedIds: Boolean = false
     ): VisitDetailViewModel {
         val dispatchers = DispatcherProvider(
             io = mainDispatcherRule.dispatcher
@@ -1471,7 +1502,12 @@ class VisitDetailViewModelTest {
 
         val addressProvider = mock<AddressProvider>()
         val idProvider = mock<IdProvider> {
-            on { generateId() } doReturn NEW_UUID
+            if (uniqueGeneratedIds) {
+                var nextId = 0L
+                on { generateId() } doAnswer { UUID(0L, ++nextId) }
+            } else {
+                on { generateId() } doReturn NEW_UUID
+            }
         }
         val permissionChecker = mock<PermissionChecker> {
             on { hasPermissions(any(), any()) } doReturn false
