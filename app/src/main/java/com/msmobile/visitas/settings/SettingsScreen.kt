@@ -5,8 +5,11 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.VisibleForTesting
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -14,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -41,6 +45,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
@@ -63,8 +68,10 @@ import com.msmobile.visitas.util.borderPadding
 import com.msmobile.visitas.util.cardInnerPadding
 import com.msmobile.visitas.util.snackbarPadding
 import com.msmobile.visitas.visit.VisitMapEngineOption
+import java.time.Duration
 
 private const val BACKUP_MIME_TYPE = "application/octet-stream"
+private val EVENT_DURATION_OPTIONS_MINUTES = listOf(15L, 30L, 45L, 60L, 90L, 120L)
 
 @Composable
 fun SettingsScreen(
@@ -118,107 +125,138 @@ private fun SettingsScreenContent(
         context.showShareIntent(shareUri, BACKUP_MIME_TYPE)
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = borderPadding + cardInnerPadding),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Top
-    ) {
-        SettingsSection(title = stringResource(R.string.settings_section_backup)) {
-            OutlinedButton(
-                modifier = Modifier.fillMaxWidth(),
-                onClick = {
-                    onEvent(
-                        SettingsDetailViewModel.UiEvent.CreateBackup(
-                            successMessage = createBackupSuccessMessage,
-                            errorMessage = createBackupFailureMessage
+    // Scrolls so the calendar options stay reachable on short screens and large font scales. The
+    // minimum height keeps the version line pinned to the bottom whenever everything fits.
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .heightIn(min = maxHeight)
+                .padding(horizontal = borderPadding + cardInnerPadding),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top
+        ) {
+            SettingsSection(title = stringResource(R.string.settings_section_backup)) {
+                OutlinedButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = {
+                        onEvent(
+                            SettingsDetailViewModel.UiEvent.CreateBackup(
+                                successMessage = createBackupSuccessMessage,
+                                errorMessage = createBackupFailureMessage
+                            )
                         )
+                    }
+                ) {
+                    Text(text = stringResource(R.string.create_backup))
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = {
+                        restoreBackupLauncher.launch(arrayOf(BACKUP_MIME_TYPE))
+                    }
+                ) {
+                    Text(text = stringResource(R.string.restore_backup))
+                }
+            }
+
+
+            SettingsSection(title = stringResource(R.string.settings_section_map)) {
+                MapEngineDropdown(
+                    selectedEngine = uiState.selectedMapEngine,
+                    onEngineSelected = { engine ->
+                        onEvent(SettingsDetailViewModel.UiEvent.MapEngineSelected(engine))
+                    }
+                )
+            }
+
+            SettingsSection(title = stringResource(R.string.settings_section_calendar)) {
+                AddVisitsToCalendarCheckbox(
+                    checked = uiState.addVisitsToCalendar,
+                    onCheckedChange = { enabled ->
+                        onEvent(SettingsDetailViewModel.UiEvent.AddVisitsToCalendarToggled(enabled))
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                CalendarSelectionDropdown(
+                    calendars = uiState.availableCalendars,
+                    selectedCalendar = uiState.selectedCalendar,
+                    enabled = uiState.addVisitsToCalendar,
+                    onCalendarSelected = { calendar ->
+                        onEvent(SettingsDetailViewModel.UiEvent.CalendarSelected(calendar))
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                EventDurationDropdown(
+                    label = stringResource(R.string.settings_return_visit_duration_label),
+                    selectedDurationMillis = uiState.returnVisitDurationMillis,
+                    enabled = uiState.addVisitsToCalendar,
+                    onDurationSelected = { durationMillis ->
+                        onEvent(SettingsDetailViewModel.UiEvent.ReturnVisitDurationSelected(durationMillis))
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                EventDurationDropdown(
+                    label = stringResource(R.string.settings_bible_study_duration_label),
+                    selectedDurationMillis = uiState.bibleStudyDurationMillis,
+                    enabled = uiState.addVisitsToCalendar,
+                    onDurationSelected = { durationMillis ->
+                        onEvent(SettingsDetailViewModel.UiEvent.BibleStudyDurationSelected(durationMillis))
+                    }
+                )
+            }
+
+            if (uiState.isLoading) {
+                Spacer(modifier = Modifier.height(16.dp))
+                CircularProgressIndicator()
+            }
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            Text(
+                modifier = Modifier.navigationBarsPadding(),
+                text = stringResource(R.string.app_version, uiState.versionName),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        // Overlaid rather than inside the scrolling column, so it stays at the bottom of the screen;
+        // the padding matches the column's so the snackbar keeps the content width.
+        Box(modifier = Modifier.padding(horizontal = borderPadding + cardInnerPadding)) {
+            when (uiState.backupResult) {
+                is SettingsDetailViewModel.BackupResult.RestoreFailure -> {
+                    RestoreBackupSnackbar(
+                        modifier = Modifier.snackbarPadding(),
+                        message = uiState.backupResult.message
                     )
                 }
-            ) {
-                Text(text = stringResource(R.string.create_backup))
-            }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            OutlinedButton(
-                modifier = Modifier.fillMaxWidth(),
-                onClick = {
-                    restoreBackupLauncher.launch(arrayOf(BACKUP_MIME_TYPE))
+                is SettingsDetailViewModel.BackupResult.RestoreSuccess -> {
+                    RestoreBackupSnackbar(
+                        modifier = Modifier.snackbarPadding(),
+                        message = uiState.backupResult.message
+                    )
                 }
-            ) {
-                Text(text = stringResource(R.string.restore_backup))
-            }
-        }
 
-
-        SettingsSection(title = stringResource(R.string.settings_section_map)) {
-            MapEngineDropdown(
-                selectedEngine = uiState.selectedMapEngine,
-                onEngineSelected = { engine ->
-                    onEvent(SettingsDetailViewModel.UiEvent.MapEngineSelected(engine))
+                is SettingsDetailViewModel.BackupResult.BackupCreationSuccess,
+                null -> {
+                    // Do nothing
                 }
-            )
-        }
-
-        SettingsSection(title = stringResource(R.string.settings_section_calendar)) {
-            AddVisitsToCalendarCheckbox(
-                checked = uiState.addVisitsToCalendar,
-                onCheckedChange = { enabled ->
-                    onEvent(SettingsDetailViewModel.UiEvent.AddVisitsToCalendarToggled(enabled))
-                }
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            CalendarSelectionDropdown(
-                calendars = uiState.availableCalendars,
-                selectedCalendar = uiState.selectedCalendar,
-                enabled = uiState.addVisitsToCalendar,
-                onCalendarSelected = { calendar ->
-                    onEvent(SettingsDetailViewModel.UiEvent.CalendarSelected(calendar))
-                }
-            )
-        }
-
-        if (uiState.isLoading) {
-            Spacer(modifier = Modifier.height(16.dp))
-            CircularProgressIndicator()
-        }
-
-        when (uiState.backupResult) {
-            is SettingsDetailViewModel.BackupResult.RestoreFailure -> {
-                RestoreBackupSnackbar(
-                    modifier = Modifier.snackbarPadding(),
-                    message = uiState.backupResult.message
-                )
-            }
-
-            is SettingsDetailViewModel.BackupResult.RestoreSuccess -> {
-                RestoreBackupSnackbar(
-                    modifier = Modifier.snackbarPadding(),
-                    message = uiState.backupResult.message
-                )
-            }
-
-            is SettingsDetailViewModel.BackupResult.BackupCreationSuccess,
-            null -> {
-                // Do nothing
             }
         }
-
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        Text(
-            modifier = Modifier.navigationBarsPadding(),
-            text = stringResource(R.string.app_version, uiState.versionName),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
     }
 
     PermissionRationaleSheet(
@@ -426,6 +464,57 @@ private fun CalendarSelectionDropdown(
             }
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EventDurationDropdown(
+    label: String,
+    selectedDurationMillis: Long,
+    enabled: Boolean,
+    onDurationSelected: (Long) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    // The checkbox can be turned off while the menu is open.
+    LaunchedEffect(enabled) { if (!enabled) expanded = false }
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        OutlinedTextField(
+            value = durationLabel(selectedDurationMillis),
+            onValueChange = {},
+            readOnly = true,
+            enabled = enabled,
+            label = { Text(text = label) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = enabled)
+                .fillMaxWidth()
+        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            EVENT_DURATION_OPTIONS_MINUTES.forEach { minutes ->
+                val durationMillis = Duration.ofMinutes(minutes).toMillis()
+                DropdownMenuItem(
+                    text = { Text(text = durationLabel(durationMillis)) },
+                    onClick = {
+                        onDurationSelected(durationMillis)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun durationLabel(durationMillis: Long): String {
+    val minutes = Duration.ofMillis(durationMillis).toMinutes().toInt()
+    return pluralStringResource(R.plurals.settings_duration_minutes, minutes, minutes)
 }
 
 /**

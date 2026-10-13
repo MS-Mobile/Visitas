@@ -95,6 +95,12 @@
     <string name="map_engine_label">Map Engine</string>
     <string name="settings_calendar_selection_label">Save events to</string>
     <string name="settings_calendar_selection_empty">No calendar available</string>
+    <string name="settings_return_visit_duration_label">Return visit duration</string>
+    <string name="settings_bible_study_duration_label">Bible study duration</string>
+    <plurals name="settings_duration_minutes">
+        <item quantity="one">%d minute</item>
+        <item quantity="other">%d minutes</item>
+    </plurals>
     <string name="create_backup">Create backup</string>
     <string name="restore_backup">Restore backup</string>
     <string name="restore_backup_title">Restore Backup</string>
