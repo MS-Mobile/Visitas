@@ -5,8 +5,11 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.VisibleForTesting
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -14,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -121,97 +125,115 @@ private fun SettingsScreenContent(
         context.showShareIntent(shareUri, BACKUP_MIME_TYPE)
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = borderPadding + cardInnerPadding),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Top
-    ) {
-        SettingsSection(title = stringResource(R.string.settings_section_backup)) {
-            OutlinedButton(
-                modifier = Modifier.fillMaxWidth(),
-                onClick = {
-                    onEvent(
-                        SettingsDetailViewModel.UiEvent.CreateBackup(
-                            successMessage = createBackupSuccessMessage,
-                            errorMessage = createBackupFailureMessage
+    // Scrolls so the calendar options stay reachable on short screens and large font scales. The
+    // minimum height keeps the version line pinned to the bottom whenever everything fits.
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .heightIn(min = maxHeight)
+                .padding(horizontal = borderPadding + cardInnerPadding),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top
+        ) {
+            SettingsSection(title = stringResource(R.string.settings_section_backup)) {
+                OutlinedButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = {
+                        onEvent(
+                            SettingsDetailViewModel.UiEvent.CreateBackup(
+                                successMessage = createBackupSuccessMessage,
+                                errorMessage = createBackupFailureMessage
+                            )
                         )
-                    )
+                    }
+                ) {
+                    Text(text = stringResource(R.string.create_backup))
                 }
-            ) {
-                Text(text = stringResource(R.string.create_backup))
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = {
+                        restoreBackupLauncher.launch(arrayOf(BACKUP_MIME_TYPE))
+                    }
+                ) {
+                    Text(text = stringResource(R.string.restore_backup))
+                }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
 
-            OutlinedButton(
-                modifier = Modifier.fillMaxWidth(),
-                onClick = {
-                    restoreBackupLauncher.launch(arrayOf(BACKUP_MIME_TYPE))
-                }
-            ) {
-                Text(text = stringResource(R.string.restore_backup))
+            SettingsSection(title = stringResource(R.string.settings_section_map)) {
+                MapEngineDropdown(
+                    selectedEngine = uiState.selectedMapEngine,
+                    onEngineSelected = { engine ->
+                        onEvent(SettingsDetailViewModel.UiEvent.MapEngineSelected(engine))
+                    }
+                )
             }
-        }
 
+            SettingsSection(title = stringResource(R.string.settings_section_calendar)) {
+                AddVisitsToCalendarCheckbox(
+                    checked = uiState.addVisitsToCalendar,
+                    onCheckedChange = { enabled ->
+                        onEvent(SettingsDetailViewModel.UiEvent.AddVisitsToCalendarToggled(enabled))
+                    }
+                )
 
-        SettingsSection(title = stringResource(R.string.settings_section_map)) {
-            MapEngineDropdown(
-                selectedEngine = uiState.selectedMapEngine,
-                onEngineSelected = { engine ->
-                    onEvent(SettingsDetailViewModel.UiEvent.MapEngineSelected(engine))
-                }
+                Spacer(modifier = Modifier.height(8.dp))
+
+                CalendarSelectionDropdown(
+                    calendars = uiState.availableCalendars,
+                    selectedCalendar = uiState.selectedCalendar,
+                    enabled = uiState.addVisitsToCalendar,
+                    onCalendarSelected = { calendar ->
+                        onEvent(SettingsDetailViewModel.UiEvent.CalendarSelected(calendar))
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                EventDurationDropdown(
+                    label = stringResource(R.string.settings_return_visit_duration_label),
+                    selectedDurationMillis = uiState.returnVisitDurationMillis,
+                    enabled = uiState.addVisitsToCalendar,
+                    onDurationSelected = { durationMillis ->
+                        onEvent(SettingsDetailViewModel.UiEvent.ReturnVisitDurationSelected(durationMillis))
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                EventDurationDropdown(
+                    label = stringResource(R.string.settings_bible_study_duration_label),
+                    selectedDurationMillis = uiState.bibleStudyDurationMillis,
+                    enabled = uiState.addVisitsToCalendar,
+                    onDurationSelected = { durationMillis ->
+                        onEvent(SettingsDetailViewModel.UiEvent.BibleStudyDurationSelected(durationMillis))
+                    }
+                )
+            }
+
+            if (uiState.isLoading) {
+                Spacer(modifier = Modifier.height(16.dp))
+                CircularProgressIndicator()
+            }
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            Text(
+                modifier = Modifier.navigationBarsPadding(),
+                text = stringResource(R.string.app_version, uiState.versionName),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-        }
 
-        SettingsSection(title = stringResource(R.string.settings_section_calendar)) {
-            AddVisitsToCalendarCheckbox(
-                checked = uiState.addVisitsToCalendar,
-                onCheckedChange = { enabled ->
-                    onEvent(SettingsDetailViewModel.UiEvent.AddVisitsToCalendarToggled(enabled))
-                }
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            CalendarSelectionDropdown(
-                calendars = uiState.availableCalendars,
-                selectedCalendar = uiState.selectedCalendar,
-                enabled = uiState.addVisitsToCalendar,
-                onCalendarSelected = { calendar ->
-                    onEvent(SettingsDetailViewModel.UiEvent.CalendarSelected(calendar))
-                }
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            EventDurationDropdown(
-                label = stringResource(R.string.settings_return_visit_duration_label),
-                selectedDurationMillis = uiState.returnVisitDurationMillis,
-                enabled = uiState.addVisitsToCalendar,
-                onDurationSelected = { durationMillis ->
-                    onEvent(SettingsDetailViewModel.UiEvent.ReturnVisitDurationSelected(durationMillis))
-                }
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            EventDurationDropdown(
-                label = stringResource(R.string.settings_bible_study_duration_label),
-                selectedDurationMillis = uiState.bibleStudyDurationMillis,
-                enabled = uiState.addVisitsToCalendar,
-                onDurationSelected = { durationMillis ->
-                    onEvent(SettingsDetailViewModel.UiEvent.BibleStudyDurationSelected(durationMillis))
-                }
-            )
-        }
-
-        if (uiState.isLoading) {
             Spacer(modifier = Modifier.height(16.dp))
-            CircularProgressIndicator()
         }
 
+        // Overlaid rather than inside the scrolling column, so it stays at the bottom of the screen.
         when (uiState.backupResult) {
             is SettingsDetailViewModel.BackupResult.RestoreFailure -> {
                 RestoreBackupSnackbar(
@@ -232,18 +254,6 @@ private fun SettingsScreenContent(
                 // Do nothing
             }
         }
-
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        Text(
-            modifier = Modifier.navigationBarsPadding(),
-            text = stringResource(R.string.app_version, uiState.versionName),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
     }
 
     PermissionRationaleSheet(
