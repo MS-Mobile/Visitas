@@ -12,7 +12,6 @@ import com.msmobile.visitas.householder.Householder
 import com.msmobile.visitas.householder.HouseholderRepository
 import com.msmobile.visitas.householder.HouseholderSnapshot
 import com.msmobile.visitas.preference.PreferenceRepository
-import com.msmobile.visitas.preference.preferredCalendar
 import com.msmobile.visitas.util.AddressProvider
 import com.msmobile.visitas.util.CalendarEventManager
 import com.msmobile.visitas.util.ClipboardHandler
@@ -1023,12 +1022,11 @@ class VisitDetailViewModel
         // creating duplicates.
         val preference = preferenceRepository.get()
         val addVisitsToCalendar = preference.addVisitsToCalendar
-        val preferredCalendar = preference.preferredCalendar
         return visitList.map { visitState ->
             val calendarEventId = if (addVisitsToCalendar) {
                 syncVisitCalendarEvent(
                     calendarEventId = visitState.calendarEventId,
-                    preferredCalendar = preferredCalendar,
+                    preference = preference,
                     visitType = visitState.visitType.type,
                     subject = visitState.subject,
                     date = visitState.date,

@@ -7,6 +7,7 @@ import com.msmobile.visitas.householder.HouseholderRepository
 import com.msmobile.visitas.householder.HouseholderSnapshot
 import com.msmobile.visitas.preference.Preference
 import com.msmobile.visitas.preference.PreferenceRepository
+import com.msmobile.visitas.preference.preferredCalendar
 import com.msmobile.visitas.preference.withPreferredCalendar
 import com.msmobile.visitas.util.AddressProvider
 import com.msmobile.visitas.util.CalendarEventManager
@@ -35,7 +36,6 @@ import org.mockito.kotlin.argThat
 import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -436,7 +436,7 @@ class VisitDetailViewModelTest {
 
         // Assert
         verifyBlocking(requireNotNull(syncVisitCalendarEventRef.value)) {
-            invoke(anyOrNull(), eq(chosen), any(), any(), any(), any(), any())
+            invoke(anyOrNull(), argThat { preferredCalendar == chosen }, any(), any(), any(), any(), any())
         }
     }
 

@@ -1,6 +1,9 @@
 package com.msmobile.visitas.util
 
+import com.msmobile.visitas.preference.Preference
+import com.msmobile.visitas.preference.preferredCalendar
 import com.msmobile.visitas.visit.VisitType
+import java.time.Duration
 import java.time.LocalDateTime
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -11,7 +14,7 @@ class SyncVisitCalendarEventUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(
         calendarEventId: Long?,
-        preferredCalendar: CalendarIdentity?,
+        preference: Preference,
         visitType: VisitType,
         subject: String,
         date: LocalDateTime,
@@ -19,7 +22,12 @@ class SyncVisitCalendarEventUseCase @Inject constructor(
         householderName: String
     ): Long? {
         if (!calendarEventManager.hasCalendarPermission()) return calendarEventId
-        if (visitType == VisitType.FIRST_VISIT) return null
+        // A first visit gets no event; the others last as long as the user chose for their type.
+        val durationMillis = when (visitType) {
+            VisitType.FIRST_VISIT -> return null
+            VisitType.RETURN_VISIT -> preference.returnVisitDurationMillis
+            VisitType.BIBLE_STUDY -> preference.bibleStudyDurationMillis
+        }
         val title = if (subject.isNotBlank()) {
             "$householderName - ${subject.lines().firstOrNull() ?: ""}"
         } else {
@@ -27,10 +35,11 @@ class SyncVisitCalendarEventUseCase @Inject constructor(
         }
         return calendarEventManager.saveEvent(
             eventId = calendarEventId,
-            calendar = preferredCalendar,
+            calendar = preference.preferredCalendar,
             title = title,
             description = subject,
             startTime = date,
+            duration = Duration.ofMillis(durationMillis),
             isDone = isDone
         )
     }
