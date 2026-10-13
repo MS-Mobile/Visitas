@@ -233,25 +233,28 @@ private fun SettingsScreenContent(
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-        // Overlaid rather than inside the scrolling column, so it stays at the bottom of the screen.
-        when (uiState.backupResult) {
-            is SettingsDetailViewModel.BackupResult.RestoreFailure -> {
-                RestoreBackupSnackbar(
-                    modifier = Modifier.snackbarPadding(),
-                    message = uiState.backupResult.message
-                )
-            }
+        // Overlaid rather than inside the scrolling column, so it stays at the bottom of the screen;
+        // the padding matches the column's so the snackbar keeps the content width.
+        Box(modifier = Modifier.padding(horizontal = borderPadding + cardInnerPadding)) {
+            when (uiState.backupResult) {
+                is SettingsDetailViewModel.BackupResult.RestoreFailure -> {
+                    RestoreBackupSnackbar(
+                        modifier = Modifier.snackbarPadding(),
+                        message = uiState.backupResult.message
+                    )
+                }
 
-            is SettingsDetailViewModel.BackupResult.RestoreSuccess -> {
-                RestoreBackupSnackbar(
-                    modifier = Modifier.snackbarPadding(),
-                    message = uiState.backupResult.message
-                )
-            }
+                is SettingsDetailViewModel.BackupResult.RestoreSuccess -> {
+                    RestoreBackupSnackbar(
+                        modifier = Modifier.snackbarPadding(),
+                        message = uiState.backupResult.message
+                    )
+                }
 
-            is SettingsDetailViewModel.BackupResult.BackupCreationSuccess,
-            null -> {
-                // Do nothing
+                is SettingsDetailViewModel.BackupResult.BackupCreationSuccess,
+                null -> {
+                    // Do nothing
+                }
             }
         }
     }
