@@ -49,7 +49,10 @@ in the first seconds are branch ↔ `version.properties` mismatch and an already
 **Confirm the release notes with the user before dispatching.** Portuguese, default `Ajustes e
 melhorias.` — it becomes both the Play release name and `whatsnew-pt-BR`, and this is the one
 outward-facing, irreversible step. Keep it to a **single line with no quotes**: the workflow
-interpolates it straight into a shell `echo`.
+interpolates it straight into a shell `echo`. Keep it to **at most 50 characters** too: Play caps the
+release name there and fails the run at *Committing the Edit*, after the AAB has already uploaded
+(`Release name, …, is longer than maximum length 50.`). Nothing is published and the version code is
+not consumed, so just re-dispatch Deploy with shorter notes — no rebuild needed.
 
 `actions_run_trigger`, `method: run_workflow`, `workflow_id: deploy.yml`, `ref: release/X.Y.Z`,
 `inputs: { release_notes: "…" }`. It downloads the artifacts from the latest **successful**
