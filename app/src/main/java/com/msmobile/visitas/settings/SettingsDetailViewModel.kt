@@ -3,6 +3,8 @@ package com.msmobile.visitas.settings
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.msmobile.visitas.preference.DEFAULT_BIBLE_STUDY_DURATION_MILLIS
+import com.msmobile.visitas.preference.DEFAULT_RETURN_VISIT_DURATION_MILLIS
 import com.msmobile.visitas.preference.PreferenceRepository
 import com.msmobile.visitas.preference.preferredCalendar
 import com.msmobile.visitas.preference.withPreferredCalendar
@@ -46,6 +48,8 @@ class SettingsDetailViewModel @Inject constructor(
             is UiEvent.MapEngineSelected -> mapEngineSelected(event.engine)
             is UiEvent.AddVisitsToCalendarToggled -> addVisitsToCalendarToggled(event.enabled)
             is UiEvent.CalendarSelected -> calendarSelected(event.calendar)
+            is UiEvent.ReturnVisitDurationSelected -> returnVisitDurationSelected(event.durationMillis)
+            is UiEvent.BibleStudyDurationSelected -> bibleStudyDurationSelected(event.durationMillis)
             is UiEvent.CalendarRationaleAccepted -> calendarRationaleAccepted()
             is UiEvent.CalendarRationaleDismissed -> calendarRationaleDismissed()
             is UiEvent.CalendarPermissionGranted -> calendarPermissionGranted()
@@ -71,7 +75,9 @@ class SettingsDetailViewModel @Inject constructor(
                 it.copy(
                     selectedMapEngine = preference.visitMapEngineOption,
                     addVisitsToCalendar = preference.addVisitsToCalendar,
-                    preferredCalendar = preference.preferredCalendar
+                    preferredCalendar = preference.preferredCalendar,
+                    returnVisitDurationMillis = preference.returnVisitDurationMillis,
+                    bibleStudyDurationMillis = preference.bibleStudyDurationMillis
                 )
             }
             loadAvailableCalendars()
@@ -112,6 +118,22 @@ class SettingsDetailViewModel @Inject constructor(
             preferenceRepository.save(preferenceRepository.get().withPreferredCalendar(identity))
         }
         _uiState.update { it.copy(preferredCalendar = identity) }
+    }
+
+    private fun returnVisitDurationSelected(durationMillis: Long) {
+        viewModelScope.launch(dispatchers.io) {
+            val preference = preferenceRepository.get().copy(returnVisitDurationMillis = durationMillis)
+            preferenceRepository.save(preference)
+        }
+        _uiState.update { it.copy(returnVisitDurationMillis = durationMillis) }
+    }
+
+    private fun bibleStudyDurationSelected(durationMillis: Long) {
+        viewModelScope.launch(dispatchers.io) {
+            val preference = preferenceRepository.get().copy(bibleStudyDurationMillis = durationMillis)
+            preferenceRepository.save(preference)
+        }
+        _uiState.update { it.copy(bibleStudyDurationMillis = durationMillis) }
     }
 
     private fun mapEngineSelected(engine: VisitMapEngineOption) {
@@ -265,6 +287,8 @@ class SettingsDetailViewModel @Inject constructor(
         data class MapEngineSelected(val engine: VisitMapEngineOption) : UiEvent()
         data class AddVisitsToCalendarToggled(val enabled: Boolean) : UiEvent()
         data class CalendarSelected(val calendar: CalendarInfo) : UiEvent()
+        data class ReturnVisitDurationSelected(val durationMillis: Long) : UiEvent()
+        data class BibleStudyDurationSelected(val durationMillis: Long) : UiEvent()
         data object CalendarRationaleAccepted : UiEvent()
         data object CalendarRationaleDismissed : UiEvent()
         data object CalendarPermissionGranted : UiEvent()
@@ -309,6 +333,8 @@ class SettingsDetailViewModel @Inject constructor(
         val addVisitsToCalendar: Boolean = false,
         val availableCalendars: List<CalendarInfo> = emptyList(),
         val preferredCalendar: CalendarIdentity? = null,
+        val returnVisitDurationMillis: Long = DEFAULT_RETURN_VISIT_DURATION_MILLIS,
+        val bibleStudyDurationMillis: Long = DEFAULT_BIBLE_STUDY_DURATION_MILLIS,
         val showCalendarRationale: Boolean = false,
         val showCalendarPermissionDialog: Boolean = false,
         val versionName: String = ""

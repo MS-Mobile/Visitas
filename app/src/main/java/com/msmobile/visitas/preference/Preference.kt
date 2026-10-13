@@ -1,5 +1,6 @@
 package com.msmobile.visitas.preference
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.msmobile.visitas.util.CalendarIdentity
@@ -22,8 +23,19 @@ data class Preference(
     // write these through preferredCalendar / withPreferredCalendar rather than directly.
     val preferredCalendarAccountType: String? = null,
     val preferredCalendarAccountName: String? = null,
-    val preferredCalendarOwnerAccount: String? = null
+    val preferredCalendarOwnerAccount: String? = null,
+    // How long the calendar event written for each visit type lasts.
+    @ColumnInfo(defaultValue = "1800000")
+    val returnVisitDurationMillis: Long = DEFAULT_RETURN_VISIT_DURATION_MILLIS,
+    @ColumnInfo(defaultValue = "3600000")
+    val bibleStudyDurationMillis: Long = DEFAULT_BIBLE_STUDY_DURATION_MILLIS
 )
+
+/** 30 minutes. Mirrored by the `@ColumnInfo` default above and in `MIGRATION_15_16`. */
+const val DEFAULT_RETURN_VISIT_DURATION_MILLIS = 1_800_000L
+
+/** 60 minutes. Mirrored by the `@ColumnInfo` default above and in `MIGRATION_15_16`. */
+const val DEFAULT_BIBLE_STUDY_DURATION_MILLIS = 3_600_000L
 
 /** The calendar the user chose, or null to let the app pick automatically. */
 val Preference.preferredCalendar: CalendarIdentity?

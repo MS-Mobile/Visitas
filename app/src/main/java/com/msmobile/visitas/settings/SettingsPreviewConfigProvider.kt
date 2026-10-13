@@ -7,6 +7,7 @@ import com.msmobile.visitas.util.CalendarInfo
 import com.msmobile.visitas.util.IntentState
 import com.msmobile.visitas.util.identity
 import com.msmobile.visitas.visit.VisitMapEngineOption
+import java.time.Duration
 
 @VisibleForTesting
 internal class SettingsPreviewConfigProvider : PreviewParameterProvider<SettingsPreviewConfig> {
@@ -69,6 +70,30 @@ internal class SettingsPreviewConfigProvider : PreviewParameterProvider<Settings
                 addVisitsToCalendar = true,
                 availableCalendars = PREVIEW_CALENDARS,
                 preferredCalendar = PREVIEW_MINISTRY_CALENDAR.identity,
+                versionName = APP_VERSION
+            )
+        ),
+        SettingsPreviewConfig(
+            configName = "Custom Event Durations",
+            mainActivityUiState = previewMainActivityUiState,
+            uiState = SettingsDetailViewModel.UiState(
+                selectedMapEngine = VisitMapEngineOption.MapLibre,
+                addVisitsToCalendar = true,
+                availableCalendars = PREVIEW_CALENDARS,
+                preferredCalendar = PREVIEW_MINISTRY_CALENDAR.identity,
+                returnVisitDurationMillis = Duration.ofMinutes(45).toMillis(),
+                bibleStudyDurationMillis = Duration.ofMinutes(90).toMillis(),
+                versionName = APP_VERSION
+            )
+        ),
+        SettingsPreviewConfig(
+            configName = "Custom Event Durations Disabled",
+            mainActivityUiState = previewMainActivityUiState,
+            uiState = SettingsDetailViewModel.UiState(
+                selectedMapEngine = VisitMapEngineOption.MapLibre,
+                addVisitsToCalendar = false,
+                returnVisitDurationMillis = Duration.ofMinutes(45).toMillis(),
+                bibleStudyDurationMillis = Duration.ofMinutes(90).toMillis(),
                 versionName = APP_VERSION
             )
         )

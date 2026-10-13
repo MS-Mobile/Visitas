@@ -1,5 +1,7 @@
 package com.msmobile.visitas.settings
 
+import com.msmobile.visitas.preference.DEFAULT_BIBLE_STUDY_DURATION_MILLIS
+import com.msmobile.visitas.preference.DEFAULT_RETURN_VISIT_DURATION_MILLIS
 import com.msmobile.visitas.preference.Preference
 import com.msmobile.visitas.preference.PreferenceRepository
 import com.msmobile.visitas.preference.preferredCalendar
@@ -369,9 +371,80 @@ class SettingsDetailViewModelTest {
         )
     }
 
+    @Test
+    fun `onEvent with ViewCreated loads event durations from saved preference`() {
+        val viewModel = createViewModel(
+            savedReturnVisitDurationMillis = FORTY_FIVE_MINUTES_MILLIS,
+            savedBibleStudyDurationMillis = NINETY_MINUTES_MILLIS
+        )
+
+        viewModel.onEvent(SettingsDetailViewModel.UiEvent.ViewCreated)
+
+        assertEquals(FORTY_FIVE_MINUTES_MILLIS, viewModel.uiState.value.returnVisitDurationMillis)
+        assertEquals(NINETY_MINUTES_MILLIS, viewModel.uiState.value.bibleStudyDurationMillis)
+    }
+
+    @Test
+    fun `onEvent with ReturnVisitDurationSelected updates state to selected duration`() {
+        val viewModel = createViewModel()
+
+        viewModel.onEvent(
+            SettingsDetailViewModel.UiEvent.ReturnVisitDurationSelected(FORTY_FIVE_MINUTES_MILLIS)
+        )
+
+        assertEquals(FORTY_FIVE_MINUTES_MILLIS, viewModel.uiState.value.returnVisitDurationMillis)
+    }
+
+    @Test
+    fun `onEvent with ReturnVisitDurationSelected saves only the return visit duration`() {
+        val preferenceRepositoryRef = MockReferenceHolder<PreferenceRepository>()
+        val viewModel = createViewModel(preferenceRepositoryRef = preferenceRepositoryRef)
+
+        viewModel.onEvent(
+            SettingsDetailViewModel.UiEvent.ReturnVisitDurationSelected(FORTY_FIVE_MINUTES_MILLIS)
+        )
+
+        verifyBlocking(requireNotNull(preferenceRepositoryRef.value)) {
+            save(argThat {
+                returnVisitDurationMillis == FORTY_FIVE_MINUTES_MILLIS &&
+                    bibleStudyDurationMillis == DEFAULT_BIBLE_STUDY_DURATION_MILLIS
+            })
+        }
+    }
+
+    @Test
+    fun `onEvent with BibleStudyDurationSelected updates state to selected duration`() {
+        val viewModel = createViewModel()
+
+        viewModel.onEvent(
+            SettingsDetailViewModel.UiEvent.BibleStudyDurationSelected(NINETY_MINUTES_MILLIS)
+        )
+
+        assertEquals(NINETY_MINUTES_MILLIS, viewModel.uiState.value.bibleStudyDurationMillis)
+    }
+
+    @Test
+    fun `onEvent with BibleStudyDurationSelected saves only the bible study duration`() {
+        val preferenceRepositoryRef = MockReferenceHolder<PreferenceRepository>()
+        val viewModel = createViewModel(preferenceRepositoryRef = preferenceRepositoryRef)
+
+        viewModel.onEvent(
+            SettingsDetailViewModel.UiEvent.BibleStudyDurationSelected(NINETY_MINUTES_MILLIS)
+        )
+
+        verifyBlocking(requireNotNull(preferenceRepositoryRef.value)) {
+            save(argThat {
+                bibleStudyDurationMillis == NINETY_MINUTES_MILLIS &&
+                    returnVisitDurationMillis == DEFAULT_RETURN_VISIT_DURATION_MILLIS
+            })
+        }
+    }
+
     private fun createViewModel(
         savedMapEngine: VisitMapEngineOption = VisitMapEngineOption.MapLibre,
         savedAddVisitsToCalendar: Boolean = false,
+        savedReturnVisitDurationMillis: Long = DEFAULT_RETURN_VISIT_DURATION_MILLIS,
+        savedBibleStudyDurationMillis: Long = DEFAULT_BIBLE_STUDY_DURATION_MILLIS,
         savedPreferredCalendar: CalendarIdentity? = null,
         availableCalendars: List<CalendarInfo> = emptyList(),
         hasCalendarPermission: Boolean = true,
@@ -385,7 +458,9 @@ class SettingsDetailViewModelTest {
                 visitListDateFilterOption = VisitListDateFilterOption.All,
                 visitListDistanceFilterOption = VisitListDistanceFilterOption.All,
                 visitMapEngineOption = savedMapEngine,
-                addVisitsToCalendar = savedAddVisitsToCalendar
+                addVisitsToCalendar = savedAddVisitsToCalendar,
+                returnVisitDurationMillis = savedReturnVisitDurationMillis,
+                bibleStudyDurationMillis = savedBibleStudyDurationMillis
             ).withPreferredCalendar(savedPreferredCalendar)
         }
         preferenceRepositoryRef?.value = preferenceRepository
@@ -404,6 +479,9 @@ class SettingsDetailViewModelTest {
     }
 
     private companion object {
+        const val FORTY_FIVE_MINUTES_MILLIS = 2_700_000L
+        const val NINETY_MINUTES_MILLIS = 5_400_000L
+
         val PERSONAL_CALENDAR = CalendarInfo(
             id = 1L,
             displayName = "Personal",

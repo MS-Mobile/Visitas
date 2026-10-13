@@ -41,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
@@ -63,8 +64,10 @@ import com.msmobile.visitas.util.borderPadding
 import com.msmobile.visitas.util.cardInnerPadding
 import com.msmobile.visitas.util.snackbarPadding
 import com.msmobile.visitas.visit.VisitMapEngineOption
+import java.time.Duration
 
 private const val BACKUP_MIME_TYPE = "application/octet-stream"
+private val EVENT_DURATION_OPTIONS_MINUTES = listOf(15L, 30L, 45L, 60L, 90L, 120L)
 
 @Composable
 fun SettingsScreen(
@@ -178,6 +181,28 @@ private fun SettingsScreenContent(
                 enabled = uiState.addVisitsToCalendar,
                 onCalendarSelected = { calendar ->
                     onEvent(SettingsDetailViewModel.UiEvent.CalendarSelected(calendar))
+                }
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            EventDurationDropdown(
+                label = stringResource(R.string.settings_return_visit_duration_label),
+                selectedDurationMillis = uiState.returnVisitDurationMillis,
+                enabled = uiState.addVisitsToCalendar,
+                onDurationSelected = { durationMillis ->
+                    onEvent(SettingsDetailViewModel.UiEvent.ReturnVisitDurationSelected(durationMillis))
+                }
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            EventDurationDropdown(
+                label = stringResource(R.string.settings_bible_study_duration_label),
+                selectedDurationMillis = uiState.bibleStudyDurationMillis,
+                enabled = uiState.addVisitsToCalendar,
+                onDurationSelected = { durationMillis ->
+                    onEvent(SettingsDetailViewModel.UiEvent.BibleStudyDurationSelected(durationMillis))
                 }
             )
         }
@@ -426,6 +451,57 @@ private fun CalendarSelectionDropdown(
             }
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EventDurationDropdown(
+    label: String,
+    selectedDurationMillis: Long,
+    enabled: Boolean,
+    onDurationSelected: (Long) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    // The checkbox can be turned off while the menu is open.
+    LaunchedEffect(enabled) { if (!enabled) expanded = false }
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        OutlinedTextField(
+            value = durationLabel(selectedDurationMillis),
+            onValueChange = {},
+            readOnly = true,
+            enabled = enabled,
+            label = { Text(text = label) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = enabled)
+                .fillMaxWidth()
+        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            EVENT_DURATION_OPTIONS_MINUTES.forEach { minutes ->
+                val durationMillis = Duration.ofMinutes(minutes).toMillis()
+                DropdownMenuItem(
+                    text = { Text(text = durationLabel(durationMillis)) },
+                    onClick = {
+                        onDurationSelected(durationMillis)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun durationLabel(durationMillis: Long): String {
+    val minutes = Duration.ofMillis(durationMillis).toMinutes().toInt()
+    return pluralStringResource(R.plurals.settings_duration_minutes, minutes, minutes)
 }
 
 /**
