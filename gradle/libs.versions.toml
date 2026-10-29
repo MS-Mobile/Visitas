@@ -1,6 +1,6 @@
 [versions]
 activity-compose = "1.13.0"
-agp = "9.4.1"
+agp = "9.5.0"
 android-compile-sdk="37.1"
 android-min-sdk="26"
 android-target-sdk="36"
