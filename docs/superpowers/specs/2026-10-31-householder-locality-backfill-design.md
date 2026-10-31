@@ -89,7 +89,9 @@ style of `BackupHandlerTest`: `@HiltAndroidTest`, the real `VisitasDatabase`, `A
 - **After a restore:** create a backup holding a householder with null locality, restore it through
   `BackupHandler`, `restart().join()` → the restored householder is filled.
 
-The assertions on the exact city depend on Google's geocoder data for that point; the test pins the
+The backfill reverse-geocodes the coordinates stored on each householder, never the device's own
+position, so the test does not depend on the emulator's mock location; the Criciúma point lives in
+the test as constants. The assertions on the exact city depend on Google's geocoder data for that point; the test pins the
 expected value and a change in that data would surface as a failure there.
 
 Manual check on the emulator: a householder with null locality gets it filled after launch; an
