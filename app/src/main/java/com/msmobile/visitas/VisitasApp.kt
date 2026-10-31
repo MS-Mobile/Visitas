@@ -3,6 +3,7 @@ package com.msmobile.visitas
 import android.app.Application
 import androidx.appfunctions.service.AppFunctionConfiguration
 import com.msmobile.visitas.appfunctions.VisitAppFunctions
+import com.msmobile.visitas.householder.HouseholderLocalityBackfill
 import dagger.hilt.android.HiltAndroidApp
 import io.sentry.android.core.SentryAndroid
 import javax.inject.Inject
@@ -12,6 +13,8 @@ class VisitasApp : Application(), AppFunctionConfiguration.Provider {
 
     @Inject lateinit var visitAppFunctions: VisitAppFunctions
 
+    @Inject lateinit var householderLocalityBackfill: HouseholderLocalityBackfill
+
     override val appFunctionConfiguration: AppFunctionConfiguration
         get() = AppFunctionConfiguration.Builder()
             .addEnclosingClassFactory(VisitAppFunctions::class.java) { visitAppFunctions }
@@ -20,6 +23,7 @@ class VisitasApp : Application(), AppFunctionConfiguration.Provider {
     override fun onCreate() {
         super.onCreate()
         initSentry()
+        householderLocalityBackfill.start()
     }
 
     private fun initSentry() {

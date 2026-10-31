@@ -3,6 +3,7 @@ package com.msmobile.visitas.backup
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.msmobile.visitas.householder.HouseholderLocalityBackfill
 import com.msmobile.visitas.util.BackupHandler
 import com.msmobile.visitas.util.DispatcherProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -17,6 +18,7 @@ import javax.inject.Inject
 @HiltViewModel
 class BackupViewModel @Inject constructor(
     private val backupHandler: BackupHandler,
+    private val householderLocalityBackfill: HouseholderLocalityBackfill,
     private val dispatchers: DispatcherProvider
 ) : ViewModel() {
 
@@ -65,6 +67,9 @@ class BackupViewModel @Inject constructor(
         viewModelScope.launch(dispatchers.io) {
             backupHandler.restoreBackup(fileUri)
                 .onSuccess {
+                    // Older backups lack neighborhood and city; runs in the application scope, so
+                    // closing the backup sheet does not cancel it.
+                    householderLocalityBackfill.restart()
                     _uiState.update {
                         it.copy(
                             isLoading = false,

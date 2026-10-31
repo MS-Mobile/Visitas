@@ -38,6 +38,32 @@ class AddressProvider(
         }
     }
 
+    /** Wraps the static [Geocoder.isPresent] so callers stay mockable. */
+    fun isGeocoderAvailable(): Boolean = Geocoder.isPresent()
+
+    /**
+     * Looks up only the neighborhood and city of a point. Unlike [getAddressFromLatLong], an answer
+     * without a street still counts as [LocalityLookup.Found], and a failure is reported apart from
+     * an empty answer so callers can retry it. An empty result list is a failure: the points looked
+     * up already carry a street address, so "nothing here" most likely means no connectivity.
+     */
+    suspend fun lookupLocality(latitude: Double, longitude: Double): LocalityLookup {
+        return try {
+            val addresses = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                getLocalityAddressesAsync(latitude, longitude)
+            } else {
+                @Suppress("DEPRECATION")
+                geocoder.getFromLocation(latitude, longitude, 1)
+            }
+            val address = addresses?.firstOrNull() ?: return LocalityLookup.Failed
+            LocalityLookup.Found(neighborhood = address.neighborhood, city = address.city)
+        } catch (error: Exception) {
+            if (error is CancellationException) throw error
+            logger.error(TAG, "Failed to look up locality", error)
+            LocalityLookup.Failed
+        }
+    }
+
     fun calculateDistance(
         startLatitude: Double,
         startLongitude: Double,
@@ -203,6 +229,32 @@ class AddressProvider(
         } ?: AddressSpecs.NoData
     }
 
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    private suspend fun getLocalityAddressesAsync(
+        latitude: Double,
+        longitude: Double
+    ): List<Address>? {
+        return withTimeoutOrNull(LOCALITY_LOOKUP_TIMEOUT) {
+            suspendCancellableCoroutine { cont ->
+                geocoder.getFromLocation(
+                    latitude,
+                    longitude,
+                    1,
+                    object : Geocoder.GeocodeListener {
+                        override fun onGeocode(addresses: MutableList<Address>) {
+                            cont.resumeIfActive(addresses)
+                        }
+
+                        override fun onError(errorMessage: String?) {
+                            logger.error(TAG, "Failed to look up locality: $errorMessage")
+                            cont.resumeIfActive(null)
+                        }
+                    }
+                )
+            }
+        }
+    }
+
     private fun getAddressesFromLocation(location: Location): List<AddressSpecs> {
         return geocoder.getFromLocation(location.latitude, location.longitude, MAX_ADDRESS_RESULTS)
             .orEmpty()
@@ -234,13 +286,16 @@ class AddressProvider(
      * The neighborhood (Brazilian "bairro") is the geocoder's sub-locality. Brazilian results
      * often leave [Address.getLocality] empty and carry the city in the sub-admin area instead.
      */
+    private val Address.neighborhood: String? get() = subLocality
+    private val Address.city: String? get() = locality ?: subAdminArea
+
     private fun Address.toAddressSpecs(): AddressSpecs.Data =
         AddressSpecs.Data(
             address = toStreetAddressString(),
             latitude = latitude,
             longitude = longitude,
-            neighborhood = subLocality,
-            city = locality ?: subAdminArea
+            neighborhood = neighborhood,
+            city = city
         )
 
     sealed class AddressSpecs {
@@ -254,6 +309,11 @@ class AddressProvider(
         ) : AddressSpecs()
     }
 
+    sealed class LocalityLookup {
+        data class Found(val neighborhood: String?, val city: String?) : LocalityLookup()
+        data object Failed : LocalityLookup()
+    }
+
     sealed class AddressDistance {
         data object NoData : AddressDistance()
         data class Nearby(val distance: Float) : AddressDistance()
@@ -264,6 +324,7 @@ class AddressProvider(
     private companion object {
         private const val TAG = "AddressProvider"
         private const val LOCATION_REQUEST_INTERVAL = 3_000L
+        private const val LOCALITY_LOOKUP_TIMEOUT = 10_000L
         private const val MAX_ADDRESS_RESULTS = 10
         private const val LOCATION_ACCURACY = 20
         private const val LOCATION_ACCURACY_TOLERANCE = 5

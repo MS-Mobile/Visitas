@@ -31,6 +31,7 @@ import com.msmobile.visitas.util.DispatcherProvider
 import com.msmobile.visitas.util.EncryptionHandler
 import com.msmobile.visitas.util.IdProvider
 import com.msmobile.visitas.util.LocaleProvider
+import com.msmobile.visitas.util.LocalityBackfillFlag
 import com.msmobile.visitas.util.Logger
 import com.msmobile.visitas.util.NetworkStatusTracker
 import com.msmobile.visitas.util.PermissionChecker
@@ -51,6 +52,8 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import javax.inject.Singleton
 
 @InstallIn(SingletonComponent::class)
@@ -77,6 +80,21 @@ class ApplicationModule {
     @Provides
     fun dispatcherProvider(): DispatcherProvider {
         return DispatcherProvider()
+    }
+
+    @Singleton
+    @Provides
+    @ApplicationScope
+    fun applicationScope(dispatcherProvider: DispatcherProvider): CoroutineScope {
+        return CoroutineScope(SupervisorJob() + dispatcherProvider.io)
+    }
+
+    @Singleton
+    @Provides
+    fun localityBackfillFlag(@ApplicationContext context: Context): LocalityBackfillFlag {
+        return LocalityBackfillFlag(
+            context.getSharedPreferences("locality_backfill", Context.MODE_PRIVATE)
+        )
     }
 
     @Singleton
