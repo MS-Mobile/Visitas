@@ -482,6 +482,71 @@ class VisitListViewModelTest {
     }
 
     @Test
+    fun `search matches the householder neighborhood and overrides the date filter`() {
+        val viewModel = createViewModel(
+            visits = listOf(createSearchableVisitHouseholder(neighborhood = "Centro", city = "Criciúma")),
+            visitListDateFilterOption = VisitListDateFilterOption.Done
+        )
+        viewModel.onEvent(VisitListViewModel.UiEvent.ViewCreated)
+
+        viewModel.onEvent(VisitListViewModel.UiEvent.SearchChanged("centro"))
+
+        assertFalse(viewModel.uiState.value.visitList.single().hide)
+    }
+
+    @Test
+    fun `search matches the householder city ignoring accents`() {
+        val viewModel = createViewModel(
+            visits = listOf(createSearchableVisitHouseholder(neighborhood = "Centro", city = "Criciúma")),
+            visitListDateFilterOption = VisitListDateFilterOption.Done
+        )
+        viewModel.onEvent(VisitListViewModel.UiEvent.ViewCreated)
+
+        viewModel.onEvent(VisitListViewModel.UiEvent.SearchChanged("criciuma"))
+
+        assertFalse(viewModel.uiState.value.visitList.single().hide)
+    }
+
+    @Test
+    fun `search words may be spread across name and neighborhood`() {
+        val viewModel = createViewModel(
+            visits = listOf(createSearchableVisitHouseholder(neighborhood = "Centro", city = "Criciúma")),
+            visitListDateFilterOption = VisitListDateFilterOption.Done
+        )
+        viewModel.onEvent(VisitListViewModel.UiEvent.ViewCreated)
+
+        viewModel.onEvent(VisitListViewModel.UiEvent.SearchChanged("Ana Centro"))
+
+        assertFalse(viewModel.uiState.value.visitList.single().hide)
+    }
+
+    @Test
+    fun `search hides the visit when a word matches no field`() {
+        val viewModel = createViewModel(
+            visits = listOf(createSearchableVisitHouseholder(neighborhood = "Centro", city = "Criciúma")),
+            visitListDateFilterOption = VisitListDateFilterOption.Done
+        )
+        viewModel.onEvent(VisitListViewModel.UiEvent.ViewCreated)
+
+        viewModel.onEvent(VisitListViewModel.UiEvent.SearchChanged("Ana Pinheirinho"))
+
+        assertTrue(viewModel.uiState.value.visitList.single().hide)
+    }
+
+    @Test
+    fun `search still matches the name when neighborhood and city are missing`() {
+        val viewModel = createViewModel(
+            visits = listOf(createSearchableVisitHouseholder(neighborhood = null, city = null)),
+            visitListDateFilterOption = VisitListDateFilterOption.Done
+        )
+        viewModel.onEvent(VisitListViewModel.UiEvent.ViewCreated)
+
+        viewModel.onEvent(VisitListViewModel.UiEvent.SearchChanged("Ana"))
+
+        assertFalse(viewModel.uiState.value.visitList.single().hide)
+    }
+
+    @Test
     fun `onEvent with ViewCreated loads visitMapEngine from preference`() {
         val viewModel = createViewModel(savedMapEngine = VisitMapEngineOption.Leaflet)
 
@@ -1029,6 +1094,23 @@ class VisitListViewModelTest {
             type = VisitType.FIRST_VISIT,
             householderLatitude = null,
             householderLongitude = null
+        )
+    }
+
+    private fun createSearchableVisitHouseholder(neighborhood: String?, city: String?): VisitHouseholder {
+        return VisitHouseholder(
+            visitId = FIRST_VISIT_ID,
+            subject = "Subject 1",
+            date = LocalDateTime.now(),
+            isDone = false,
+            householderId = FIRST_HOUSEHOLDER_ID,
+            householderName = "Ana Souza",
+            householderAddress = "Rua Henrique Lage, 100",
+            type = VisitType.FIRST_VISIT,
+            householderLatitude = null,
+            householderLongitude = null,
+            householderNeighborhood = neighborhood,
+            householderCity = city
         )
     }
 

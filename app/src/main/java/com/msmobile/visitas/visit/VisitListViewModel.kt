@@ -758,7 +758,14 @@ constructor(
             val householderDistanceAsFilter = householderDistance.asDistanceFilter
             val visitDate = visit.date.toLocalDate()
             val isVisitDone = visit.isDone
-            val matchesName = visit.householderName.containsAllWords(filter.search)
+            // All search words must appear somewhere across name, neighborhood and city, so
+            // "Ana Centro" finds Ana living in Centro.
+            val searchableText = listOfNotNull(
+                visit.householderName,
+                visit.householderNeighborhood,
+                visit.householderCity
+            ).joinToString(" ")
+            val matchesSearch = searchableText.containsAllWords(search)
             val isSearchEmpty = search.isEmpty()
             val isFilteringByDistance = distanceFilter is VisitDistanceFilter.Nearby
             val matchesDate = dateFilter.matchesDate(
@@ -774,14 +781,14 @@ constructor(
             // Two invariants, both deliberate:
             //  - Drafts are always visible. They are work in progress the user must not lose
             //    sight of, so no filter may hide them.
-            //  - A name-search match is always visible. Typing a name is a direct ask that
-            //    overrides the browsing filters.
+            //  - A search match is always visible. Typing a name, neighborhood or city is a
+            //    direct ask that overrides the browsing filters.
             // Only the default, empty-search view is narrowed by date/distance. A new filter
-            // belongs inside the isSearchEmpty branch — never wrap hasDrafts or matchesName
+            // belongs inside the isSearchEmpty branch — never wrap hasDrafts or matchesSearch
             // with it.
             val show = hasDrafts
                     || isSearchEmpty && (matchesDate || matchesDistance)
-                    || matchesName
+                    || matchesSearch
             visit.copy(hide = !show) to matchesDistance
         }.sortedWith(
             // Drafts sort first for the same reason they are never hidden: keep both halves
@@ -845,6 +852,8 @@ constructor(
                 isPendingVisitMenuExpanded = false,
                 hasToBeRescheduled = hasToBeRescheduled(date, isDone),
                 type = type,
+                householderNeighborhood = householderNeighborhood,
+                householderCity = householderCity,
                 householderAddressDistance = AddressProvider.AddressDistance.NoData,
                 hide = false
             )
@@ -962,6 +971,8 @@ constructor(
         val isPendingVisitMenuExpanded: Boolean,
         val hasToBeRescheduled: Boolean,
         val type: VisitType,
+        val householderNeighborhood: String? = null,
+        val householderCity: String? = null,
     )
 
     sealed interface PreviewBackupFileState {
@@ -1002,7 +1013,7 @@ constructor(
     ) {
         /**
          * Whether the list is split by period of the day rather than by date. Only a single-day
-         * filter shows one day; a name search overrides the date filter and can match any day.
+         * filter shows one day; a search overrides the date filter and can match any day.
          */
         val groupsVisitsByPeriod: Boolean
             get() = filter.search.isEmpty() && selectedVisitFilterOption in SINGLE_DAY_FILTER_OPTIONS
