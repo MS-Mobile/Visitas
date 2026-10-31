@@ -27,6 +27,7 @@ import com.msmobile.visitas.util.VisitDataFormatter
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertNotNull
+import junit.framework.TestCase.assertNull
 import junit.framework.TestCase.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -1420,6 +1421,86 @@ class VisitDetailViewModelTest {
         assertEquals("Question 1\nResponse 1", updatedVisit.subject)
     }
 
+    @Test
+    fun `looking up the address from lat long saves its neighborhood and city`() {
+        // Arrange
+        val householderRepositoryRef = MockReferenceHolder<HouseholderRepository>()
+        val viewModel = createViewModel(
+            householderRepositoryRef = householderRepositoryRef,
+            useRealLatLongParser = true,
+            addressFromLatLong = AddressProvider.AddressSpecs.Data(
+                address = "Rua Henrique Lage, 100",
+                latitude = LOOKUP_LATITUDE,
+                longitude = LOOKUP_LONGITUDE,
+                neighborhood = "Centro",
+                city = "Criciúma"
+            )
+        )
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+        viewModel.onEvent(
+            VisitDetailViewModel.UiEvent.HouseholderAddressChanged("$LOOKUP_LATITUDE,$LOOKUP_LONGITUDE")
+        )
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.LookUpAddressFromLatLongClicked)
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.SaveClicked)
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert
+        val householder = viewModel.uiState.value.householder
+        assertEquals("Rua Henrique Lage, 100", householder.address)
+        assertEquals("Centro", householder.neighborhood)
+        assertEquals("Criciúma", householder.city)
+        verifyBlocking(requireNotNull(householderRepositoryRef.value), atLeastOnce()) {
+            save(argThat { !isDraft && neighborhood == "Centro" && city == "Criciúma" })
+        }
+    }
+
+    @Test
+    fun `looking up an address that is not found clears the previous neighborhood and city`() {
+        // Arrange
+        val viewModel = createViewModel(
+            useRealLatLongParser = true,
+            householderNeighborhood = "Centro",
+            householderCity = "Criciúma",
+            addressFromLatLong = AddressProvider.AddressSpecs.NoData
+        )
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+        viewModel.onEvent(
+            VisitDetailViewModel.UiEvent.HouseholderAddressChanged("$LOOKUP_LATITUDE,$LOOKUP_LONGITUDE")
+        )
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.LookUpAddressFromLatLongClicked)
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert
+        val state = viewModel.uiState.value
+        assertEquals(VisitDetailViewModel.UiEventState.NoAddressFound, state.eventState)
+        assertNull(state.householder.neighborhood)
+        assertNull(state.householder.city)
+    }
+
+    @Test
+    fun `clearing the address clears its neighborhood and city`() {
+        // Arrange
+        val viewModel = createViewModel(
+            householderNeighborhood = "Centro",
+            householderCity = "Criciúma"
+        )
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ViewCreated(householderId = HOUSEHOLDER_ID))
+        assertEquals("Centro", viewModel.uiState.value.householder.neighborhood)
+
+        // Act
+        viewModel.onEvent(VisitDetailViewModel.UiEvent.ClearAddressClicked)
+
+        // Assert
+        val householder = viewModel.uiState.value.householder
+        assertNull(householder.neighborhood)
+        assertNull(householder.city)
+    }
+
     private fun createViewModel(
         conversationRepositoryRef: MockReferenceHolder<ConversationRepository>? = null,
         householderRepositoryRef: MockReferenceHolder<HouseholderRepository>? = null,
@@ -1437,6 +1518,10 @@ class VisitDetailViewModelTest {
         householderPreferredTime: VisitPreferredTime = VisitPreferredTime.ANY,
         householderNotes: String = "Test Notes",
         householderPhoneNumber: String? = null,
+        householderNeighborhood: String? = null,
+        householderCity: String? = null,
+        addressFromLatLong: AddressProvider.AddressSpecs = AddressProvider.AddressSpecs.NoData,
+        useRealLatLongParser: Boolean = false,
         visitTimeValidResult: Boolean = true,
         conversations: List<Conversation>? = null,
         addVisitsToCalendar: Boolean = false,
@@ -1462,6 +1547,8 @@ class VisitDetailViewModelTest {
                 preferredTime = householderPreferredTime,
                 notes = householderNotes,
                 phoneNumber = householderPhoneNumber,
+                neighborhood = householderNeighborhood,
+                city = householderCity,
                 isDraft = householderIsDraft
             )
             on { getByIdOrNull(any()) } doReturn if (committedRowsExist) {
@@ -1500,7 +1587,9 @@ class VisitDetailViewModelTest {
         }
         preferenceRepositoryRef?.value = preferenceRepository
 
-        val addressProvider = mock<AddressProvider>()
+        val addressProvider = mock<AddressProvider> {
+            onBlocking { getAddressFromLatLong(any(), any()) } doReturn addressFromLatLong
+        }
         val idProvider = mock<IdProvider> {
             if (uniqueGeneratedIds) {
                 var nextId = 0L
@@ -1523,7 +1612,9 @@ class VisitDetailViewModelTest {
         val dateTimeProvider = mock<DateTimeProvider> {
             on { nowLocalDateTime() } doReturn TEST_DATE_TIME
         }
-        val latLongParser = mock<LatLongParser>()
+        // The mock is the default so existing address-state assertions keep their behavior; tests
+        // that need a real coordinate parse opt into the real parser.
+        val latLongParser = if (useRealLatLongParser) LatLongParser() else mock<LatLongParser>()
         val clipboardHandler = mock<ClipboardHandler>()
         val visitDataFormatter = VisitDataFormatter(LocaleProvider())
         clipboardHandlerRef?.value = clipboardHandler
@@ -1590,6 +1681,8 @@ class VisitDetailViewModelTest {
         preferredTime: VisitPreferredTime = VisitPreferredTime.ANY,
         notes: String = "Test Notes",
         phoneNumber: String? = null,
+        neighborhood: String? = null,
+        city: String? = null,
         isDraft: Boolean = false
     ): Householder {
         return Householder(
@@ -1602,7 +1695,9 @@ class VisitDetailViewModelTest {
             addressLongitude = longitude,
             preferredDay = preferredDay,
             preferredTime = preferredTime,
-            isDraft = isDraft
+            isDraft = isDraft,
+            neighborhood = neighborhood,
+            city = city
         )
     }
 
@@ -1630,6 +1725,8 @@ class VisitDetailViewModelTest {
         private val FIRST_VISIT_ID = UUID.fromString("9e8d7c6b-5a4f-3e2d-1c0b-a9e8d7c6b5a4")
         private val NEW_UUID = UUID.fromString("1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d")
         private val TEST_DATE_TIME = LocalDateTime.of(2024, 1, 15, 10, 30)
+        private const val LOOKUP_LATITUDE = -28.6775
+        private const val LOOKUP_LONGITUDE = -49.3697
         private const val EXISTING_CALENDAR_EVENT_ID = 77L
     }
 }

@@ -24,6 +24,7 @@ import com.msmobile.visitas.migration.MIGRATION_12_13
 import com.msmobile.visitas.migration.MIGRATION_13_14
 import com.msmobile.visitas.migration.MIGRATION_14_15
 import com.msmobile.visitas.migration.MIGRATION_15_16
+import com.msmobile.visitas.migration.MIGRATION_16_17
 import com.msmobile.visitas.preference.Preference
 import com.msmobile.visitas.preference.PreferenceDao
 import com.msmobile.visitas.preference.PreferenceTypeConverters
@@ -51,7 +52,7 @@ import java.io.File
     views = [
         VisitHouseholder::class
     ],
-    version = 16
+    version = 17
 )
 @TypeConverters(RoomUUIDConverter::class, RoomLocalDateTimeConverter::class, PreferenceTypeConverters::class)
 abstract class VisitasDatabase : RoomDatabase() {
@@ -81,7 +82,8 @@ abstract class VisitasDatabase : RoomDatabase() {
             MIGRATION_12_13,
             MIGRATION_13_14,
             MIGRATION_14_15,
-            MIGRATION_15_16
+            MIGRATION_15_16,
+            MIGRATION_16_17
         )
 
         fun build(context: Context): VisitasDatabase {

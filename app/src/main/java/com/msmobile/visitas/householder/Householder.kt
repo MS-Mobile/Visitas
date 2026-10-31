@@ -17,5 +17,7 @@ data class Householder(
     val preferredDay: VisitPreferredDay = VisitPreferredDay.ANY,
     val preferredTime: VisitPreferredTime = VisitPreferredTime.ANY,
     val isDraft: Boolean = false,
-    val phoneNumber: String? = null
+    val phoneNumber: String? = null,
+    val neighborhood: String? = null,
+    val city: String? = null
 )
