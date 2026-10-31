@@ -12,6 +12,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -260,5 +261,80 @@ class HouseholderDaoTest {
         assertEquals(1, finalVisits.size)
         assertEquals(visit.id, finalVisits.first().id)
     }
-}
 
+    @Test
+    fun listMissingLocality_shouldReturnOnlyHouseholdersWithCoordinatesAndAMissingField() = runTest {
+        // Arrange
+        val missingBoth = localityHouseholder(neighborhood = null, city = null)
+        val missingCity = localityHouseholder(neighborhood = "Centro", city = null)
+        val complete = localityHouseholder(neighborhood = "Centro", city = "Criciúma")
+        val noCoordinates = localityHouseholder(neighborhood = null, city = null)
+            .copy(addressLatitude = null, addressLongitude = null)
+        listOf(missingBoth, missingCity, complete, noCoordinates)
+            .forEach { database.householderDao().save(it) }
+
+        // Act
+        val ids = database.householderDao().listMissingLocality().map { it.id }.toSet()
+
+        // Assert
+        assertEquals(setOf(missingBoth.id, missingCity.id), ids)
+    }
+
+    @Test
+    fun fillLocality_shouldFillOnlyNullFields() = runTest {
+        // Arrange
+        val householder = localityHouseholder(neighborhood = "Manual", city = null)
+        database.householderDao().save(householder)
+
+        // Act
+        database.householderDao().fillLocality(
+            id = householder.id,
+            latitude = LATITUDE,
+            longitude = LONGITUDE,
+            neighborhood = "Centro",
+            city = "Criciúma"
+        )
+
+        // Assert
+        val saved = database.householderDao().getById(householder.id)
+        assertEquals("Manual", saved.neighborhood)
+        assertEquals("Criciúma", saved.city)
+    }
+
+    @Test
+    fun fillLocality_whenCoordinatesChanged_shouldNotWrite() = runTest {
+        // Arrange - the pin was moved after the lookup started
+        val householder = localityHouseholder(neighborhood = null, city = null)
+        database.householderDao().save(householder)
+
+        // Act
+        database.householderDao().fillLocality(
+            id = householder.id,
+            latitude = LATITUDE + 1,
+            longitude = LONGITUDE,
+            neighborhood = "Centro",
+            city = "Criciúma"
+        )
+
+        // Assert
+        val saved = database.householderDao().getById(householder.id)
+        assertNull(saved.neighborhood)
+        assertNull(saved.city)
+    }
+
+    private fun localityHouseholder(neighborhood: String?, city: String?) = Householder(
+        id = UUID.randomUUID(),
+        name = "Locality Owner",
+        address = "Rua Test, 1",
+        notes = null,
+        addressLatitude = LATITUDE,
+        addressLongitude = LONGITUDE,
+        neighborhood = neighborhood,
+        city = city
+    )
+
+    private companion object {
+        private const val LATITUDE = -28.6775
+        private const val LONGITUDE = -49.3697
+    }
+}
