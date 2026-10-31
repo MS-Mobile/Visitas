@@ -17,7 +17,9 @@ import java.util.UUID
         h.name as householderName,
         h.address as householderAddress,
         h.addressLatitude as householderLatitude,
-        h.addressLongitude as householderLongitude
+        h.addressLongitude as householderLongitude,
+        h.neighborhood as householderNeighborhood,
+        h.city as householderCity
     FROM visit v
     JOIN householder h ON v.householderId = h.id
     INNER JOIN (
@@ -42,4 +44,6 @@ data class VisitHouseholder(
     val type: VisitType,
     val householderLatitude: Double?,
     val householderLongitude: Double?,
+    val householderNeighborhood: String? = null,
+    val householderCity: String? = null,
 )
