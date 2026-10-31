@@ -1,6 +1,7 @@
 package com.msmobile.visitas.backup
 
 import android.net.Uri
+import com.msmobile.visitas.householder.HouseholderLocalityBackfill
 import com.msmobile.visitas.util.BackupHandler
 import com.msmobile.visitas.util.DispatcherProvider
 import com.msmobile.visitas.util.MainDispatcherRule
@@ -14,6 +15,8 @@ import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 
 class BackupViewModelTest {
     @get:Rule
@@ -131,6 +134,54 @@ class BackupViewModelTest {
     }
 
     @Test
+    fun `onEvent with RestoreBackup success restarts the locality backfill`() {
+        // Arrange
+        val uriRef = MockReferenceHolder<Uri>()
+        val backfillRef = MockReferenceHolder<HouseholderLocalityBackfill>()
+        val viewModel = createViewModel(
+            restoreBackupResult = RestoreBackupResult.Success,
+            uriRef = uriRef,
+            backfillRef = backfillRef
+        )
+
+        // Act
+        viewModel.onEvent(
+            BackupViewModel.UiEvent.RestoreBackup(
+                fileUri = requireNotNull(uriRef.value),
+                successMessage = "Restore successful",
+                errorMessage = "Restore failed"
+            )
+        )
+
+        // Assert
+        verify(requireNotNull(backfillRef.value)).restart()
+    }
+
+    @Test
+    fun `onEvent with RestoreBackup failure does not restart the locality backfill`() {
+        // Arrange
+        val uriRef = MockReferenceHolder<Uri>()
+        val backfillRef = MockReferenceHolder<HouseholderLocalityBackfill>()
+        val viewModel = createViewModel(
+            restoreBackupResult = RestoreBackupResult.Failure,
+            uriRef = uriRef,
+            backfillRef = backfillRef
+        )
+
+        // Act
+        viewModel.onEvent(
+            BackupViewModel.UiEvent.RestoreBackup(
+                fileUri = requireNotNull(uriRef.value),
+                successMessage = "Restore successful",
+                errorMessage = "Restore failed"
+            )
+        )
+
+        // Assert
+        verify(requireNotNull(backfillRef.value), never()).restart()
+    }
+
+    @Test
     fun `onEvent with CreateBackUpFailed sets restore failure result`() {
         // Arrange
         val viewModel = createViewModel()
@@ -191,7 +242,8 @@ class BackupViewModelTest {
     private fun createViewModel(
         createBackupResult: CreateBackupResult? = null,
         restoreBackupResult: RestoreBackupResult? = null,
-        uriRef: MockReferenceHolder<Uri>? = null
+        uriRef: MockReferenceHolder<Uri>? = null,
+        backfillRef: MockReferenceHolder<HouseholderLocalityBackfill>? = null
     ): BackupViewModel {
         val dispatchers = DispatcherProvider(
             io = mainDispatcherRule.dispatcher
@@ -212,8 +264,12 @@ class BackupViewModelTest {
             }
         }
 
+        val backfill = mock<HouseholderLocalityBackfill>()
+        backfillRef?.value = backfill
+
         return BackupViewModel(
             backupHandler = backupHandler,
+            householderLocalityBackfill = backfill,
             dispatchers = dispatchers
         )
     }
