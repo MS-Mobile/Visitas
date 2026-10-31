@@ -173,11 +173,7 @@ class AddressProvider(
                 ) { addresses ->
                     val addressSpecs = addresses.mapNotNull { address ->
                         if (address.thoroughfare == null) return@mapNotNull AddressSpecs.NoData
-                        AddressSpecs.Data(
-                            address = address.toStreetAddressString(),
-                            latitude = address.latitude,
-                            longitude = address.longitude
-                        )
+                        address.toAddressSpecs()
                     }
                     cont.resumeIfActive(addressSpecs)
                 }
@@ -200,13 +196,7 @@ class AddressProvider(
                     if (address.thoroughfare == null) {
                         cont.resumeIfActive(AddressSpecs.NoData)
                     } else {
-                        cont.resumeIfActive(
-                            AddressSpecs.Data(
-                                address = address.toStreetAddressString(),
-                                latitude = address.latitude,
-                                longitude = address.longitude
-                            )
-                        )
+                        cont.resumeIfActive(address.toAddressSpecs())
                     }
                 }
             }
@@ -218,11 +208,7 @@ class AddressProvider(
             .orEmpty()
             .mapNotNull { address ->
                 if (address.thoroughfare == null) return@mapNotNull AddressSpecs.NoData
-                AddressSpecs.Data(
-                    address = address.toStreetAddressString(),
-                    latitude = address.latitude,
-                    longitude = address.longitude
-                )
+                address.toAddressSpecs()
             }
     }
 
@@ -233,11 +219,7 @@ class AddressProvider(
             if (address.thoroughfare == null) {
                 AddressSpecs.NoData
             } else {
-                AddressSpecs.Data(
-                    address = address.toStreetAddressString(),
-                    latitude = address.latitude,
-                    longitude = address.longitude
-                )
+                address.toAddressSpecs()
             }
         } catch (error: Exception) {
             logger.error(TAG, "Failed to get address from lat/long", error)
@@ -248,12 +230,27 @@ class AddressProvider(
     private fun Address.toStreetAddressString(): String =
         listOfNotNull(thoroughfare, subThoroughfare).joinToString(", ")
 
+    /**
+     * The neighborhood (Brazilian "bairro") is the geocoder's sub-locality. Brazilian results
+     * often leave [Address.getLocality] empty and carry the city in the sub-admin area instead.
+     */
+    private fun Address.toAddressSpecs(): AddressSpecs.Data =
+        AddressSpecs.Data(
+            address = toStreetAddressString(),
+            latitude = latitude,
+            longitude = longitude,
+            neighborhood = subLocality,
+            city = locality ?: subAdminArea
+        )
+
     sealed class AddressSpecs {
         data object NoData : AddressSpecs()
         data class Data(
             val address: String,
             val latitude: Double,
-            val longitude: Double
+            val longitude: Double,
+            val neighborhood: String? = null,
+            val city: String? = null
         ) : AddressSpecs()
     }
 

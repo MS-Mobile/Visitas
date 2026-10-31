@@ -215,7 +215,9 @@ class BackupHandlerTest {
             address = "123 Test Street",
             notes = "Test notes",
             addressLatitude = 40.7128,
-            addressLongitude = -74.0060
+            addressLongitude = -74.0060,
+            neighborhood = "Centro",
+            city = "Criciúma"
         )
 
         val testConversation = com.msmobile.visitas.conversation.Conversation(
@@ -266,6 +268,8 @@ class BackupHandlerTest {
         assertEquals(testHouseholder.name, restoredHouseholder.name)
         assertEquals(testHouseholder.address, restoredHouseholder.address)
         assertEquals(testHouseholder.notes, restoredHouseholder.notes)
+        assertEquals(testHouseholder.neighborhood, restoredHouseholder.neighborhood)
+        assertEquals(testHouseholder.city, restoredHouseholder.city)
 
         val restoredConversation = restoredConversations.find { it.id == testConversation.id }
         assertNotNull(restoredConversation)

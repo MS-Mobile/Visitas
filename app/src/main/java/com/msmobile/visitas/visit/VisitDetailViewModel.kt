@@ -218,9 +218,13 @@ class VisitDetailViewModel
         newState {
             copy(
                 householder = householder.copy(
+                    // The old neighborhood and city describe the previous coordinates, so they
+                    // are dropped even if the lookup below finds nothing.
                     editable = householder.editable.copy(
                         addressLatitude = latLong.latitude,
-                        addressLongitude = latLong.longitude
+                        addressLongitude = latLong.longitude,
+                        neighborhood = null,
+                        city = null
                     ),
                     isLoadingAddress = true
                 ),
@@ -248,7 +252,11 @@ class VisitDetailViewModel
                         )
                         copy(
                             householder = householder.copy(
-                                editable = householder.editable.copy(address = addressInfo.address),
+                                editable = householder.editable.copy(
+                                    address = addressInfo.address,
+                                    neighborhood = addressInfo.neighborhood,
+                                    city = addressInfo.city
+                                ),
                                 isLoadingAddress = false,
                                 addressState = addressState
                             ),
@@ -287,7 +295,9 @@ class VisitDetailViewModel
                                 editable = householder.editable.copy(
                                     address = addressInfo.address,
                                     addressLatitude = addressInfo.latitude,
-                                    addressLongitude = addressInfo.longitude
+                                    addressLongitude = addressInfo.longitude,
+                                    neighborhood = addressInfo.neighborhood,
+                                    city = addressInfo.city
                                 ),
                                 isLoadingAddress = false,
                                 addressState = addressState
@@ -427,7 +437,9 @@ class VisitDetailViewModel
                 householder = householder.copy(
                     editable = householder.editable.copy(
                         addressLatitude = null,
-                        addressLongitude = null
+                        addressLongitude = null,
+                        neighborhood = null,
+                        city = null
                     )
                 )
             )
@@ -1338,7 +1350,9 @@ class VisitDetailViewModel
                 addressLongitude = addressLongitude,
                 preferredDay = preferredDay,
                 preferredTime = preferredTime,
-                isDraft = isDraft
+                isDraft = isDraft,
+                neighborhood = neighborhood,
+                city = city
             )
         }
 
@@ -1358,7 +1372,9 @@ class VisitDetailViewModel
                     addressLatitude = addressLatitude,
                     addressLongitude = addressLongitude,
                     preferredDay = preferredDay,
-                    preferredTime = preferredTime
+                    preferredTime = preferredTime,
+                    neighborhood = neighborhood,
+                    city = city
                 ),
                 showClearName = false,
                 showCopyData = true,
@@ -1554,6 +1570,8 @@ class VisitDetailViewModel
         val addressLongitude get() = editable.addressLongitude
         val preferredDay get() = editable.preferredDay
         val preferredTime get() = editable.preferredTime
+        val neighborhood get() = editable.neighborhood
+        val city get() = editable.city
     }
 
     data class VisitTypeState(val type: VisitType, val description: StringResource)
@@ -1566,7 +1584,9 @@ class VisitDetailViewModel
         val addressLatitude: Double? = null,
         val addressLongitude: Double? = null,
         val preferredDay: VisitPreferredDay = VisitPreferredDay.ANY,
-        val preferredTime: VisitPreferredTime = VisitPreferredTime.ANY
+        val preferredTime: VisitPreferredTime = VisitPreferredTime.ANY,
+        val neighborhood: String? = null,
+        val city: String? = null
     )
 
     data class EditableVisitData(
