@@ -48,10 +48,11 @@ Reverse-geocode them in the background until every one has been looked up succes
    (`SupervisorJob() + dispatcherProvider.io`) under an `@ApplicationScope` qualifier.
 5. **Backfill** — `householder/HouseholderLocalityBackfill`, a `@Singleton` taking the DAO,
    `AddressProvider`, the flag, the application scope and `Logger`:
-   - `start()`: launches a run unless one is already active.
-   - `restart()`: cancels and joins the active run, clears the flag, then launches a run. Used after a
-     restore, whose data the in-flight run did not see; skipping instead would let the stale run set
-     the flag and leave the restored householders untouched.
+   - `start(): Job`: launches a run unless one is already active, and returns the active run.
+   - `restart(): Job`: launches a job that cancels and joins the active run, clears the flag, then
+     runs. Used after a restore, whose data the in-flight run did not see; skipping instead would
+     let the stale run set the flag and leave the restored householders untouched.
+   - Both return the `Job` so the instrumented test can `join()` it; production callers ignore it.
    - A run: returns if the flag is set; returns without setting it when
      `addressProvider.isGeocoderAvailable()` is false; otherwise looks up each householder from `listMissingLocality()` one at a time, calls
      `fillLocality` for each `Found`, and calls `markDone()` only if none was `Failed`. Failures are
@@ -71,6 +72,25 @@ Reverse-geocode them in the background until every one has been looked up succes
 - `restart()` while a run is active → first run cancelled, flag cleared, a new run performed.
 
 `BackupViewModelTest`: a successful restore calls `restart()`; a failed one does not.
+
+`HouseholderLocalityBackfillTest` (instrumented, `app/src/androidTest/.../householder/`), in the
+style of `BackupHandlerTest`: `@HiltAndroidTest`, the real `VisitasDatabase`, `AddressProvider`
+(real `Geocoder`), flag and backfill injected, the database deleted and the flag cleared in
+`@After`. It exercises the real geocoder, so it needs network:
+- **Precondition:** each test first calls `addressProvider.lookupLocality` for its coordinates and
+  `assumeTrue(it is Found)`, so an offline emulator or a device without a geocoder *skips* the test
+  instead of failing it.
+- **Fills a householder:** one householder at a fixed point in Criciúma (center), null
+  neighborhood/city → `restart().join()` → city is `Criciúma`, neighborhood is non-null, the flag is
+  set.
+- **Keeps existing values:** a householder at the same point with `neighborhood = "Manual"` and null
+  city → after the run, neighborhood is still `Manual` and city is filled.
+- **Skips householders without coordinates:** one with null latitude/longitude is untouched.
+- **After a restore:** create a backup holding a householder with null locality, restore it through
+  `BackupHandler`, `restart().join()` → the restored householder is filled.
+
+The assertions on the exact city depend on Google's geocoder data for that point; the test pins the
+expected value and a change in that data would surface as a failure there.
 
 Manual check on the emulator: a householder with null locality gets it filled after launch; an
 offline launch leaves the flag unset and the next online launch completes it.
