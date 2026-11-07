@@ -111,7 +111,7 @@ class OsrmRoutingProvider @Inject constructor(
     private suspend fun getRouteGeometry(
         startLocation: Pair<Double, Double>,
         orderedVisits: List<OptimizedVisit>
-    ): String? {
+    ): OsrmGeometry? {
         if (orderedVisits.isEmpty()) return null
 
         // Prepare coordinates for OSRM route request

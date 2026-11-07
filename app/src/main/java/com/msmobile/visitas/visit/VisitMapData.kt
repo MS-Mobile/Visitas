@@ -1,5 +1,6 @@
 package com.msmobile.visitas.visit
 
+import com.msmobile.visitas.routing.OsrmGeometry
 import com.squareup.moshi.JsonClass
 
 @JsonClass(generateAdapter = true)
@@ -11,5 +12,5 @@ data class VisitMapData(
     val householderLongitude: Double,
     val householderDistance: Int?,
     val visitOrder: Int,
-    val routeGeometry: String? = null
+    val routeGeometry: OsrmGeometry? = null
 )

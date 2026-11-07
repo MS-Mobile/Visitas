@@ -200,7 +200,7 @@
                 if (sortedVisits.length > 0 && sortedVisits[0].routeGeometry) {
                     log('Drawing route with geometry');
                     map.getSource('route').setData(sortedVisits[0].routeGeometry);
-                } else if (sortedVisits.length > 1) {
+                } else if (sortedVisits.length > 0) {
                     log('Drawing simple route line');
                     const routePoints = [[longitude, latitude]];
                     sortedVisits.forEach(visit => {
