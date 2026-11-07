@@ -21,7 +21,7 @@ data class OsrmRouteResponse(
 @JsonClass(generateAdapter = true)
 data class OsrmRoute(
     @param:Json(name = "geometry")
-    val geometry: String,
+    val geometry: OsrmGeometry,
     @param:Json(name = "legs")
     val legs: List<OsrmLeg>,
     @param:Json(name = "distance")
@@ -32,6 +32,15 @@ data class OsrmRoute(
     val weightName: String,
     @param:Json(name = "weight")
     val weight: Double
+)
+
+// A GeoJSON LineString, as returned for `geometries=geojson`. It is passed to the map as-is
+@JsonClass(generateAdapter = true)
+data class OsrmGeometry(
+    @param:Json(name = "type")
+    val type: String,
+    @param:Json(name = "coordinates")
+    val coordinates: List<List<Double>>
 )
 
 @JsonClass(generateAdapter = true)
@@ -55,7 +64,7 @@ data class OsrmStep(
     @param:Json(name = "driving_side")
     val drivingSide: String,
     @param:Json(name = "geometry")
-    val geometry: String,
+    val geometry: OsrmGeometry,
     @param:Json(name = "mode")
     val mode: String,
     @param:Json(name = "maneuver")
@@ -112,7 +121,7 @@ data class OsrmWaypoint(
 
 data class RouteOptimizationResult(
     val orderedVisits: List<OptimizedVisit>,
-    val routeGeometry: String?
+    val routeGeometry: OsrmGeometry?
 )
 
 data class OptimizedVisit(
