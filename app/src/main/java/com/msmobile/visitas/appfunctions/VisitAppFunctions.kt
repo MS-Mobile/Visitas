@@ -6,7 +6,6 @@ import androidx.appfunctions.AppFunctionSerializable
 import androidx.appfunctions.service.AppFunction
 import com.msmobile.visitas.util.DateTimeProvider
 import com.msmobile.visitas.util.DispatcherProvider
-import com.msmobile.visitas.util.LocaleProvider
 import com.msmobile.visitas.visit.VisitHouseholderRepository
 import kotlinx.coroutines.withContext
 import java.time.format.DateTimeFormatter
@@ -18,7 +17,6 @@ class VisitAppFunctions @Inject constructor(
     private val visitHouseholderRepository: VisitHouseholderRepository,
     private val dateTimeProvider: DateTimeProvider,
     private val dispatcherProvider: DispatcherProvider,
-    private val localeProvider: LocaleProvider,
 ) {
     @AppFunctionSerializable(isDescribedByKDoc = true)
     data class VisitItem(
@@ -28,7 +26,10 @@ class VisitAppFunctions @Inject constructor(
         val householderName: String,
         /** Street address of the person to visit. */
         val address: String,
-        /** Scheduled date and time as a human-readable string. */
+        /**
+         * Scheduled date and time in ISO 8601 format with the device's UTC offset,
+         * e.g. "2026-11-07T10:30:00-03:00". Format it for display as needed.
+         */
         val scheduledDate: String,
         /** Type of visit: FIRST_VISIT, RETURN_VISIT, or BIBLE_STUDY. */
         val visitType: String
@@ -88,15 +89,16 @@ class VisitAppFunctions @Inject constructor(
             )
         }
 
-        val formatter =
-            DateTimeFormatter.ofPattern("EEEE, MMMM d 'at' h:mm a", localeProvider.getLocale())
+        val zoneId = dateTimeProvider.zoneId()
         VisitListResult(
             visits = filtered.map { visit ->
                 VisitItem(
                     subject = visit.subject,
                     householderName = visit.householderName,
                     address = visit.householderAddress,
-                    scheduledDate = visit.date.format(formatter),
+                    scheduledDate = visit.date.atZone(zoneId)
+                        .toOffsetDateTime()
+                        .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
                     visitType = visit.type.name
                 )
             },
