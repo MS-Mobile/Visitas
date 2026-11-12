@@ -11,6 +11,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,6 +25,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
@@ -64,6 +66,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -80,6 +83,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -87,6 +91,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.DialogWindowProvider
+import androidx.core.view.WindowCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.msmobile.visitas.AppScaffold
@@ -1262,8 +1268,14 @@ private fun ColumnScope.VisitMapSheet(
     ) {
         BasicAlertDialog(
             onDismissRequest = onDismiss,
-            properties = DialogProperties(usePlatformDefaultWidth = false)
+            // decorFitsSystemWindows = false lets the map draw behind the status and navigation
+            // bars; left at its default the dialog is inset and its dim scrim shows as grey bars.
+            properties = DialogProperties(
+                usePlatformDefaultWidth = false,
+                decorFitsSystemWindows = false
+            )
         ) {
+            MapDialogSystemBarAppearance()
             Box(
                 Modifier
                     .fillMaxSize()
@@ -1281,6 +1293,7 @@ private fun ColumnScope.VisitMapSheet(
                     contentDescription = stringResource(R.string.location_active_indicator_map_content_description),
                     modifier = Modifier
                         .align(Alignment.TopStart)
+                        .safeDrawingPadding()
                         .padding(MAP_OVERLAY_PADDING)
                 )
 
@@ -1288,6 +1301,7 @@ private fun ColumnScope.VisitMapSheet(
                     onClick = onDismiss,
                     modifier = Modifier
                         .align(Alignment.TopEnd)
+                        .safeDrawingPadding()
                         .padding(MAP_OVERLAY_PADDING),
                     colors = tonalButtonColors()
                 ) {
@@ -1297,6 +1311,24 @@ private fun ColumnScope.VisitMapSheet(
                     )
                 }
             }
+        }
+    }
+}
+
+/**
+ * The map dialog is its own window, so the activity's system bar appearance (set in `VisitasTheme`)
+ * does not reach it. Without this the bars keep the dialog theme's light icons, which vanish over
+ * the light map.
+ */
+@Composable
+private fun MapDialogSystemBarAppearance() {
+    val view = LocalView.current
+    val isDarkTheme = isSystemInDarkTheme()
+    SideEffect {
+        val window = (view.parent as? DialogWindowProvider)?.window ?: return@SideEffect
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            isAppearanceLightStatusBars = !isDarkTheme
+            isAppearanceLightNavigationBars = !isDarkTheme
         }
     }
 }
