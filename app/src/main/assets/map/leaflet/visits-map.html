@@ -5,7 +5,7 @@
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
     <title>Leaflet Map</title>
-    <link rel="stylesheet" href="leaflet-2.0.0-alpha.1.css"/>
+    <link rel="stylesheet" href="leaflet-2.0.0-beta.3.css"/>
     <style>
         #map {
             height: 100vh;
@@ -23,10 +23,10 @@
 <body>
 <div id="map"></div>
 <!-- This is the IIFE/global build (unpkg's leaflet-global.js), not leaflet.js, which is ESM-only
-     and will not load from a file:// WebView. v2 exposes window.leaflet and removed the lowercase
-     factory helpers, so classes are constructed with `new leaflet.X()`. Coordinates are
+     and will not load from a file:// WebView. Since 2.0.0-beta.1 it exposes window.L (the alpha used
+     window.leaflet), and v2 removed the lowercase factory helpers, so classes are constructed with `new L.X()`. Coordinates are
      [latitude, longitude] here — the opposite of the MapLibre engine. -->
-<script src="leaflet-2.0.0-alpha.1.js"></script>
+<script src="leaflet-2.0.0-beta.3.js"></script>
 <script>
     let map;
     let currentLocation = null; // store current location
@@ -66,16 +66,16 @@
         try {
             log('Initializing map (no coordinates yet)');
 
-            if (typeof leaflet === 'undefined') {
+            if (typeof L === 'undefined') {
                 throw new Error('Leaflet library not loaded');
             }
 
             labels.currentLocation = currentLocationText;
 
             // Initialize map with a neutral view; real center will be applied in setMarkers
-            map = new leaflet.Map('map').setView([0, 0], 2);
+            map = new L.Map('map').setView([0, 0], 2);
 
-            new leaflet.TileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            new L.TileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
               attribution: '&copy; OpenStreetMap contributors'
             }).addTo(map);
 
@@ -124,7 +124,7 @@
         visitMarkers.forEach(m => map.removeLayer(m));
         visitMarkers = [];
 
-        const redIcon = new leaflet.Icon({
+        const redIcon = new L.Icon({
             iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
             shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
             iconSize: [25, 41],
@@ -138,7 +138,7 @@
             const popupContent = group.map(p => p.popupContent)
                 .join('<hr style="border: none; border-top: 1px solid #ddd; margin: 6px 0;">');
 
-            const marker = new leaflet.Marker(first.latLng, { icon: redIcon })
+            const marker = new L.Marker(first.latLng, { icon: redIcon })
                 .addTo(map)
                 .on('click', () => {
                     if (window.Visits && window.Visits.onMarkerClicked) {
@@ -149,7 +149,7 @@
             visitMarkers.push(marker);
 
             // Stop number(s) as a badge overlay; a group's badge widens into a pill to fit them all
-            const numberIcon = new leaflet.DivIcon({
+            const numberIcon = new L.DivIcon({
                 className: 'visit-order-number',
                 html: '<div style="background: white; border: 2px solid red; border-radius: 10px; min-width: 20px; height: 20px; padding: 0 4px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; color: red; white-space: nowrap; margin-left: 18px; margin-top: -8px;">' +
                     group.map(p => p.label).join('·') + '</div>',
@@ -157,7 +157,7 @@
                 iconAnchor: [10, 10]
             });
 
-            visitMarkers.push(new leaflet.Marker(first.latLng, { icon: numberIcon })
+            visitMarkers.push(new L.Marker(first.latLng, { icon: numberIcon })
                 .addTo(map));
         });
     }
@@ -179,7 +179,7 @@
            if (currentLocationMarker) {
                map.removeLayer(currentLocationMarker);
            }
-           currentLocationMarker = new leaflet.Marker(currentLocation)
+           currentLocationMarker = new L.Marker(currentLocation)
                .addTo(map)
                .bindPopup(labels.currentLocation);
 
@@ -191,7 +191,7 @@
                routeLayer = null;
            }
 
-           const bounds = new leaflet.LatLngBounds([]);
+           const bounds = new L.LatLngBounds([]);
 
            // Always include current location in bounds
            if (currentLocation) {
@@ -239,7 +239,7 @@
                         const routeGeometry = sortedVisits[0].routeGeometry;
 
                         // Create route line with styling
-                        routeLayer = new leaflet.GeoJSON(routeGeometry, {
+                        routeLayer = new L.GeoJSON(routeGeometry, {
                             style: {
                                 color: '#2E86AB',
                                 weight: 4,
@@ -272,7 +272,7 @@
                         });
 
                         if (routePoints.length > 1) {
-                            routeLayer = new leaflet.Polyline(routePoints, {
+                            routeLayer = new L.Polyline(routePoints, {
                                 color: '#2E86AB',
                                 weight: 3,
                                 opacity: 0.6,
