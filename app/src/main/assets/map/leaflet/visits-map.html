@@ -33,6 +33,13 @@
     let routeLayer = null; // store route layer
     let currentLocationMarker = null; // marker for current location
     let visitMarkers = []; // track all visit markers for cleanup
+    // Pins whose icons would overlap at the current zoom are shown as one grouped pin ("5·6")
+    // placed on the earliest stop's real coordinates, so no pin is ever drawn off its address
+    // and none hides another. Zooming in far enough splits the group again.
+    const PIN_WIDTH = 25;
+    const PIN_HEIGHT = 41;
+    let visitPins = [];
+    let visitGroupsKey = null;
     let labels = {
         currentLocation: undefined,
     };
@@ -72,6 +79,8 @@
               attribution: '&copy; OpenStreetMap contributors'
             }).addTo(map);
 
+            map.on('zoomend', renderVisitMarkers);
+
             log('Map initialized successfully (awaiting coordinates)');
 
             if (window.Visits && window.Visits.onMapReady) {
@@ -83,6 +92,74 @@
                window.Visits.onMapInitializationError(error.message || error.toString());
             }
         }
+    }
+
+    // Two pins overlap when their bottom-anchored icons intersect on screen. A pin joins the
+    // first group holding any pin it overlaps; pins are visited in route order, so each group's
+    // first member is its earliest stop.
+    function groupVisitPins(pins) {
+        const groups = [];
+        pins.forEach(pin => {
+            const point = map.latLngToContainerPoint(pin.latLng);
+            const group = groups.find(g => g.points.some(p =>
+                Math.abs(p.x - point.x) < PIN_WIDTH && Math.abs(p.y - point.y) < PIN_HEIGHT));
+            if (group) {
+                group.pins.push(pin);
+                group.points.push(point);
+            } else {
+                groups.push({ pins: [pin], points: [point] });
+            }
+        });
+        return groups.map(g => g.pins);
+    }
+
+    function renderVisitMarkers() {
+        if (!map) return;
+        const groups = groupVisitPins(visitPins);
+        // zoomend fires on every pinch; rebuilding unchanged markers would close an open popup
+        const key = groups.map(g => g.map(p => p.index).join(',')).join('|');
+        if (key === visitGroupsKey) return;
+        visitGroupsKey = key;
+
+        visitMarkers.forEach(m => map.removeLayer(m));
+        visitMarkers = [];
+
+        const redIcon = new leaflet.Icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+        });
+
+        groups.forEach(group => {
+            const first = group[0];
+            const popupContent = group.map(p => p.popupContent)
+                .join('<hr style="border: none; border-top: 1px solid #ddd; margin: 6px 0;">');
+
+            const marker = new leaflet.Marker(first.latLng, { icon: redIcon })
+                .addTo(map)
+                .on('click', () => {
+                    if (window.Visits && window.Visits.onMarkerClicked) {
+                        window.Visits.onMarkerClicked('marker_' + first.index);
+                    }
+                })
+                .bindPopup(popupContent);
+            visitMarkers.push(marker);
+
+            // Stop number(s) as a badge overlay; a group's badge widens into a pill to fit them all
+            const numberIcon = new leaflet.DivIcon({
+                className: 'visit-order-number',
+                html: '<div style="background: white; border: 2px solid red; border-radius: 10px; min-width: 20px; height: 20px; padding: 0 4px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; color: red; white-space: nowrap; margin-left: 18px; margin-top: -8px;">' +
+                    group.map(p => p.label).join('·') + '</div>',
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            });
+
+            visitMarkers.push(new leaflet.Marker(first.latLng, { icon: numberIcon })
+                .addTo(map));
+        });
     }
 
     // Changed: now receives latitude, longitude plus visits
@@ -106,9 +183,7 @@
                .addTo(map)
                .bindPopup(labels.currentLocation);
 
-           // Clear existing visit markers
-           visitMarkers.forEach(m => map.removeLayer(m));
-           visitMarkers = [];
+           visitPins = [];
 
            // Clear existing route layer
            if (routeLayer) {
@@ -134,15 +209,6 @@
 
                         log('Adding marker for: ' + householderName + ' at ' + householderLatitude + ', ' + householderLongitude + ' (order: ' + visitOrder + ')');
 
-                        const redIcon = new leaflet.Icon({
-                            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
-                            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                            iconSize: [25, 41],
-                            iconAnchor: [12, 41],
-                            popupAnchor: [1, -34],
-                            shadowSize: [41, 41]
-                        });
-
                         const popupContent = '<div>' +
                             '<div style="display: flex; justify-content: space-between; align-items: center;">' +
                                 '<strong>' + householderName + '</strong>' +
@@ -155,27 +221,12 @@
                             visit.householderAddress + '<br/>' +
                         '</div>';
 
-                        // Create numbered marker
-                        const marker = new leaflet.Marker([householderLatitude, householderLongitude], { icon: redIcon })
-                            .addTo(map)
-                            .on('click', () => {
-                                if (window.Visits && window.Visits.onMarkerClicked) {
-                                    window.Visits.onMarkerClicked('marker_' + index);
-                                }
-                            })
-                            .bindPopup(popupContent);
-                        visitMarkers.push(marker);
-
-                        // Add visit order number as a div icon overlay
-                        const numberIcon = new leaflet.DivIcon({
-                            className: 'visit-order-number',
-                            html: '<div style="background: white; border: 2px solid red; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; color: red; margin-left: 18px; margin-top: -8px;">' + (visitOrder + 1) + '</div>',
-                            iconSize: [20, 20],
-                            iconAnchor: [10, 10]
+                        visitPins.push({
+                            index,
+                            latLng: [householderLatitude, householderLongitude],
+                            label: String(visitOrder + 1),
+                            popupContent
                         });
-
-                        visitMarkers.push(new leaflet.Marker([householderLatitude, householderLongitude], { icon: numberIcon })
-                            .addTo(map));
 
                         bounds.extend([householderLatitude, householderLongitude]);
                     }
@@ -236,9 +287,15 @@
                     map.fitBounds(bounds, { padding: [20, 20] });
                 }
 
+                // Grouping depends on screen distance; an animated fitBounds regroups on zoomend
+                visitGroupsKey = null;
+                renderVisitMarkers();
+
                 log('All markers added successfully');
             } else {
                 log('No visits provided or visits array is empty.');
+                visitGroupsKey = null;
+                renderVisitMarkers();
 
                 // Only center on current location if no other markers
                 if (!didFitBounds && currentLocation) {
