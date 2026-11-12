@@ -31,8 +31,17 @@
     const STYLE_LIGHT = 'https://tiles.openfreemap.org/styles/liberty';
     const STYLE_DARK = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 
+    // Pins whose drawn shapes would overlap at the current zoom are shown as one grouped pin
+    // ("5·6") placed on the earliest stop's real coordinates, so no pin is ever drawn off its
+    // address and none hides another. Zooming in far enough splits the group again.
+    const PIN_WIDTH = 25;
+    const PIN_HEIGHT = 41;
+
     let map;
-    let markers = [];
+    let currentMarker = null;
+    let visitPins = [];
+    let visitMarkers = [];
+    let visitGroupsKey = null;
     let routeAdded = false;
     let pendingSetMarkers = null;
     let labels = { currentLocation: undefined };
@@ -89,6 +98,8 @@
                     }
                 });
                 routeAdded = true;
+                // moveend, not zoomend: rotating or tilting also changes how close pins look
+                map.on('moveend', renderVisitMarkers);
                 log('Map initialized successfully');
                 if (window.Visits && window.Visits.onMapReady) window.Visits.onMapReady();
 
@@ -115,6 +126,85 @@
         }
     }
 
+    // Two pins overlap when their bottom-anchored shapes intersect on screen. A pin joins the
+    // first group holding any pin it overlaps; pins are visited in route order, so each group's
+    // first member is its earliest stop.
+    function groupVisitPins(pins) {
+        const groups = [];
+        pins.forEach(pin => {
+            const point = map.project(pin.lngLat);
+            const group = groups.find(g => g.points.some(p =>
+                Math.abs(p.x - point.x) < PIN_WIDTH && Math.abs(p.y - point.y) < PIN_HEIGHT));
+            if (group) {
+                group.pins.push(pin);
+                group.points.push(point);
+            } else {
+                groups.push({ pins: [pin], points: [point] });
+            }
+        });
+        return groups.map(g => g.pins);
+    }
+
+    // The pin and its number are one SVG on purpose. Do not add `position: relative` to the
+    // wrapper — it breaks MapLibre's own marker positioning and the pins drift away from their
+    // coordinates. A group's head widens into a pill so every stop number fits.
+    function createPinElement(label) {
+        const el = document.createElement('div');
+        el.style.cssText = 'cursor:pointer;line-height:0;';
+        const text = '<text x="__X__" y="16" text-anchor="middle" font-size="10" font-weight="bold" fill="#dc2626" font-family="sans-serif">' + label + '</text>';
+        if (label.length <= 2) {
+            el.innerHTML =
+                '<svg width="25" height="41" viewBox="0 0 25 41" xmlns="http://www.w3.org/2000/svg">' +
+                '<path d="M12.5 0C5.6 0 0 5.6 0 12.5c0 9.4 12.5 28.5 12.5 28.5S25 21.9 25 12.5C25 5.6 19.4 0 12.5 0z" fill="#dc2626"/>' +
+                '<circle cx="12.5" cy="12.5" r="8" fill="white" opacity="0.9"/>' +
+                text.replace('__X__', '12.5') +
+                '</svg>';
+        } else {
+            const w = Math.max(PIN_WIDTH, label.length * 6 + 14);
+            const c = w / 2;
+            el.innerHTML =
+                '<svg width="' + w + '" height="41" viewBox="0 0 ' + w + ' 41" xmlns="http://www.w3.org/2000/svg">' +
+                '<path d="M12.5 0H' + (w - 12.5) + 'A12.5 12.5 0 0 1 ' + (w - 12.5) + ' 25H' + (c + 6) +
+                'L' + c + ' 41L' + (c - 6) + ' 25H12.5A12.5 12.5 0 0 1 12.5 0z" fill="#dc2626"/>' +
+                '<rect x="4" y="4.5" width="' + (w - 8) + '" height="16" rx="8" fill="white" opacity="0.9"/>' +
+                text.replace('__X__', String(c)) +
+                '</svg>';
+        }
+        return el;
+    }
+
+    function renderVisitMarkers() {
+        if (!map) return;
+        const groups = groupVisitPins(visitPins);
+        // moveend fires on every pan; rebuilding unchanged markers would close an open popup
+        const key = groups.map(g => g.map(p => p.index).join(',')).join('|');
+        if (key === visitGroupsKey) return;
+        visitGroupsKey = key;
+
+        visitMarkers.forEach(m => m.remove());
+        visitMarkers = [];
+
+        groups.forEach(group => {
+            const first = group[0];
+            const el = createPinElement(group.map(p => p.label).join('·'));
+            const popupContent = group.map(p => p.popupContent)
+                .join('<hr style="border:none;border-top:1px solid #ddd;margin:6px 0;">');
+
+            const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+                .setLngLat(first.lngLat)
+                .setPopup(new maplibregl.Popup({ offset: 5 }).setHTML(popupContent))
+                .addTo(map);
+
+            el.addEventListener('click', () => {
+                if (window.Visits && window.Visits.onMarkerClicked) {
+                    window.Visits.onMarkerClicked('marker_' + first.index);
+                }
+            });
+
+            visitMarkers.push(marker);
+        });
+    }
+
     // Kotlin calls this with (latitude, longitude) for both engines. MapLibre is GeoJSON-ordered,
     // so every coordinate handed to it below must be swapped to [longitude, latitude].
     async function setMarkers(latitude, longitude, visits) {
@@ -129,19 +219,18 @@
 
             log('Setting markers...');
 
-            markers.forEach(m => m.remove());
-            markers = [];
-
-            const currentMarker = new maplibregl.Marker({ color: '#0078D4' })
+            if (currentMarker) currentMarker.remove();
+            currentMarker = new maplibregl.Marker({ color: '#0078D4' })
                 .setLngLat([longitude, latitude])
                 .setPopup(new maplibregl.Popup({ offset: 25 }).setText(labels.currentLocation))
                 .addTo(map);
-            markers.push(currentMarker);
 
             const bounds = new maplibregl.LngLatBounds();
             bounds.extend([longitude, latitude]);
 
             map.getSource('route').setData({ type: 'FeatureCollection', features: [] });
+
+            visitPins = [];
 
             if (visits && visits.length > 0) {
                 const sortedVisits = visits.slice().sort((a, b) => a.visitOrder - b.visitOrder);
@@ -157,18 +246,6 @@
 
                     log('Adding marker for: ' + householderName + ' (order: ' + visitOrder + ')');
 
-                    // The pin and its number are one SVG on purpose. Do not add `position:
-                    // relative` to this wrapper — it breaks MapLibre's own marker positioning
-                    // and the pins drift away from their coordinates.
-                    const el = document.createElement('div');
-                    el.style.cssText = 'cursor:pointer;line-height:0;';
-                    el.innerHTML =
-                        '<svg width="25" height="41" viewBox="0 0 25 41" xmlns="http://www.w3.org/2000/svg">' +
-                        '<path d="M12.5 0C5.6 0 0 5.6 0 12.5c0 9.4 12.5 28.5 12.5 28.5S25 21.9 25 12.5C25 5.6 19.4 0 12.5 0z" fill="#dc2626"/>' +
-                        '<circle cx="12.5" cy="12.5" r="8" fill="white" opacity="0.9"/>' +
-                        '<text x="12.5" y="16" text-anchor="middle" font-size="10" font-weight="bold" fill="#dc2626" font-family="sans-serif">' + (visitOrder + 1) + '</text>' +
-                        '</svg>';
-
                     const popupContent =
                         '<div>' +
                         '<div style="display:flex;justify-content:space-between;align-items:center;">' +
@@ -182,18 +259,12 @@
                         householderAddress +
                         '</div>';
 
-                    const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
-                        .setLngLat([householderLongitude, householderLatitude])
-                        .setPopup(new maplibregl.Popup({ offset: 5 }).setHTML(popupContent))
-                        .addTo(map);
-
-                    el.addEventListener('click', () => {
-                        if (window.Visits && window.Visits.onMarkerClicked) {
-                            window.Visits.onMarkerClicked('marker_' + index);
-                        }
+                    visitPins.push({
+                        index,
+                        lngLat: [householderLongitude, householderLatitude],
+                        label: String(visitOrder + 1),
+                        popupContent
                     });
-
-                    markers.push(marker);
                     bounds.extend([householderLongitude, householderLatitude]);
                 });
 
@@ -221,9 +292,15 @@
                     map.fitBounds(bounds, { padding: 40, animate: false });
                 }
 
+                // Grouping depends on screen distance, so it must run after the final zoom is set
+                visitGroupsKey = null;
+                renderVisitMarkers();
+
                 log('All markers added successfully');
             } else {
                 log('No visits provided or visits array is empty.');
+                visitGroupsKey = null;
+                renderVisitMarkers();
                 if (!didFitBounds) {
                     didFitBounds = true;
                     map.setCenter([longitude, latitude]);
