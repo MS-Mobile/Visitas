@@ -15,6 +15,9 @@
             margin: 0;
             padding: 0;
         }
+        /* The map draws behind the system bars; keep the controls (zoom, attribution) clear of them. */
+        .leaflet-top { top: var(--safe-top, 0px); }
+        .leaflet-bottom { bottom: var(--safe-bottom, 0px); }
         @media (prefers-color-scheme: dark) {
             #map { filter: brightness(0.7); }
         }
@@ -60,6 +63,16 @@
     }
 
     log('Script loaded successfully');
+
+    // The map is drawn edge to edge, behind the status and navigation bars. Kotlin reports their
+    // heights in CSS px so the controls and the initial fit stay clear of them.
+    let safeArea = { top: 0, bottom: 0 };
+
+    function setSafeAreaInsets(top, bottom) {
+        safeArea = { top: top, bottom: bottom };
+        document.documentElement.style.setProperty('--safe-top', top + 'px');
+        document.documentElement.style.setProperty('--safe-bottom', bottom + 'px');
+    }
 
     // Changed: now only receives the text for current location popup
     async function initializeMap(currentLocationText) {
@@ -284,7 +297,10 @@
 
                 if (!didFitBounds && bounds.isValid()) {
                     didFitBounds = true;
-                    map.fitBounds(bounds, { padding: [20, 20] });
+                    map.fitBounds(bounds, {
+                        paddingTopLeft: [20, 20 + safeArea.top],
+                        paddingBottomRight: [20, 20 + safeArea.bottom]
+                    });
                 }
 
                 // Grouping depends on screen distance; an animated fitBounds regroups on zoomend
