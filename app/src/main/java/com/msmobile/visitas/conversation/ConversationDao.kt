@@ -24,4 +24,22 @@ interface ConversationDao {
 
     @Query("SELECT * FROM conversation WHERE id = :id")
     suspend fun getById(id: UUID): Conversation
+
+    @Query("SELECT * FROM conversation WHERE id = :id")
+    suspend fun getByIdOrNull(id: UUID): Conversation?
+
+    @Query("DELETE FROM conversation WHERE id IN (:idList)")
+    suspend fun deleteBulk(idList: List<UUID>)
+
+    /** Deletes the parent and every child. The snapshot FK cascades. */
+    @Query("DELETE FROM conversation WHERE id = :groupId OR conversationGroupId = :groupId")
+    suspend fun deleteGroup(groupId: UUID)
+
+    /** Everything except never-committed rows (draft with no snapshot), for visit suggestions. */
+    @Query(
+        "SELECT * FROM conversation " +
+            "WHERE isDraft = 0 OR id IN (SELECT id FROM conversation_snapshot) " +
+            "ORDER BY question ASC"
+    )
+    suspend fun listForSuggestions(): List<Conversation>
 }

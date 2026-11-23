@@ -53,6 +53,17 @@ internal class ConversationDetailPreviewConfigProvider :
                     )
                 )
             )
+        ),
+        ConversationDetailPreviewConfig(
+            configName = "Draft",
+            mainActivityUiState = previewMainActivityUiState,
+            showDeleteButton = true,
+            uiState = previewConversationDetailUiState.copy(
+                conversationList = previewConversationDetailUiState.conversationList
+                    .mapIndexed { index, conversation ->
+                        if (index == 1) conversation.copy(isDraft = true) else conversation
+                    }
+            )
         )
     )
 

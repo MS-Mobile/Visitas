@@ -5,6 +5,8 @@ import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.msmobile.visitas.VisitasDatabase
+import com.msmobile.visitas.conversation.Conversation
+import com.msmobile.visitas.conversation.ConversationSnapshot
 import com.msmobile.visitas.preference.Preference
 import com.msmobile.visitas.preference.preferredCalendar
 import com.msmobile.visitas.preference.withPreferredCalendar
@@ -24,6 +26,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 import java.io.IOException
+import java.util.UUID
 import javax.inject.Inject
 
 @HiltAndroidTest
@@ -311,6 +314,31 @@ class BackupHandlerTest {
             "Other calendar preferences must survive the restore",
             restored?.addVisitsToCalendar == true
         )
+    }
+
+    @Test
+    fun restoreBackup_withConversationDraft_shouldRestoreItsSnapshot() = runTest {
+        // Arrange
+        initDatabase()
+        val committed = Conversation(
+            id = UUID.randomUUID(),
+            question = "Committed question",
+            response = "Committed response",
+            orderIndex = 0,
+            conversationGroupId = null
+        )
+        database.conversationDao().save(committed.copy(question = "Draft question", isDraft = true))
+        database.conversationSnapshotDao().save(ConversationSnapshot(committed))
+        val backupUri = backupHandler.createBackupFile().getOrThrow()
+        database.clearAllTables()
+
+        // Act
+        backupHandler.restoreBackup(backupUri).getOrThrow()
+
+        // Assert
+        val restoredSnapshots = database.conversationSnapshotDao().listAll()
+        assertEquals(1, restoredSnapshots.size)
+        assertEquals(committed, restoredSnapshots.first().conversation)
     }
 
     @Test

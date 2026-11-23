@@ -146,6 +146,13 @@ class BackupHandler @Inject constructor(
             this.conversationDao().save(conversation)
         }
 
+        // Copy conversation snapshots after their live rows (FK on id). Without them a restored
+        // draft looks never-committed and Undo would delete it.
+        val conversationSnapshots = backupDatabase.conversationSnapshotDao().listAll()
+        conversationSnapshots.forEach { snapshot ->
+            this.conversationSnapshotDao().save(snapshot)
+        }
+
         // Copy all visits
         val visits = backupDatabase.visitDao().listAll()
         visits.forEach { visit ->

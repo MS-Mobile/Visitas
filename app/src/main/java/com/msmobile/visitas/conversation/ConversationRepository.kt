@@ -19,4 +19,12 @@ class ConversationRepository(private val conversationDao: ConversationDao) {
     suspend fun deleteById(id: UUID) {
         conversationDao.deleteById(id)
     }
+
+    suspend fun getByIdOrNull(id: UUID): Conversation? = conversationDao.getByIdOrNull(id)
+
+    suspend fun deleteBulk(idList: List<UUID>) = conversationDao.deleteBulk(idList)
+
+    suspend fun deleteGroup(groupId: UUID) = conversationDao.deleteGroup(groupId)
+
+    suspend fun listForSuggestions(): List<Conversation> = conversationDao.listForSuggestions()
 }

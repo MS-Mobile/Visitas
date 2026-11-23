@@ -109,14 +109,19 @@ private fun ConversationDetailScreenContent(
     )
     val floatingActionButtonActions =
         conversationDetailFloatingActionButtonActions(onEvent = onEvent)
-    DisposableEffect(Unit) {
+    val subtitle = conversationDetailSubtitleString(showSubtitle = uiState.hasDrafts)
+
+    // Keyed on subtitle, not Unit: the published actions and subtitle close over draft state, so
+    // the chrome has to be re-published when that changes or the scaffold keeps stale values.
+    DisposableEffect(subtitle) {
         appScaffoldState.setUiState(
             owner = chromeOwner,
             uiState = AppScaffoldState.UiState(
                 topNavigationActions = topNavigationActions,
                 topBarActions = topBarActions,
                 detailFooterActions = detailFooterActions,
-                floatingActionButtonActions = floatingActionButtonActions
+                floatingActionButtonActions = floatingActionButtonActions,
+                subtitle = subtitle
             )
         )
         onDispose { appScaffoldState.clearUiState(chromeOwner) }
@@ -126,6 +131,11 @@ private fun ConversationDetailScreenContent(
         onEvent = onEvent
     )
     StateHandler(uiState, onEvent, onNavigateUp)
+}
+
+@Composable
+private fun conversationDetailSubtitleString(showSubtitle: Boolean): String? {
+    return if (showSubtitle) stringResource(R.string.draft) else null
 }
 
 @Composable
@@ -157,7 +167,7 @@ private fun conversationDetailFooterActions(
             contentDescription = stringResource(id = R.string.undo_changes),
             icon = Icons.AutoMirrored.Rounded.Undo,
             isEnabled = shouldEnableDiscardButton
-        ) { onEvent(ConversationDetailViewModel.UiEvent.CancelClicked) },
+        ) { onEvent(ConversationDetailViewModel.UiEvent.UndoChangesClicked) },
         DetailFooterAction(
             contentDescription = stringResource(id = R.string.save),
             icon = Icons.Rounded.DoneOutline,
@@ -361,6 +371,29 @@ private fun DeleteConfirmationDialog(onEvent: (ConversationDetailViewModel.UiEve
 }
 
 @Composable
+private fun DiscardChangesConfirmation(onEvent: (ConversationDetailViewModel.UiEvent) -> Unit) {
+    AlertDialog(
+        onDismissRequest = {
+            onEvent(ConversationDetailViewModel.UiEvent.UndoChangesConfirmationDismissed)
+        },
+        title = { Text(text = stringResource(id = R.string.discard_changes_title)) },
+        text = { Text(text = stringResource(id = R.string.discard_changes_message)) },
+        confirmButton = {
+            TextButton(onClick = { onEvent(ConversationDetailViewModel.UiEvent.UndoChangesConfirmed) }) {
+                Text(stringResource(id = R.string.confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = {
+                onEvent(ConversationDetailViewModel.UiEvent.UndoChangesConfirmationDismissed)
+            }) {
+                Text(stringResource(id = R.string.cancel))
+            }
+        }
+    )
+}
+
+@Composable
 private fun StateHandler(
     uiState: ConversationDetailViewModel.UiState,
     onEvent: (ConversationDetailViewModel.UiEvent) -> Unit,
@@ -374,13 +407,16 @@ private fun StateHandler(
         }
 
         is ConversationDetailViewModel.UiEventState.SaveComplete,
-        is ConversationDetailViewModel.UiEventState.Canceled,
         is ConversationDetailViewModel.UiEventState.Deleted -> {
             onNavigateUp()
         }
 
         is ConversationDetailViewModel.UiEventState.DeleteConfirmation -> {
             DeleteConfirmationDialog(onEvent)
+        }
+
+        is ConversationDetailViewModel.UiEventState.UndoChangesConfirmation -> {
+            DiscardChangesConfirmation(onEvent)
         }
     }
 }
@@ -405,7 +441,8 @@ internal fun ConversationDetailScreenPreview(
                     shouldEnableDiscardButton = config.uiState.hasDrafts,
                     onEvent = {}
                 ),
-                floatingActionButtonActions = conversationDetailFloatingActionButtonActions(onEvent = {})
+                floatingActionButtonActions = conversationDetailFloatingActionButtonActions(onEvent = {}),
+                subtitle = conversationDetailSubtitleString(showSubtitle = config.uiState.hasDrafts)
             ) {
                 ConversationDetailScreenContent(
                     firstConversationId = null,
