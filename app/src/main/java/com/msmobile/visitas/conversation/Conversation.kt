@@ -10,5 +10,6 @@ data class Conversation(
     val question: String,
     val response: String,
     val orderIndex: Int,
-    val conversationGroupId: UUID?
+    val conversationGroupId: UUID?,
+    val isDraft: Boolean = false
 )

@@ -7,6 +7,8 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.msmobile.visitas.conversation.Conversation
 import com.msmobile.visitas.conversation.ConversationDao
+import com.msmobile.visitas.conversation.ConversationSnapshot
+import com.msmobile.visitas.conversation.ConversationSnapshotDao
 import com.msmobile.visitas.householder.Householder
 import com.msmobile.visitas.householder.HouseholderDao
 import com.msmobile.visitas.migration.MIGRATION_1_2
@@ -26,6 +28,7 @@ import com.msmobile.visitas.migration.MIGRATION_14_15
 import com.msmobile.visitas.migration.MIGRATION_15_16
 import com.msmobile.visitas.migration.MIGRATION_16_17
 import com.msmobile.visitas.migration.MIGRATION_17_18
+import com.msmobile.visitas.migration.MIGRATION_18_19
 import com.msmobile.visitas.preference.Preference
 import com.msmobile.visitas.preference.PreferenceDao
 import com.msmobile.visitas.preference.PreferenceTypeConverters
@@ -48,12 +51,13 @@ import java.io.File
         Visit::class,
         Preference::class,
         HouseholderSnapshot::class,
-        VisitSnapshot::class
+        VisitSnapshot::class,
+        ConversationSnapshot::class
     ],
     views = [
         VisitHouseholder::class
     ],
-    version = 18
+    version = 19
 )
 @TypeConverters(RoomUUIDConverter::class, RoomLocalDateTimeConverter::class, PreferenceTypeConverters::class)
 abstract class VisitasDatabase : RoomDatabase() {
@@ -64,6 +68,7 @@ abstract class VisitasDatabase : RoomDatabase() {
     abstract fun draftSnapshotDao(): SnapshotDao
     abstract fun visitHouseholderDao(): VisitHouseholderDao
     abstract fun preferenceDao(): PreferenceDao
+    abstract fun conversationSnapshotDao(): ConversationSnapshotDao
 
     companion object {
         const val DATABASE_NAME = "visitas"
@@ -85,7 +90,8 @@ abstract class VisitasDatabase : RoomDatabase() {
             MIGRATION_14_15,
             MIGRATION_15_16,
             MIGRATION_16_17,
-            MIGRATION_17_18
+            MIGRATION_17_18,
+            MIGRATION_18_19
         )
 
         fun build(context: Context): VisitasDatabase {

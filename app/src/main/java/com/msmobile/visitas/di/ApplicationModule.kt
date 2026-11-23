@@ -11,6 +11,8 @@ import com.msmobile.visitas.BuildConfig
 import com.msmobile.visitas.VisitasDatabase
 import com.msmobile.visitas.conversation.ConversationDao
 import com.msmobile.visitas.conversation.ConversationRepository
+import com.msmobile.visitas.conversation.ConversationSnapshotDao
+import com.msmobile.visitas.conversation.ConversationSnapshotRepository
 import com.msmobile.visitas.householder.HouseholderDao
 import com.msmobile.visitas.householder.HouseholderRepository
 import com.msmobile.visitas.preference.PreferenceDao
@@ -125,6 +127,14 @@ class ApplicationModule {
     @Provides
     fun conversationRepository(conversationDao: ConversationDao): ConversationRepository {
         return ConversationRepository(conversationDao = conversationDao)
+    }
+
+    @Singleton
+    @Provides
+    fun conversationSnapshotRepository(
+        conversationSnapshotDao: ConversationSnapshotDao
+    ): ConversationSnapshotRepository {
+        return ConversationSnapshotRepository(snapshotDao = conversationSnapshotDao)
     }
 
     @Singleton
@@ -314,6 +324,12 @@ class ApplicationModule {
     @Provides
     fun conversationDao(roomDatabase: VisitasDatabase): ConversationDao {
         return roomDatabase.conversationDao()
+    }
+
+    @Singleton
+    @Provides
+    fun conversationSnapshotDao(roomDatabase: VisitasDatabase): ConversationSnapshotDao {
+        return roomDatabase.conversationSnapshotDao()
     }
 
     @Singleton
