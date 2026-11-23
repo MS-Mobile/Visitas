@@ -87,6 +87,141 @@ class ConversationDetailViewModelTest {
         assertTrue(viewModel.uiState.value.conversationList[1].isDraft)
     }
 
+    @Test
+    fun `auto save marks an edited committed conversation as draft and snapshots it`() {
+        // Arrange
+        val snapshotRepositoryRef = MockReferenceHolder<ConversationSnapshotRepository>()
+        val viewModel = createViewModel(snapshotRepositoryRef = snapshotRepositoryRef)
+        viewModel.onEvent(ConversationDetailViewModel.UiEvent.ViewCreated(FIRST_CONVERSATION_ID))
+        val second = viewModel.uiState.value.conversationList[1]
+
+        // Act
+        viewModel.onEvent(ConversationDetailViewModel.UiEvent.QuestionChanged(second, "Edited"))
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert
+        val conversations = viewModel.uiState.value.conversationList
+        assertFalse(conversations[0].isDraft)
+        assertTrue(conversations[1].isDraft)
+        val snapshotRepository = requireNotNull(snapshotRepositoryRef.value)
+        verifyBlocking(snapshotRepository) {
+            save(ConversationSnapshot(createConversationList()[1]))
+        }
+    }
+
+    @Test
+    fun `auto save snapshots an edited conversation only once across passes`() {
+        // Arrange
+        val snapshotRepositoryRef = MockReferenceHolder<ConversationSnapshotRepository>()
+        val viewModel = createViewModel(snapshotRepositoryRef = snapshotRepositoryRef)
+        viewModel.onEvent(ConversationDetailViewModel.UiEvent.ViewCreated(FIRST_CONVERSATION_ID))
+
+        // Act
+        viewModel.onEvent(
+            ConversationDetailViewModel.UiEvent.QuestionChanged(
+                viewModel.uiState.value.conversationList[1], "Edit 1"
+            )
+        )
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+        viewModel.onEvent(
+            ConversationDetailViewModel.UiEvent.QuestionChanged(
+                viewModel.uiState.value.conversationList[1], "Edit 2"
+            )
+        )
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert
+        val snapshotRepository = requireNotNull(snapshotRepositoryRef.value)
+        verifyBlocking(snapshotRepository, times(1)) { save(any()) }
+    }
+
+    @Test
+    fun `auto save on a new group marks the parent draft, links children and sets no snapshot`() {
+        // Arrange
+        val conversationRepositoryRef = MockReferenceHolder<ConversationRepository>()
+        val snapshotRepositoryRef = MockReferenceHolder<ConversationSnapshotRepository>()
+        val viewModel = createViewModel(
+            conversationRepositoryRef = conversationRepositoryRef,
+            snapshotRepositoryRef = snapshotRepositoryRef,
+            committedConversations = emptyList()
+        )
+        viewModel.onEvent(ConversationDetailViewModel.UiEvent.ViewCreated(null))
+        viewModel.onEvent(ConversationDetailViewModel.UiEvent.AddClicked)
+        val child = viewModel.uiState.value.conversationList[1]
+
+        // Act: only the child changes
+        viewModel.onEvent(ConversationDetailViewModel.UiEvent.QuestionChanged(child, "Child"))
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert
+        val conversations = viewModel.uiState.value.conversationList
+        assertTrue(conversations[0].isDraft)
+        assertTrue(conversations[1].isDraft)
+        val conversationRepository = requireNotNull(conversationRepositoryRef.value)
+        verifyBlocking(conversationRepository) {
+            save(argThat {
+                id == NEW_CHILD_CONVERSATION_ID &&
+                    conversationGroupId == NEW_CONVERSATION_ID &&
+                    isDraft
+            })
+        }
+        val snapshotRepository = requireNotNull(snapshotRepositoryRef.value)
+        verifyBlocking(snapshotRepository, never()) { save(any()) }
+    }
+
+    @Test
+    fun `delete cancels a pending auto save`() {
+        // Arrange
+        val conversationRepositoryRef = MockReferenceHolder<ConversationRepository>()
+        val viewModel = createViewModel(conversationRepositoryRef = conversationRepositoryRef)
+        viewModel.onEvent(ConversationDetailViewModel.UiEvent.ViewCreated(FIRST_CONVERSATION_ID))
+        viewModel.onEvent(
+            ConversationDetailViewModel.UiEvent.QuestionChanged(
+                viewModel.uiState.value.conversationList[1], "Edited"
+            )
+        )
+
+        // Act: delete before the 250 ms debounce elapses
+        viewModel.onEvent(ConversationDetailViewModel.UiEvent.DeleteAccepted)
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert
+        val conversationRepository = requireNotNull(conversationRepositoryRef.value)
+        verifyBlocking(conversationRepository, never()) { save(any()) }
+    }
+
+    @Test
+    fun `delete of an auto-saved new group deletes the whole group`() {
+        // Arrange: before this feature a new group had no id until Save. Auto-save gives it one, and
+        // deleting only the parent would orphan the draft children.
+        val conversationRepositoryRef = MockReferenceHolder<ConversationRepository>()
+        val viewModel = createViewModel(
+            conversationRepositoryRef = conversationRepositoryRef,
+            committedConversations = emptyList()
+        )
+        viewModel.onEvent(ConversationDetailViewModel.UiEvent.ViewCreated(null))
+        viewModel.onEvent(ConversationDetailViewModel.UiEvent.AddClicked)
+        viewModel.onEvent(
+            ConversationDetailViewModel.UiEvent.QuestionChanged(
+                viewModel.uiState.value.conversationList[1], "Child"
+            )
+        )
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Act
+        viewModel.onEvent(ConversationDetailViewModel.UiEvent.DeleteAccepted)
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert
+        val conversationRepository = requireNotNull(conversationRepositoryRef.value)
+        verifyBlocking(conversationRepository) { deleteGroup(NEW_CONVERSATION_ID) }
+        verifyBlocking(conversationRepository, never()) { deleteById(any()) }
+        assertEquals(
+            ConversationDetailViewModel.UiEventState.Deleted,
+            viewModel.uiState.value.eventState
+        )
+    }
+
     private fun createViewModel(
         conversationRepositoryRef: MockReferenceHolder<ConversationRepository>? = null,
         snapshotRepositoryRef: MockReferenceHolder<ConversationSnapshotRepository>? = null,
