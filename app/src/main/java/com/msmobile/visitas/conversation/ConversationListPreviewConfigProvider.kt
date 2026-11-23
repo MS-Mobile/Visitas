@@ -27,6 +27,15 @@ internal class PreviewConfigProvider : PreviewParameterProvider<PreviewConfig> {
             conversationUiState = previewConversationUiState.copy(
                 filter = previewConversationUiState.filter.copy(search = "God")
             )
+        ),
+        PreviewConfig(
+            configName = "With draft",
+            mainActivityUiState = previewMainActivityUiState,
+            conversationUiState = previewConversationUiState.copy(
+                conversations = previewConversationUiState.conversations.mapIndexed { index, conversation ->
+                    if (index == 0) conversation.copy(hasDrafts = true) else conversation
+                }
+            )
         )
     )
 

@@ -194,15 +194,59 @@ class ConversationListViewModelTest {
         assertEquals(SECOND_CONVERSATION_ID, visibleConversations[0].conversationId)
     }
 
+    @Test
+    fun `onEvent with ViewCreated flags every row of a group with a draft and sorts them first`() {
+        // Arrange
+        val loaded = createConversationList().map { conversation ->
+            if (conversation.id == THIRD_CONVERSATION_ID) conversation.copy(isDraft = true) else conversation
+        } + Conversation(
+            id = OTHER_CONVERSATION_ID,
+            question = "Another question",
+            response = "",
+            orderIndex = 0,
+            conversationGroupId = null
+        )
+        val viewModel = createViewModel(conversations = loaded)
+
+        // Act
+        viewModel.onEvent(ConversationListViewModel.UiEvent.ViewCreated)
+
+        // Assert
+        val conversations = viewModel.uiState.value.conversations
+        assertEquals(
+            listOf(true, true, true, false),
+            conversations.map { conversation -> conversation.hasDrafts }
+        )
+        assertEquals(OTHER_CONVERSATION_ID, conversations.last().conversationId)
+    }
+
+    @Test
+    fun `onEvent with SearchChanged never hides draft conversations`() {
+        // Arrange
+        val loaded = createConversationList().map { conversation ->
+            if (conversation.id == SECOND_CONVERSATION_ID) conversation.copy(isDraft = true) else conversation
+        }
+        val viewModel = createViewModel(conversations = loaded)
+        viewModel.onEvent(ConversationListViewModel.UiEvent.ViewCreated)
+
+        // Act
+        viewModel.onEvent(ConversationListViewModel.UiEvent.SearchChanged("no match at all"))
+
+        // Assert
+        val visible = viewModel.uiState.value.conversations.filter { conversation -> !conversation.hide }
+        assertEquals(3, visible.size)
+    }
+
     private fun createViewModel(
         conversationRepositoryRef: MockReferenceHolder<ConversationRepository>? = null,
-        savedStateHandle: SavedStateHandle = SavedStateHandle()
+        savedStateHandle: SavedStateHandle = SavedStateHandle(),
+        conversations: List<Conversation> = createConversationList()
     ): ConversationListViewModel {
         val dispatchers = DispatcherProvider(
             io = mainDispatcherRule.dispatcher
         )
         val conversationRepository = mock<ConversationRepository> {
-            on { listAll() } doReturn createConversationList()
+            on { listAll() } doReturn conversations
         }
         conversationRepositoryRef?.value = conversationRepository
 
@@ -243,5 +287,6 @@ class ConversationListViewModelTest {
         private val FIRST_CONVERSATION_ID = UUID.fromString("3f2b7d9a-8c4e-4e2a-9b1d-5c6a7f8e1a23")
         private val SECOND_CONVERSATION_ID = UUID.fromString("c1a9f7b4-2e3d-4f5a-8b6c-0d1e2f3a4b5c")
         private val THIRD_CONVERSATION_ID = UUID.fromString("7a4e1c9b-6d2f-4a3e-8b5c-0f9d1e2a3c4b")
+        private val OTHER_CONVERSATION_ID = UUID.fromString("1b2c3d4e-5f6a-4b7c-8d9e-0f1a2b3c4d5e")
     }
 }
