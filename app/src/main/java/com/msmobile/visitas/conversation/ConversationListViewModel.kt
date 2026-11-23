@@ -40,15 +40,20 @@ constructor(
     private fun loadConversations() {
         viewModelScope.launch(dispatchers.io) {
             val conversations = conversationRepository.listAll()
+            val draftGroupIds = conversations
+                .filter { conversation -> conversation.isDraft }
+                .map { conversation -> conversation.conversationGroupId ?: conversation.id }
+                .toSet()
             val conversationStates = conversations.map { conversation ->
                 val parentId = conversation.conversationGroupId ?: conversation.id
                 ConversationState(
                     conversationId = conversation.id,
                     parentId = parentId,
                     question = conversation.question,
-                    response = conversation.response
+                    response = conversation.response,
+                    hasDrafts = parentId in draftGroupIds
                 )
-            }
+            }.sortedByDescending { conversation -> conversation.hasDrafts }
             newState {
                 copy(conversations = conversationStates.filterBy(filter))
             }
@@ -82,7 +87,7 @@ constructor(
             val matchesQuestion = conversation.question.containsAllWords(search)
             val matchesResponse = conversation.response.containsAllWords(filter.search)
             val isSearchEmpty = search.isEmpty()
-            val show = isSearchEmpty || matchesQuestion || matchesResponse
+            val show = conversation.hasDrafts || isSearchEmpty || matchesQuestion || matchesResponse
             conversation.copy(hide = !show)
         }
     }
@@ -102,7 +107,8 @@ constructor(
         val parentId: UUID? = null,
         val question: String = "",
         val response: String = "",
-        val hide: Boolean = false
+        val hide: Boolean = false,
+        val hasDrafts: Boolean = false
     )
 
     data class UiState(
