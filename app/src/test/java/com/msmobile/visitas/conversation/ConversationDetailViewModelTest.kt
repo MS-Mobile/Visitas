@@ -253,6 +253,100 @@ class ConversationDetailViewModelTest {
         verifyBlocking(snapshotRepository) { deleteByGroup(FIRST_CONVERSATION_ID) }
     }
 
+    @Test
+    fun `undo changes clicked asks for confirmation`() {
+        // Arrange
+        val viewModel = createViewModel()
+
+        // Act
+        viewModel.onEvent(ConversationDetailViewModel.UiEvent.UndoChangesClicked)
+
+        // Assert
+        assertEquals(
+            ConversationDetailViewModel.UiEventState.UndoChangesConfirmation,
+            viewModel.uiState.value.eventState
+        )
+    }
+
+    @Test
+    fun `undo changes confirmed restores edited rows from snapshot and deletes added rows`() {
+        // Arrange
+        val committed = createConversationList()
+        val added = Conversation(
+            id = ADDED_CONVERSATION_ID,
+            question = "Added",
+            response = "",
+            orderIndex = 3,
+            conversationGroupId = FIRST_CONVERSATION_ID,
+            isDraft = true
+        )
+        val live = committed.mapIndexed { index, conversation ->
+            if (index == 1) conversation.copy(question = "Edited", isDraft = true) else conversation
+        } + added
+        val conversationRepositoryRef = MockReferenceHolder<ConversationRepository>()
+        val snapshotRepositoryRef = MockReferenceHolder<ConversationSnapshotRepository>()
+        val viewModel = createViewModel(
+            conversationRepositoryRef = conversationRepositoryRef,
+            snapshotRepositoryRef = snapshotRepositoryRef,
+            listByGroupResults = listOf(live, live, committed),
+            snapshots = listOf(ConversationSnapshot(committed[1]))
+        )
+        viewModel.onEvent(ConversationDetailViewModel.UiEvent.ViewCreated(FIRST_CONVERSATION_ID))
+
+        // Act
+        viewModel.onEvent(ConversationDetailViewModel.UiEvent.UndoChangesConfirmed)
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert
+        val conversationRepository = requireNotNull(conversationRepositoryRef.value)
+        verifyBlocking(conversationRepository) { deleteBulk(listOf(ADDED_CONVERSATION_ID)) }
+        verifyBlocking(conversationRepository) { save(committed[1]) }
+        val snapshotRepository = requireNotNull(snapshotRepositoryRef.value)
+        verifyBlocking(snapshotRepository) { deleteByGroup(FIRST_CONVERSATION_ID) }
+        val state = viewModel.uiState.value
+        assertEquals(3, state.conversationList.size)
+        assertEquals("Question 2", state.conversationList[1].question)
+        assertFalse(state.hasDrafts)
+    }
+
+    @Test
+    fun `undo changes confirmed on a never-committed group deletes it and resets the form`() {
+        // Arrange
+        val draftParent = Conversation(
+            id = NEW_CONVERSATION_ID,
+            question = "Typed",
+            response = "",
+            orderIndex = 0,
+            conversationGroupId = null,
+            isDraft = true
+        )
+        val conversationRepositoryRef = MockReferenceHolder<ConversationRepository>()
+        val viewModel = createViewModel(
+            conversationRepositoryRef = conversationRepositoryRef,
+            listByGroupResults = listOf(listOf(draftParent), emptyList()),
+            committedConversations = emptyList()
+        )
+        viewModel.onEvent(ConversationDetailViewModel.UiEvent.ViewCreated(null))
+        viewModel.onEvent(
+            ConversationDetailViewModel.UiEvent.QuestionChanged(
+                viewModel.uiState.value.conversationList[0], "Typed"
+            )
+        )
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Act
+        viewModel.onEvent(ConversationDetailViewModel.UiEvent.UndoChangesConfirmed)
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert
+        val conversationRepository = requireNotNull(conversationRepositoryRef.value)
+        verifyBlocking(conversationRepository) { deleteBulk(listOf(NEW_CONVERSATION_ID)) }
+        val state = viewModel.uiState.value
+        assertEquals(1, state.conversationList.size)
+        assertEquals("", state.conversationList[0].question)
+        assertFalse(state.hasDrafts)
+    }
+
     private fun createViewModel(
         conversationRepositoryRef: MockReferenceHolder<ConversationRepository>? = null,
         snapshotRepositoryRef: MockReferenceHolder<ConversationSnapshotRepository>? = null,

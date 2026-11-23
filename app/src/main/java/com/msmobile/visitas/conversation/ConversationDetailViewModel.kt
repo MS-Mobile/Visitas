@@ -42,7 +42,9 @@ constructor(
             is UiEvent.ViewCreated -> viewCreated(event.firstConversationId)
             is UiEvent.QuestionChanged -> questionChanged(event.conversation, event.value)
             is UiEvent.ResponseChanged -> responseChanged(event.conversation, event.value)
-            is UiEvent.CancelClicked -> cancelClicked()
+            is UiEvent.UndoChangesClicked -> undoChangesClicked()
+            is UiEvent.UndoChangesConfirmed -> undoChangesConfirmed()
+            is UiEvent.UndoChangesConfirmationDismissed -> undoChangesConfirmationDismissed()
             is UiEvent.SaveClicked -> saveClicked()
             is UiEvent.DeleteClicked -> deleteClicked()
             is UiEvent.DeleteAccepted -> deleteAccepted()
@@ -161,9 +163,41 @@ constructor(
         }
     }
 
-    private fun cancelClicked() {
-        conversationGroupId = null
-        newState { copy(eventState = UiEventState.Canceled) }
+    private fun undoChangesClicked() {
+        newState { copy(eventState = UiEventState.UndoChangesConfirmation) }
+    }
+
+    private fun undoChangesConfirmationDismissed() {
+        newState { copy(eventState = UiEventState.Idle) }
+    }
+
+    /**
+     * One data path for both cases: delete draft rows that have no snapshot (added this session, or
+     * the whole group if it was never committed), then restore the snapshots. Only the UI step
+     * branches: nothing left means the group never existed, so reset to an empty form.
+     */
+    private fun undoChangesConfirmed() {
+        newState { copy(eventState = UiEventState.Idle) }
+        val groupId = conversationGroupId ?: return
+        viewModelScope.launch(dispatchers.io) {
+            val snapshots = snapshotRepository.listByGroup(groupId)
+            val committedIds = snapshots.map { snapshot -> snapshot.conversation.id }.toSet()
+            val addedIds = conversationRepository.listByIdOrGroupId(groupId)
+                .filter { conversation -> conversation.isDraft && conversation.id !in committedIds }
+                .map { conversation -> conversation.id }
+            if (addedIds.isNotEmpty()) conversationRepository.deleteBulk(addedIds)
+            snapshots.forEach { snapshot -> conversationRepository.save(snapshot.conversation) }
+            snapshotRepository.deleteByGroup(groupId)
+
+            val remaining = conversationRepository.listByIdOrGroupId(groupId)
+            if (remaining.isEmpty()) {
+                conversationGroupId = null
+                newState { copy(conversationList = listOf(newConversation(0))) }
+            } else {
+                newState { copy(conversationList = remaining.map { conversation -> conversation.asState }) }
+            }
+            initialEditableData = _uiState.value.editableSnapshot()
+        }
     }
 
     private fun viewCreated(id: UUID?) {
@@ -398,7 +432,9 @@ constructor(
 
         data object AddClicked : UiEvent()
         data object SaveClicked : UiEvent()
-        data object CancelClicked : UiEvent()
+        data object UndoChangesClicked : UiEvent()
+        data object UndoChangesConfirmed : UiEvent()
+        data object UndoChangesConfirmationDismissed : UiEvent()
         data object DeleteClicked : UiEvent()
         data object DeleteAccepted : UiEvent()
         data object DeleteDismissed : UiEvent()
@@ -411,7 +447,7 @@ constructor(
         data object Deleted : UiEventState()
         data object Saving : UiEventState()
         data object SaveComplete : UiEventState()
-        data object Canceled : UiEventState()
+        data object UndoChangesConfirmation : UiEventState()
     }
 
     data class UiState(

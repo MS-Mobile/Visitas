@@ -157,7 +157,7 @@ private fun conversationDetailFooterActions(
             contentDescription = stringResource(id = R.string.undo_changes),
             icon = Icons.AutoMirrored.Rounded.Undo,
             isEnabled = shouldEnableDiscardButton
-        ) { onEvent(ConversationDetailViewModel.UiEvent.CancelClicked) },
+        ) { onEvent(ConversationDetailViewModel.UiEvent.UndoChangesClicked) },
         DetailFooterAction(
             contentDescription = stringResource(id = R.string.save),
             icon = Icons.Rounded.DoneOutline,
@@ -361,6 +361,29 @@ private fun DeleteConfirmationDialog(onEvent: (ConversationDetailViewModel.UiEve
 }
 
 @Composable
+private fun DiscardChangesConfirmation(onEvent: (ConversationDetailViewModel.UiEvent) -> Unit) {
+    AlertDialog(
+        onDismissRequest = {
+            onEvent(ConversationDetailViewModel.UiEvent.UndoChangesConfirmationDismissed)
+        },
+        title = { Text(text = stringResource(id = R.string.discard_changes_title)) },
+        text = { Text(text = stringResource(id = R.string.discard_changes_message)) },
+        confirmButton = {
+            TextButton(onClick = { onEvent(ConversationDetailViewModel.UiEvent.UndoChangesConfirmed) }) {
+                Text(stringResource(id = R.string.confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = {
+                onEvent(ConversationDetailViewModel.UiEvent.UndoChangesConfirmationDismissed)
+            }) {
+                Text(stringResource(id = R.string.cancel))
+            }
+        }
+    )
+}
+
+@Composable
 private fun StateHandler(
     uiState: ConversationDetailViewModel.UiState,
     onEvent: (ConversationDetailViewModel.UiEvent) -> Unit,
@@ -374,13 +397,16 @@ private fun StateHandler(
         }
 
         is ConversationDetailViewModel.UiEventState.SaveComplete,
-        is ConversationDetailViewModel.UiEventState.Canceled,
         is ConversationDetailViewModel.UiEventState.Deleted -> {
             onNavigateUp()
         }
 
         is ConversationDetailViewModel.UiEventState.DeleteConfirmation -> {
             DeleteConfirmationDialog(onEvent)
+        }
+
+        is ConversationDetailViewModel.UiEventState.UndoChangesConfirmation -> {
+            DiscardChangesConfirmation(onEvent)
         }
     }
 }
