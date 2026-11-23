@@ -109,14 +109,19 @@ private fun ConversationDetailScreenContent(
     )
     val floatingActionButtonActions =
         conversationDetailFloatingActionButtonActions(onEvent = onEvent)
-    DisposableEffect(Unit) {
+    val subtitle = conversationDetailSubtitleString(showSubtitle = uiState.hasDrafts)
+
+    // Keyed on subtitle, not Unit: the published actions and subtitle close over draft state, so
+    // the chrome has to be re-published when that changes or the scaffold keeps stale values.
+    DisposableEffect(subtitle) {
         appScaffoldState.setUiState(
             owner = chromeOwner,
             uiState = AppScaffoldState.UiState(
                 topNavigationActions = topNavigationActions,
                 topBarActions = topBarActions,
                 detailFooterActions = detailFooterActions,
-                floatingActionButtonActions = floatingActionButtonActions
+                floatingActionButtonActions = floatingActionButtonActions,
+                subtitle = subtitle
             )
         )
         onDispose { appScaffoldState.clearUiState(chromeOwner) }
@@ -126,6 +131,11 @@ private fun ConversationDetailScreenContent(
         onEvent = onEvent
     )
     StateHandler(uiState, onEvent, onNavigateUp)
+}
+
+@Composable
+private fun conversationDetailSubtitleString(showSubtitle: Boolean): String? {
+    return if (showSubtitle) stringResource(R.string.draft) else null
 }
 
 @Composable
@@ -431,7 +441,8 @@ internal fun ConversationDetailScreenPreview(
                     shouldEnableDiscardButton = config.uiState.hasDrafts,
                     onEvent = {}
                 ),
-                floatingActionButtonActions = conversationDetailFloatingActionButtonActions(onEvent = {})
+                floatingActionButtonActions = conversationDetailFloatingActionButtonActions(onEvent = {}),
+                subtitle = conversationDetailSubtitleString(showSubtitle = config.uiState.hasDrafts)
             ) {
                 ConversationDetailScreenContent(
                     firstConversationId = null,
