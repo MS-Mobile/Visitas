@@ -1223,7 +1223,7 @@ class VisitDetailViewModel
     private fun viewCreated(householderId: UUID?) {
         this.isUpdatingVisit = householderId != null
         viewModelScope.launch(dispatchers.io) {
-            conversations = conversationRepository.listAll()
+            conversations = conversationRepository.listForSuggestions()
             val conversationList = conversations.map { conversation ->
                 conversation.asState
             }

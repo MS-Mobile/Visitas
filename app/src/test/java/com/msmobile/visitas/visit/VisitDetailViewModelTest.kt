@@ -152,7 +152,7 @@ class VisitDetailViewModelTest {
 
         // Assert
         val conversationRepository = requireNotNull(conversationRepositoryRef.value)
-        verifyBlocking(conversationRepository) { listAll() }
+        verifyBlocking(conversationRepository) { listForSuggestions() }
         val state = viewModel.uiState.value
         assertEquals(3, state.conversationList.size)
         assertFalse(state.showDeleteButton)
@@ -1535,7 +1535,7 @@ class VisitDetailViewModelTest {
             io = mainDispatcherRule.dispatcher
         )
         val conversationRepository = mock<ConversationRepository> {
-            on { listAll() } doReturn (conversations ?: createConversationList())
+            on { listForSuggestions() } doReturn (conversations ?: createConversationList())
         }
         conversationRepositoryRef?.value = conversationRepository
 
