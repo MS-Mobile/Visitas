@@ -147,15 +147,17 @@ constructor(
     }
 
     private fun saveClicked() {
-        newState {
-            copy(eventState = UiEventState.Saving)
-        }
+        newState { copy(eventState = UiEventState.Saving) }
         viewModelScope.launch(dispatchers.io) {
-            deleteRemovedConversations(uiState.value.conversationList)
-            addOrUpdateConversations(uiState.value.conversationList)
-            newState {
-                copy(eventState = UiEventState.SaveComplete)
+            deleteRemovedConversations(uiState.value.conversationList)   // cascades their snapshots
+            val finalized = uiState.value.conversationList.map { conversation ->
+                conversation.copy(isDraft = false)
             }
+            addOrUpdateConversations(finalized)
+            conversationGroupId?.let { groupId -> snapshotRepository.deleteByGroup(groupId) }
+            newState { copy(conversationList = finalized, eventState = UiEventState.SaveComplete) }
+            // Rebase so a debounced pass landing after the save doesn't re-dirty the committed rows.
+            initialEditableData = _uiState.value.editableSnapshot()
         }
     }
 

@@ -222,6 +222,37 @@ class ConversationDetailViewModelTest {
         )
     }
 
+    @Test
+    fun `save finalizes drafts and deletes the group's snapshots`() {
+        // Arrange
+        val conversationRepositoryRef = MockReferenceHolder<ConversationRepository>()
+        val snapshotRepositoryRef = MockReferenceHolder<ConversationSnapshotRepository>()
+        val viewModel = createViewModel(
+            conversationRepositoryRef = conversationRepositoryRef,
+            snapshotRepositoryRef = snapshotRepositoryRef
+        )
+        viewModel.onEvent(ConversationDetailViewModel.UiEvent.ViewCreated(FIRST_CONVERSATION_ID))
+        viewModel.onEvent(
+            ConversationDetailViewModel.UiEvent.QuestionChanged(
+                viewModel.uiState.value.conversationList[1], "Edited"
+            )
+        )
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Act
+        viewModel.onEvent(ConversationDetailViewModel.UiEvent.SaveClicked)
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert
+        assertFalse(viewModel.uiState.value.hasDrafts)
+        val conversationRepository = requireNotNull(conversationRepositoryRef.value)
+        verifyBlocking(conversationRepository) {
+            save(argThat { id == SECOND_CONVERSATION_ID && question == "Edited" && !isDraft })
+        }
+        val snapshotRepository = requireNotNull(snapshotRepositoryRef.value)
+        verifyBlocking(snapshotRepository) { deleteByGroup(FIRST_CONVERSATION_ID) }
+    }
+
     private fun createViewModel(
         conversationRepositoryRef: MockReferenceHolder<ConversationRepository>? = null,
         snapshotRepositoryRef: MockReferenceHolder<ConversationSnapshotRepository>? = null,
