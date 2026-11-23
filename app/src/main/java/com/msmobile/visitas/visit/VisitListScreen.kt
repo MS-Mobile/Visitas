@@ -1038,7 +1038,7 @@ private fun HouseholderNameRow(
                     modifier = Modifier
                         .weight(weight = 1f, fill = false)
                         .padding(end = horizontalFieldPadding),
-                    text = stringResource(id = R.string.visit_draft),
+                    text = stringResource(id = R.string.draft),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.tertiary,

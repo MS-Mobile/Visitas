@@ -1353,7 +1353,7 @@ private fun NextVisitSuggestionButton(show: Boolean, onClick: () -> Unit) {
 @Composable
 private fun visitDetailSubtitleString(showSubtitle: Boolean): String? {
     return if (showSubtitle) {
-        stringResource(R.string.visit_draft)
+        stringResource(R.string.draft)
     } else {
         null
     }
