@@ -6,6 +6,7 @@ import com.msmobile.visitas.util.DispatcherProvider
 import com.msmobile.visitas.util.IdProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.debounce
@@ -137,6 +138,9 @@ constructor(
         autoSaveJob?.cancel()
         newState { copy(eventState = UiEventState.Deleting) }
         viewModelScope.launch(dispatchers.io) {
+            // A pass already inside a Room save can't be interrupted; wait for it so it can't
+            // re-insert a row after the group is deleted.
+            autoSaveJob?.cancelAndJoin()
             val id = conversationGroupId ?: return@launch
             conversationRepository.deleteGroup(id)
             conversationGroupId = null
@@ -271,7 +275,7 @@ constructor(
     }
 
     private suspend fun saveDraftSilently(state: UiState) {
-        val groupId = state.conversationList.first().id
+        val groupId = state.conversationList.firstOrNull()?.id ?: return
         state.conversationList.forEachIndexed { index, conversation ->
             if (conversation.wasRemoved) return@forEachIndexed
             conversationRepository.save(conversation.inGroup(index, groupId).asModel)
@@ -333,7 +337,7 @@ constructor(
     }
 
     private suspend fun addOrUpdateConversations(conversationList: List<ConversationState>) {
-        val groupId = conversationList.first().id
+        val groupId = conversationList.firstOrNull()?.id ?: return
         conversationList.forEachIndexed { index, conversation ->
             conversationRepository.save(conversation.inGroup(index, groupId).asModel)
         }

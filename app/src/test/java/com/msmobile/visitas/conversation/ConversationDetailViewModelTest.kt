@@ -7,6 +7,9 @@ import com.msmobile.visitas.util.MockReferenceHolder
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertTrue
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import org.junit.Rule
 import org.junit.Test
 import org.mockito.kotlin.any
@@ -14,10 +17,10 @@ import org.mockito.kotlin.argThat
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doReturnConsecutively
+import org.mockito.kotlin.doSuspendableAnswer
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
-import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyBlocking
 import org.mockito.kotlin.verifyNoInteractions
 import java.util.UUID
@@ -40,6 +43,7 @@ class ConversationDetailViewModelTest {
                 firstConversationId = null
             )
         )
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
 
         // Assert
         val conversationRepository = requireNotNull(conversationRepositoryRef.value)
@@ -347,13 +351,107 @@ class ConversationDetailViewModelTest {
         assertFalse(state.hasDrafts)
     }
 
+    @Test
+    fun `editing a row back to its original text does not auto save`() {
+        // Arrange
+        val conversationRepositoryRef = MockReferenceHolder<ConversationRepository>()
+        val viewModel = createViewModel(conversationRepositoryRef = conversationRepositoryRef)
+        viewModel.onEvent(ConversationDetailViewModel.UiEvent.ViewCreated(FIRST_CONVERSATION_ID))
+
+        // Act
+        viewModel.onEvent(
+            ConversationDetailViewModel.UiEvent.QuestionChanged(
+                viewModel.uiState.value.conversationList[1], "Edited"
+            )
+        )
+        viewModel.onEvent(
+            ConversationDetailViewModel.UiEvent.QuestionChanged(
+                viewModel.uiState.value.conversationList[1], "Question 2"
+            )
+        )
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert
+        val conversationRepository = requireNotNull(conversationRepositoryRef.value)
+        verifyBlocking(conversationRepository, never()) { save(any()) }
+        assertFalse(viewModel.uiState.value.hasDrafts)
+    }
+
+    @Test
+    fun `undo changes confirmed without a group id makes no repository calls`() {
+        // Arrange
+        val conversationRepositoryRef = MockReferenceHolder<ConversationRepository>()
+        val snapshotRepositoryRef = MockReferenceHolder<ConversationSnapshotRepository>()
+        val viewModel = createViewModel(
+            conversationRepositoryRef = conversationRepositoryRef,
+            snapshotRepositoryRef = snapshotRepositoryRef
+        )
+        viewModel.onEvent(ConversationDetailViewModel.UiEvent.ViewCreated(null))
+
+        // Act
+        viewModel.onEvent(ConversationDetailViewModel.UiEvent.UndoChangesConfirmed)
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert
+        verifyNoInteractions(requireNotNull(conversationRepositoryRef.value))
+        verifyNoInteractions(requireNotNull(snapshotRepositoryRef.value))
+    }
+
+    @Test
+    fun `save deletes rows marked as removed`() {
+        // Arrange
+        val conversationRepositoryRef = MockReferenceHolder<ConversationRepository>()
+        val viewModel = createViewModel(conversationRepositoryRef = conversationRepositoryRef)
+        viewModel.onEvent(ConversationDetailViewModel.UiEvent.ViewCreated(FIRST_CONVERSATION_ID))
+        viewModel.onEvent(
+            ConversationDetailViewModel.UiEvent.RemoveConversationClicked(
+                viewModel.uiState.value.conversationList[2]
+            )
+        )
+
+        // Act
+        viewModel.onEvent(ConversationDetailViewModel.UiEvent.SaveClicked)
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert
+        val conversationRepository = requireNotNull(conversationRepositoryRef.value)
+        verifyBlocking(conversationRepository) { deleteById(THIRD_CONVERSATION_ID) }
+    }
+
+    @Test
+    fun `delete waits for an in-flight auto save before deleting the group`() {
+        // Arrange: a Room write can't be interrupted, so the fake save finishes even when cancelled.
+        val callLog = mutableListOf<String>()
+        val viewModel = createViewModel(saveDurationMillis = 1_000, callLog = callLog)
+        viewModel.onEvent(ConversationDetailViewModel.UiEvent.ViewCreated(FIRST_CONVERSATION_ID))
+        viewModel.onEvent(
+            ConversationDetailViewModel.UiEvent.QuestionChanged(
+                viewModel.uiState.value.conversationList[1], "Edited"
+            )
+        )
+        // Past the 250 ms debounce: the auto-save pass is now inside its first save.
+        mainDispatcherRule.dispatcher.scheduler.advanceTimeBy(300)
+
+        // Act
+        viewModel.onEvent(ConversationDetailViewModel.UiEvent.DeleteAccepted)
+        mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
+
+        // Assert
+        assertTrue(callLog.contains("save"))
+        assertEquals("deleteGroup", callLog.last())
+    }
+
     private fun createViewModel(
         conversationRepositoryRef: MockReferenceHolder<ConversationRepository>? = null,
         snapshotRepositoryRef: MockReferenceHolder<ConversationSnapshotRepository>? = null,
         // Consecutive results of listByIdOrGroupId: [load, undo live rows, undo remaining rows].
         listByGroupResults: List<List<Conversation>> = listOf(createConversationList()),
         committedConversations: List<Conversation> = createConversationList(),
-        snapshots: List<ConversationSnapshot> = emptyList()
+        snapshots: List<ConversationSnapshot> = emptyList(),
+        // When set, each save takes this long and can't be cancelled midway, like a Room write.
+        saveDurationMillis: Long = 0,
+        // Records completed saves and group deletes, in completion order.
+        callLog: MutableList<String>? = null
     ): ConversationDetailViewModel {
         val dispatchers = DispatcherProvider(io = mainDispatcherRule.dispatcher)
         val conversationRepository = mock<ConversationRepository> {
@@ -361,6 +459,19 @@ class ConversationDetailViewModelTest {
             on { getByIdOrNull(any()) } doAnswer { invocation ->
                 val id = invocation.getArgument<UUID>(0)
                 committedConversations.firstOrNull { conversation -> conversation.id == id }
+            }
+            if (callLog != null) {
+                on { save(any()) } doSuspendableAnswer {
+                    withContext(NonCancellable) {
+                        delay(saveDurationMillis)
+                        callLog.add("save")
+                    }
+                    Unit
+                }
+                on { deleteGroup(any()) } doSuspendableAnswer {
+                    callLog.add("deleteGroup")
+                    Unit
+                }
             }
         }
         val snapshotRepository = mock<ConversationSnapshotRepository> {
