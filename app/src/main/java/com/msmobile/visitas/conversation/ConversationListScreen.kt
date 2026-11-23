@@ -201,10 +201,22 @@ private fun ConversationCard(
             .copy(containerColor = MaterialTheme.colorScheme.surfaceContainer),
         onClick = onClick
     ) {
-        Column(modifier = Modifier.padding(cardInnerPadding)) {
-            Text(text = conversation.question, fontWeight = FontWeight.Bold)
+        // Mirrors the visit list header: the question takes the remaining width and the
+        // Draft label sits at the end. Questions wrap instead of ellipsizing.
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(cardInnerPadding),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                modifier = Modifier.weight(1f),
+                text = conversation.question,
+                fontWeight = FontWeight.Bold
+            )
             if (conversation.hasDrafts) {
                 Text(
+                    modifier = Modifier.padding(start = horizontalFieldPadding),
                     text = stringResource(id = R.string.draft),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
