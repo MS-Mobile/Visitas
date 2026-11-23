@@ -18,6 +18,7 @@ class ConversationDetailViewModel
 constructor(
     private val dispatchers: DispatcherProvider,
     private val conversationRepository: ConversationRepository,
+    private val snapshotRepository: ConversationSnapshotRepository,
     private val uuidProvider: IdProvider
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(
@@ -254,7 +255,8 @@ constructor(
         val showQuestionClear: Boolean,
         val showResponseClear: Boolean,
         val canBeDeleted: Boolean,
-        val wasRemoved: Boolean
+        val wasRemoved: Boolean,
+        val isDraft: Boolean = false
     )
 
     private fun List<ConversationState>.indexOfByOrderIndex(visit: ConversationState): Int {
@@ -272,7 +274,8 @@ constructor(
                 showQuestionClear = false,
                 showResponseClear = false,
                 canBeDeleted = canDeleteConversation(orderIndex),
-                wasRemoved = false
+                wasRemoved = false,
+                isDraft = isDraft
             )
         }
 
@@ -283,7 +286,8 @@ constructor(
                 question = question,
                 response = response,
                 conversationGroupId = conversationGroupId,
-                orderIndex = orderIndex
+                orderIndex = orderIndex,
+                isDraft = isDraft
             )
         }
 
@@ -329,7 +333,9 @@ constructor(
 
     data class UiState(
         val conversationList: List<ConversationState>,
-        val eventState: UiEventState,
-        val hasDrafts: Boolean = false
-    )
+        val eventState: UiEventState
+    ) {
+        val hasDrafts: Boolean
+            get() = conversationList.any { conversation -> !conversation.wasRemoved && conversation.isDraft }
+    }
 }
